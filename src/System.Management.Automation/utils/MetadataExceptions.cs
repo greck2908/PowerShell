@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
@@ -151,7 +151,7 @@ namespace System.Management.Automation
             get { return _swallowException; }
         }
 
-        private bool _swallowException = false;
+        private readonly bool _swallowException = false;
     }
 
     /// <summary>
@@ -228,4 +228,3 @@ namespace System.Management.Automation
         }
     }
 }
-

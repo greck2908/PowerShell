@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -28,7 +28,7 @@ namespace Microsoft.PowerShell.Commands
     /// Implements a cmdlet that gets the list of loaded modules...
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "Module", DefaultParameterSetName = ParameterSet_Loaded,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=141552")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096696")]
     [OutputType(typeof(PSModuleInfo))]
     public sealed class GetModuleCommand : ModuleCmdletBase, IDisposable
     {
@@ -165,8 +165,8 @@ namespace Microsoft.PowerShell.Commands
                     "Get-Module");
                 foreach (
                     PSObject outputObject in
-                        RemoteDiscoveryHelper.InvokePowerShell(powerShell, this.CancellationToken, this,
-                                                               errorMessageTemplate))
+                        RemoteDiscoveryHelper.InvokePowerShell(powerShell, this, errorMessageTemplate,
+                                                               this.CancellationToken))
                 {
                     PSModuleInfo moduleInfo = RemoteDiscoveryHelper.RehydratePSModuleInfo(outputObject);
                     yield return moduleInfo;
@@ -174,7 +174,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private PSModuleInfo GetModuleInfoForRemoteModuleWithoutManifest(RemoteDiscoveryHelper.CimModule cimModule)
+        private static PSModuleInfo GetModuleInfoForRemoteModuleWithoutManifest(RemoteDiscoveryHelper.CimModule cimModule)
         {
             return new PSModuleInfo(cimModule.ModuleName, null, null);
         }
@@ -440,7 +440,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (var n in names)
                 {
-                    if (n.IndexOf(StringLiterals.DefaultPathSeparator) != -1 || n.IndexOf(StringLiterals.AlternatePathSeparator) != -1)
+                    if (n.Contains(StringLiterals.DefaultPathSeparator) || n.Contains(StringLiterals.AlternatePathSeparator))
                     {
                         string errorMessage = StringUtil.Format(stringFormat, n);
                         var argumentException = new ArgumentException(errorMessage);
@@ -573,9 +573,11 @@ namespace Microsoft.PowerShell.Commands
             IDictionary<string, ModuleSpecification> moduleSpecTable,
             PSModuleInfo module)
         {
+            const WildcardOptions options = WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant;
             foreach (ModuleSpecification moduleSpec in moduleSpecTable.Values)
             {
-                if (moduleSpec.Name == module.Name || moduleSpec.Name == module.Path || module.Path.Contains(moduleSpec.Name))
+                WildcardPattern namePattern = WildcardPattern.Get(moduleSpec.Name, options);
+                if (namePattern.IsMatch(module.Name) || moduleSpec.Name == module.Path || module.Path.Contains(moduleSpec.Name))
                 {
                     yield return moduleSpec;
                 }

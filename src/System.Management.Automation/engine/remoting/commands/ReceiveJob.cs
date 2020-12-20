@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -54,7 +54,7 @@ namespace Microsoft.PowerShell.Commands
     ///              not PSRemotingJob.
     /// </summary>
     [Cmdlet(VerbsCommunications.Receive, "Job", DefaultParameterSetName = ReceiveJobCommand.LocationParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113372", RemotingCapability = RemotingCapability.SupportedByCommand)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096965", RemotingCapability = RemotingCapability.SupportedByCommand)]
     public class ReceiveJobCommand : JobCmdletBase, IDisposable
     {
         #region Properties
@@ -768,7 +768,7 @@ namespace Microsoft.PowerShell.Commands
             // There is a bug in V2 that only remoting jobs work
             // with Receive-Job. This is being fixed
 
-            if (!(job is Job2) && job.UsesResultsCollection)
+            if (job is not Job2 && job.UsesResultsCollection)
             {
                 // extract results and handle them
                 Collection<PSStreamObject> results = ReadAll<PSStreamObject>(job.Results);
@@ -1493,6 +1493,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         private readonly Dictionary<Guid, bool> _eventArgsWritten = new Dictionary<Guid, bool>();
+
         private void WriteJobStateInformation(Job job, JobStateEventArgs args = null)
         {
             // at any point there will be only one thread which will have

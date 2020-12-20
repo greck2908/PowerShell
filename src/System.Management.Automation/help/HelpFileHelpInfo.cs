@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.IO;
@@ -50,8 +50,8 @@ namespace System.Management.Automation
         /// <value>Name for the help info</value>
         internal override string Name { get; } = string.Empty;
 
-        private string _filename = string.Empty;
-        private string _synopsis = string.Empty;
+        private readonly string _filename = string.Empty;
+        private readonly string _synopsis = string.Empty;
         /// <summary>
         /// Synopsis for the help info.
         /// </summary>

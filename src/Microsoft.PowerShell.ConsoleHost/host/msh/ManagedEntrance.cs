@@ -1,13 +1,15 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#nullable enable
+
 using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.Management.Automation;
-using System.Management.Automation.Internal;
+using System.Management.Automation.Host;
 using System.Management.Automation.Runspaces;
 using System.Management.Automation.Tracing;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -27,20 +29,45 @@ namespace Microsoft.PowerShell
         /// <param name="args">
         /// Command line arguments to the managed MSH
         /// </param>
-        /// <param name="argc" />
-        public static int Start(string consoleFilePath, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 2)]string[] args, int argc)
+        /// <param name="argc">
+        /// Length of the passed in argument array.
+        /// </param>
+        [Obsolete("Callers should now use UnmanagedPSEntry.Start(string[], int)", error: true)]
+        public static int Start(string consoleFilePath, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 2)] string[] args, int argc)
         {
-            // Warm up some components concurrently on background threads.
-            System.Management.Automation.Runspaces.EarlyStartup.Init();
+            return Start(args, argc);
+        }
 
-            // We need to read the settings file before we create the console host
-            Microsoft.PowerShell.CommandLineParameterParser.EarlyParse(args);
+        /// <summary>
+        /// Starts managed MSH.
+        /// </summary>
+        /// <param name="args">
+        /// Command line arguments to the managed MSH
+        /// </param>
+        /// <param name="argc">
+        /// Length of the passed in argument array.
+        /// </param>
+        public static int Start([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)] string[] args, int argc)
+        {
+            if (args == null)
+            {
+                throw new ArgumentNullException(nameof(args));
+            }
 
-#if !UNIX
-            // NOTE: On Unix, logging has to be deferred until after command-line parsing
-            // complete. On Windows, deferring the call is not needed.
-            PSEtwLog.LogConsoleStartup();
+#if DEBUG
+            if (args.Length > 0 && !string.IsNullOrEmpty(args[0]) && args[0]!.Equals("-isswait", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Attach the debugger to continue...");
+                while (!System.Diagnostics.Debugger.IsAttached)
+                {
+                    Thread.Sleep(100);
+                }
+
+                System.Diagnostics.Debugger.Break();
+            }
 #endif
+            // Warm up some components concurrently on background threads.
+            EarlyStartup.Init();
 
             // Windows Vista and later support non-traditional UI fallback ie., a
             // user on an Arabic machine can choose either French or English(US) as
@@ -52,34 +79,29 @@ namespace Microsoft.PowerShell
             Thread.CurrentThread.CurrentUICulture = NativeCultureResolver.UICulture;
             Thread.CurrentThread.CurrentCulture = NativeCultureResolver.Culture;
 
-#if DEBUG
-            if (args.Length > 0 && !string.IsNullOrEmpty(args[0]) && args[0].Equals("-isswait", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("Attach the debugger to continue...");
-                while (!System.Diagnostics.Debugger.IsAttached)
-                {
-                    Thread.Sleep(100);
-                }
+            ConsoleHost.ParseCommandLine(args);
 
-                System.Diagnostics.Debugger.Break();
-            }
-#endif
+            // NOTE: On Unix, logging depends on a command line parsing
+            // and must be just after ConsoleHost.ParseCommandLine(args)
+            // to allow overriding logging options.
+            PSEtwLog.LogConsoleStartup();
+
             int exitCode = 0;
             try
             {
-                var banner = ManagedEntranceStrings.ShellBannerNonWindowsPowerShell;
-                var formattedBanner = string.Format(CultureInfo.InvariantCulture, banner, PSVersionInfo.GitCommitId);
-                exitCode = Microsoft.PowerShell.ConsoleShell.Start(
-                    formattedBanner,
-                    ManagedEntranceStrings.UsageHelp,
-                    args);
-            }
-            catch (System.Management.Automation.Host.HostException e)
-            {
-                if (e.InnerException != null && e.InnerException.GetType() == typeof(System.ComponentModel.Win32Exception))
-                {
-                    System.ComponentModel.Win32Exception win32e = e.InnerException as System.ComponentModel.Win32Exception;
+                var banner = string.Format(
+                    CultureInfo.InvariantCulture,
+                    ManagedEntranceStrings.ShellBannerNonWindowsPowerShell,
+                    PSVersionInfo.GitCommitId);
 
+                ConsoleHost.DefaultInitialSessionState = InitialSessionState.CreateDefault2();
+
+                exitCode = ConsoleHost.Start(banner, ManagedEntranceStrings.UsageHelp);
+            }
+            catch (HostException e)
+            {
+                if (e.InnerException is Win32Exception win32e)
+                {
                     // These exceptions are caused by killing conhost.exe
                     // 1236, network connection aborted by local system
                     // 0x6, invalid console handle
@@ -100,4 +122,3 @@ namespace Microsoft.PowerShell
         }
     }
 }
-

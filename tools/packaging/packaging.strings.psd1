@@ -1,4 +1,4 @@
-﻿@{
+@{
     Description = @'
 PowerShell is an automation and configuration management platform.
 It consists of a cross-platform command-line shell and associated scripting language.
@@ -130,11 +130,11 @@ open {0}
         <version>{1}</version>
         <authors>Microsoft</authors>
         <owners>Microsoft,PowerShell</owners>
-        <requireLicenseAcceptance>true</requireLicenseAcceptance>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Runtime for hosting PowerShell</description>
         <projectUrl>https://github.com/PowerShell/PowerShell</projectUrl>
-        <iconUrl>https://github.com/PowerShell/PowerShell/blob/master/assets/Powershell_black_64.png?raw=true</iconUrl>
-        <licenseUrl>https://github.com/PowerShell/PowerShell/blob/master/LICENSE.txt</licenseUrl>
+        <icon>{2}</icon>
+        <license type="expression">MIT</license>
         <tags>PowerShell</tags>
         <language>en-US</language>
         <copyright>&#169; Microsoft Corporation. All rights reserved.</copyright>
@@ -142,7 +142,7 @@ open {0}
             <files include="**/*" buildAction="None" copyToOutput="true" flatten="false" />
         </contentFiles>
         <dependencies>
-            <group targetFramework=".netcoreapp3.0"></group>
+            <group targetFramework="net5.0"></group>
         </dependencies>
     </metadata>
 </package>
@@ -167,7 +167,7 @@ open {0}
         <authors>Microsoft</authors>
         <owners>Microsoft,PowerShell</owners>
         <projectUrl>https://github.com/PowerShell/PowerShell</projectUrl>
-        <iconUrl>https://github.com/PowerShell/PowerShell/blob/master/assets/Powershell_black_64.png?raw=true</iconUrl>
+        <icon>{2}</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>PowerShell global tool</description>
         <license type="expression">MIT</license>

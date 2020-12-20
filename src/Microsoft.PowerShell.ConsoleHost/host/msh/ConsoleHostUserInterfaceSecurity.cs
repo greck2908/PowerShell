@@ -1,13 +1,9 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System;
-using System.Globalization;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
 using System.Security;
-
-using Microsoft.Win32;
 
 namespace Microsoft.PowerShell
 {
@@ -29,7 +25,6 @@ namespace Microsoft.PowerShell
         /// <param name="message">Message to be displayed.</param>
         /// <param name="caption">Caption for the message.</param>
         /// <returns>PSCredential object.</returns>
-
         public override PSCredential PromptForCredential(
             string caption,
             string message,
@@ -54,7 +49,6 @@ namespace Microsoft.PowerShell
         /// <param name="allowedCredentialTypes">What type of creds can be supplied by the user.</param>
         /// <param name="options">Options that control the cred gathering UI behavior.</param>
         /// <returns>PSCredential object, or null if input was cancelled (or if reading from stdin and stdin at EOF).</returns>
-
         public override PSCredential PromptForCredential(
             string caption,
             string message,
@@ -121,4 +115,3 @@ namespace Microsoft.PowerShell
         }
     }
 }
-

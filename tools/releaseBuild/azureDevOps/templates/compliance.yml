@@ -3,16 +3,21 @@ parameters:
 
 jobs:
 - job: compliance
+  variables:
+    runCodesignValidationInjection: false
   displayName: Compliance
   dependsOn:
     ${{ parameters.parentJobs }}
   pool:
-    name: Package ES CodeHub Lab E
+    name: Package ES Standard Build
 
   # APIScan can take a long time
   timeoutInMinutes: 180
 
   steps:
+  - checkout: self
+    clean: true
+
   - template: SetVersionVariables.yml
     parameters:
       ReleaseTagVar: $(ReleaseTagVar)
@@ -32,17 +37,17 @@ jobs:
 
   - template: expand-compliance.yml
     parameters:
+      architecture: fxdependent
+      version: $(version)
+
+  - template: expand-compliance.yml
+    parameters:
       architecture: x86
       version: $(version)
 
   - template: expand-compliance.yml
     parameters:
       architecture: x64
-      version: $(version)
-
-  - template: expand-compliance.yml
-    parameters:
-      architecture: fxdependent
       version: $(version)
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
@@ -99,7 +104,7 @@ jobs:
 
   # PreFASt is not applicable
 
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-apiscan.APIScan@1
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-apiscan.APIScan@2
     displayName: 'Run APIScan'
     inputs:
       softwareFolder: '$(CompliancePath)'

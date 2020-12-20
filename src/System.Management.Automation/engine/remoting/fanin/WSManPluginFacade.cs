@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+
 // ----------------------------------------------------------------------
 //  Contents:  Entry points for managed PowerShell plugin worker used to
 //  host powershell in a WSMan service.
@@ -169,7 +170,8 @@ namespace System.Management.Automation.Remoting
         #region Private Members
 
         // Holds the delegate pointers in a structure that has identical layout to the native structure.
-        private WSManPluginEntryDelegatesInternal _unmanagedStruct = new WSManPluginEntryDelegatesInternal();
+        private readonly WSManPluginEntryDelegatesInternal _unmanagedStruct = new WSManPluginEntryDelegatesInternal();
+
         internal WSManPluginEntryDelegatesInternal UnmanagedStruct
         {
             get { return _unmanagedStruct; }
@@ -232,11 +234,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Use C# destructor syntax for finalization code.
-        /// This destructor will run only if the Dispose method
-        /// does not get called.
-        /// It gives your base class the opportunity to finalize.
-        /// Do not provide destructors in types derived from this class.
+        /// Finalizes an instance of the <see cref="WSManPluginEntryDelegates"/> class.
         /// </summary>
         ~WSManPluginEntryDelegates()
         {
@@ -317,7 +315,7 @@ namespace System.Management.Automation.Remoting
         private void CleanUpDelegates()
         {
             // Free GCHandles so that the memory they point to may be unpinned (garbage collected)
-            if (_pluginShellGCHandle != null)
+            if (_pluginShellGCHandle.IsAllocated)
             {
                 _pluginShellGCHandle.Free();
                 _pluginReleaseShellContextGCHandle.Free();
@@ -418,7 +416,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Immutable container that holds the delegates and their unmanaged pointers.
         /// </summary>
-        internal static WSManPluginEntryDelegates workerPtrs = new WSManPluginEntryDelegates();
+        internal static readonly WSManPluginEntryDelegates workerPtrs = new WSManPluginEntryDelegates();
 
         #region Managed Entry Points
 
@@ -431,31 +429,11 @@ namespace System.Management.Automation.Remoting
         public static int InitPlugin(
             IntPtr wkrPtrs)
         {
-            if (IntPtr.Zero == wkrPtrs)
+            if (wkrPtrs == IntPtr.Zero)
             {
                 return WSManPluginConstants.ExitCodeFailure;
             }
-#if !CORECLR
-            // For long-path support, Full .NET requires some AppContext switches;
-            // (for CoreCLR this is Not needed, because CoreCLR supports long paths by default)
-            // internally in .NET they are cached once retrieved and are typically hit very early during an application run;
-            // so per .NET team's recommendation, we are setting them as soon as we enter managed code.
-            // We build against CLR4.5 so we can run on Win7/Win8, but we want to use apis added to CLR 4.6, so we use reflection
-            try
-            {
-                Type appContextType = Type.GetType("System.AppContext"); // type is in mscorlib, so it is sufficient to supply the type name qualified by its namespace
 
-                object[] blockLongPathsSwitch = new object[] { "Switch.System.IO.BlockLongPaths", false };
-                object[] useLegacyPathHandlingSwitch = new object[] { "Switch.System.IO.UseLegacyPathHandling", false };
-
-                appContextType.InvokeMember("SetSwitch", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.InvokeMethod, null, null, blockLongPathsSwitch, CultureInfo.InvariantCulture);
-                appContextType.InvokeMember("SetSwitch", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.InvokeMethod, null, null, useLegacyPathHandlingSwitch, CultureInfo.InvariantCulture);
-            }
-            catch (Exception)
-            {
-                // If there are any non-critical exceptions (e.g. we are running on CLR prior to 4.6.2), we won't be able to use long paths
-            }
-#endif
             Marshal.StructureToPtr<WSManPluginEntryDelegates.WSManPluginEntryDelegatesInternal>(workerPtrs.UnmanagedStruct, wkrPtrs, false);
             return WSManPluginConstants.ExitCodeSuccess;
         }
@@ -491,7 +469,7 @@ namespace System.Management.Automation.Remoting
             IntPtr commandContext,
             IntPtr inboundConnectInformation)
         {
-            if (IntPtr.Zero == pluginContext)
+            if (pluginContext == IntPtr.Zero)
             {
                 WSManPluginInstance.ReportOperationComplete(
                     requestDetails,
@@ -523,7 +501,7 @@ namespace System.Management.Automation.Remoting
             IntPtr startupInfo,
             IntPtr inboundShellInformation)
         {
-            if (IntPtr.Zero == pluginContext)
+            if (pluginContext == IntPtr.Zero)
             {
                 WSManPluginInstance.ReportOperationComplete(
                     requestDetails,
@@ -579,7 +557,7 @@ namespace System.Management.Automation.Remoting
             [MarshalAs(UnmanagedType.LPWStr)] string commandLine,
             IntPtr arguments)
         {
-            if (IntPtr.Zero == pluginContext)
+            if (pluginContext == IntPtr.Zero)
             {
                 WSManPluginInstance.ReportOperationComplete(
                     requestDetails,
@@ -640,7 +618,7 @@ namespace System.Management.Automation.Remoting
             [MarshalAs(UnmanagedType.LPWStr)] string stream,
             IntPtr inboundData)
         {
-            if (IntPtr.Zero == pluginContext)
+            if (pluginContext == IntPtr.Zero)
             {
                 WSManPluginInstance.ReportOperationComplete(
                     requestDetails,
@@ -672,7 +650,7 @@ namespace System.Management.Automation.Remoting
             IntPtr commandContext,
             IntPtr streamSet)
         {
-            if (IntPtr.Zero == pluginContext)
+            if (pluginContext == IntPtr.Zero)
             {
                 WSManPluginInstance.ReportOperationComplete(
                     requestDetails,
@@ -704,7 +682,7 @@ namespace System.Management.Automation.Remoting
             IntPtr commandContext,
             [MarshalAs(UnmanagedType.LPWStr)] string code)
         {
-            if ((IntPtr.Zero == pluginContext) || (IntPtr.Zero == shellContext))
+            if ((pluginContext == IntPtr.Zero) || (shellContext == IntPtr.Zero))
             {
                 WSManPluginInstance.ReportOperationComplete(
                     requestDetails,
@@ -784,11 +762,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Use C# destructor syntax for finalization code.
-        /// This destructor will run only if the Dispose method
-        /// does not get called.
-        /// It gives your base class the opportunity to finalize.
-        /// Do not provide destructors in types derived from this class.
+        /// Finalizes an instance of the <see cref="WSManPluginManagedEntryInstanceWrapper"/> class.
         /// </summary>
         ~WSManPluginManagedEntryInstanceWrapper()
         {

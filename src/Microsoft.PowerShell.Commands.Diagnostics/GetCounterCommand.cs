@@ -1,37 +1,25 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
 using System.Management.Automation;
-using System.Management.Automation.Runspaces;
-using System.Net;
-using System.Reflection;
 using System.Resources;
-using System.Security;
-using System.Security.Principal;
-using System.Text;
 using System.Threading;
-using System.Xml;
-
+using Microsoft.Powershell.Commands.GetCounter.PdhNative;
 using Microsoft.PowerShell.Commands.Diagnostics.Common;
 using Microsoft.PowerShell.Commands.GetCounter;
-using Microsoft.Powershell.Commands.GetCounter.PdhNative;
 
 namespace Microsoft.PowerShell.Commands
 {
     ///
     /// Class that implements the Get-Counter cmdlet.
     ///
-    [Cmdlet(VerbsCommon.Get, "Counter", DefaultParameterSetName = "GetCounterSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=138335")]
+    [Cmdlet(VerbsCommon.Get, "Counter", DefaultParameterSetName = "GetCounterSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2109647")]
     public sealed class GetCounterCommand : PSCmdlet
     {
         //
@@ -49,15 +37,7 @@ namespace Microsoft.PowerShell.Commands
                             Scope = "member",
                             Target = "Microsoft.PowerShell.Commands.GetCounterCommand.ListSet",
                             Justification = "A string[] is required here because that is the type Powershell supports")]
-
-        public string[] ListSet
-        {
-            get { return _listSet; }
-
-            set { _listSet = value; }
-        }
-
-        private string[] _listSet = { "*" };
+        public string[] ListSet { get; set; } = { "*" };
 
         //
         // Counter parameter
@@ -90,9 +70,10 @@ namespace Microsoft.PowerShell.Commands
                                  @"\memory\cache faults/sec",
                                  @"\physicaldisk(_total)\% disk time",
                                  @"\physicaldisk(_total)\current disk queue length"};
+
         private bool _defaultCounters = true;
 
-        private List<string> _accumulatedCounters = new List<string>();
+        private readonly List<string> _accumulatedCounters = new();
 
         //
         // SampleInterval parameter.
@@ -104,19 +85,13 @@ namespace Microsoft.PowerShell.Commands
                 ValueFromPipelineByPropertyName = false,
                 HelpMessageBaseName = "GetEventResources")]
         [ValidateRange((int)1, int.MaxValue)]
-        public int SampleInterval
-        {
-            get { return _sampleInterval; }
-
-            set { _sampleInterval = value; }
-        }
-
-        private int _sampleInterval = 1;
+        public int SampleInterval { get; set; } = 1;
 
         //
         // MaxSamples parameter
         //
         private const Int64 KEEP_ON_SAMPLING = -1;
+
         [Parameter(
                 ParameterSetName = "GetCounterSet",
                 ValueFromPipeline = false,
@@ -165,20 +140,13 @@ namespace Microsoft.PowerShell.Commands
                             Scope = "member",
                             Target = "Microsoft.PowerShell.Commands.GetCounterCommand.ComputerName",
                             Justification = "A string[] is required here because that is the type Powershell supports")]
-        public string[] ComputerName
-        {
-            get { return _computerName; }
-
-            set { _computerName = value; }
-        }
-
-        private string[] _computerName = Array.Empty<string>();
+        public string[] ComputerName { get; set; } = Array.Empty<string>();
 
         private ResourceManager _resourceMgr = null;
 
         private PdhHelper _pdhHelper = null;
 
-        private EventWaitHandle _cancelEventArrived = new EventWaitHandle(false, EventResetMode.ManualReset);
+        private readonly EventWaitHandle _cancelEventArrived = new(false, EventResetMode.ManualReset);
 
         // Culture identifier(s)
         private const string FrenchCultureId = "fr-FR";
@@ -190,7 +158,7 @@ namespace Microsoft.PowerShell.Commands
         //
         // With this dictionary, we can add special mapping if we find other special cases in the future.
         private readonly Dictionary<string, List<Tuple<char, char>>> _cultureAndSpecialCharacterMap =
-            new Dictionary<string, List<Tuple<char, char>>>()
+            new()
                 {
                    {
                        FrenchCultureId, new List<Tuple<char, char>>()
@@ -210,24 +178,17 @@ namespace Microsoft.PowerShell.Commands
         //
         protected override void BeginProcessing()
         {
-
-#if CORECLR
             if (Platform.IsIoT)
             {
                 // IoT does not have the '$env:windir\System32\pdh.dll' assembly which is required by this cmdlet.
                 throw new PlatformNotSupportedException();
             }
 
-            // PowerShell 7 requires at least Windows 7,
-            // so no version test is needed
-            _pdhHelper = new PdhHelper(false);
-#else
-            _pdhHelper = new PdhHelper(System.Environment.OSVersion.Version.Major < 6);
-#endif
+            _pdhHelper = new PdhHelper();
             _resourceMgr = Microsoft.PowerShell.Commands.Diagnostics.Common.CommonUtilities.GetResourceManager();
 
             uint res = _pdhHelper.ConnectToDataSource();
-            if (res != 0)
+            if (res != PdhResults.PDH_CSTATUS_VALID_DATA)
             {
                 ReportPdhError(res, true);
                 return;
@@ -235,7 +196,7 @@ namespace Microsoft.PowerShell.Commands
 
             if (Continuous.IsPresent && _maxSamplesSpecified)
             {
-                Exception exc = new Exception(string.Format(CultureInfo.CurrentCulture, _resourceMgr.GetString("CounterContinuousOrMaxSamples")));
+                Exception exc = new(string.Format(CultureInfo.CurrentCulture, _resourceMgr.GetString("CounterContinuousOrMaxSamples")));
                 ThrowTerminatingError(new ErrorRecord(exc, "CounterContinuousOrMaxSamples", ErrorCategory.InvalidArgument, null));
             }
         }
@@ -281,7 +242,7 @@ namespace Microsoft.PowerShell.Commands
                         break;
 
                     default:
-                        Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Invalid parameter set name: {0}", ParameterSetName));
+                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "Invalid parameter set name: {0}", ParameterSetName));
                         break;
                 }
             }
@@ -305,12 +266,12 @@ namespace Microsoft.PowerShell.Commands
         //
         private void ProcessListSet()
         {
-            if (_computerName.Length == 0)
+            if (ComputerName.Length == 0)
             {
                 ProcessListSetPerMachine(null);
             }
             else
-                foreach (string machine in _computerName)
+                foreach (string machine in ComputerName)
                 {
                     ProcessListSetPerMachine(machine);
                 }
@@ -322,24 +283,24 @@ namespace Microsoft.PowerShell.Commands
         //
         private void ProcessListSetPerMachine(string machine)
         {
-            StringCollection counterSets = new StringCollection();
+            StringCollection counterSets = new();
             uint res = _pdhHelper.EnumObjects(machine, ref counterSets);
-            if (res != 0)
+            if (res != PdhResults.PDH_CSTATUS_VALID_DATA)
             {
                 // add an error message
                 string msg = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("NoCounterSetsOnComputer"), machine, res);
-                Exception exc = new Exception(msg);
+                Exception exc = new(msg);
                 WriteError(new ErrorRecord(exc, "NoCounterSetsOnComputer", ErrorCategory.InvalidResult, machine));
                 return;
             }
 
             CultureInfo culture = GetCurrentCulture();
             List<Tuple<char, char>> characterReplacementList = null;
-            StringCollection validPaths = new StringCollection();
+            StringCollection validPaths = new();
 
             _cultureAndSpecialCharacterMap.TryGetValue(culture.Name, out characterReplacementList);
 
-            foreach (string pattern in _listSet)
+            foreach (string pattern in ListSet)
             {
                 bool bMatched = false;
                 string normalizedPattern = pattern;
@@ -352,7 +313,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
 
-                WildcardPattern wildLogPattern = new WildcardPattern(normalizedPattern, WildcardOptions.IgnoreCase);
+                WildcardPattern wildLogPattern = new(normalizedPattern, WildcardOptions.IgnoreCase);
 
                 foreach (string counterSet in counterSets)
                 {
@@ -361,18 +322,18 @@ namespace Microsoft.PowerShell.Commands
                         continue;
                     }
 
-                    StringCollection counterSetCounters = new StringCollection();
-                    StringCollection counterSetInstances = new StringCollection();
+                    StringCollection counterSetCounters = new();
+                    StringCollection counterSetInstances = new();
 
                     res = _pdhHelper.EnumObjectItems(machine, counterSet, ref counterSetCounters, ref counterSetInstances);
                     if (res == PdhResults.PDH_ACCESS_DENIED)
                     {
                         string msg = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("CounterSetEnumAccessDenied"), counterSet);
-                        Exception exc = new Exception(msg);
+                        Exception exc = new(msg);
                         WriteError(new ErrorRecord(exc, "CounterSetEnumAccessDenied", ErrorCategory.InvalidResult, null));
                         continue;
                     }
-                    else if (res != 0)
+                    else if (res != PdhResults.PDH_CSTATUS_VALID_DATA)
                     {
                         ReportPdhError(res, false);
                         continue;
@@ -394,13 +355,10 @@ namespace Microsoft.PowerShell.Commands
                         instanceArray[0] = "*";
                     }
 
-                    Dictionary<string, string[]> counterInstanceMapping = new Dictionary<string, string[]>();
+                    Dictionary<string, string[]> counterInstanceMapping = new();
                     foreach (string counter in counterSetCounters)
                     {
-                        if (!counterInstanceMapping.ContainsKey(counter))
-                        {
-                            counterInstanceMapping.Add(counter, instanceArray);
-                        }
+                        counterInstanceMapping.TryAdd(counter, instanceArray);
                     }
 
                     PerformanceCounterCategoryType categoryType = PerformanceCounterCategoryType.Unknown;
@@ -415,7 +373,7 @@ namespace Microsoft.PowerShell.Commands
 
                     string setHelp = _pdhHelper.GetCounterSetHelp(machine, counterSet);
 
-                    CounterSet setObj = new CounterSet(counterSet, machine, categoryType, setHelp, ref counterInstanceMapping);
+                    CounterSet setObj = new(counterSet, machine, categoryType, setHelp, ref counterInstanceMapping);
                     WriteObject(setObj);
                     bMatched = true;
                 }
@@ -423,7 +381,7 @@ namespace Microsoft.PowerShell.Commands
                 if (!bMatched)
                 {
                     string msg = _resourceMgr.GetString("NoMatchingCounterSetsFound");
-                    Exception exc = new Exception(string.Format(CultureInfo.InvariantCulture, msg,
+                    Exception exc = new(string.Format(CultureInfo.InvariantCulture, msg,
                       machine ?? "localhost", normalizedPattern));
                     WriteError(new ErrorRecord(exc, "NoMatchingCounterSetsFound", ErrorCategory.ObjectNotFound, null));
                 }
@@ -445,24 +403,24 @@ namespace Microsoft.PowerShell.Commands
             CultureInfo culture = GetCurrentCulture();
             List<Tuple<char, char>> characterReplacementList = null;
             List<string> paths = CombineMachinesAndCounterPaths();
-            uint res = 0;
 
             if (!_defaultCounters)
             {
                 _cultureAndSpecialCharacterMap.TryGetValue(culture.Name, out characterReplacementList);
             }
 
-            StringCollection allExpandedPaths = new StringCollection();
+            StringCollection allExpandedPaths = new();
+            uint res;
             foreach (string path in paths)
             {
                 string localizedPath = path;
                 if (_defaultCounters)
                 {
                     res = _pdhHelper.TranslateLocalCounterPath(path, out localizedPath);
-                    if (res != 0)
+                    if (res != PdhResults.PDH_CSTATUS_VALID_DATA)
                     {
                         string msg = string.Format(CultureInfo.CurrentCulture, _resourceMgr.GetString("CounterPathTranslationFailed"), res);
-                        Exception exc = new Exception(msg);
+                        Exception exc = new(msg);
                         WriteError(new ErrorRecord(exc, "CounterPathTranslationFailed", ErrorCategory.InvalidResult, null));
 
                         localizedPath = path;
@@ -478,7 +436,7 @@ namespace Microsoft.PowerShell.Commands
 
                 StringCollection expandedPaths;
                 res = _pdhHelper.ExpandWildCardPath(localizedPath, out expandedPaths);
-                if (res != 0)
+                if (res != PdhResults.PDH_CSTATUS_VALID_DATA)
                 {
                     WriteDebug("Could not expand path " + localizedPath);
                     ReportPdhError(res, false);
@@ -490,7 +448,7 @@ namespace Microsoft.PowerShell.Commands
                     if (!_pdhHelper.IsPathValid(expandedPath))
                     {
                         string msg = string.Format(CultureInfo.CurrentCulture, _resourceMgr.GetString("CounterPathIsInvalid"), localizedPath);
-                        Exception exc = new Exception(msg);
+                        Exception exc = new(msg);
                         WriteError(new ErrorRecord(exc, "CounterPathIsInvalid", ErrorCategory.InvalidResult, null));
 
                         continue;
@@ -506,13 +464,13 @@ namespace Microsoft.PowerShell.Commands
             }
 
             res = _pdhHelper.OpenQuery();
-            if (res != 0)
+            if (res != PdhResults.PDH_CSTATUS_VALID_DATA)
             {
                 ReportPdhError(res, false);
             }
 
             res = _pdhHelper.AddCounters(ref allExpandedPaths, true);
-            if (res != 0)
+            if (res != PdhResults.PDH_CSTATUS_VALID_DATA)
             {
                 ReportPdhError(res, true);
 
@@ -534,7 +492,7 @@ namespace Microsoft.PowerShell.Commands
                 // read the first set just to get the initial values
                 res = _pdhHelper.ReadNextSet(out nextSet, bSkip);
 
-                if (res == 0)
+                if (res == PdhResults.PDH_CSTATUS_VALID_DATA)
                 {
                     // Display valid data
                     if (!bSkip)
@@ -570,12 +528,7 @@ namespace Microsoft.PowerShell.Commands
                     break;
                 }
 
-#if CORECLR
-                // CoreCLR has no overload of WaitOne with (interval, exitContext)
-                bool cancelled = _cancelEventArrived.WaitOne((int)_sampleInterval * 1000);
-#else
-                bool cancelled = _cancelEventArrived.WaitOne((int)_sampleInterval * 1000, true);
-#endif
+                bool cancelled = _cancelEventArrived.WaitOne((int)SampleInterval * 1000, true);
                 if (cancelled)
                 {
                     break;
@@ -592,7 +545,7 @@ namespace Microsoft.PowerShell.Commands
                 msg = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("CounterApiError"), res);
             }
 
-            Exception exc = new Exception(msg);
+            Exception exc = new(msg);
             if (bTerminate)
             {
                 ThrowTerminatingError(new ErrorRecord(exc, "CounterApiError", ErrorCategory.InvalidResult, null));
@@ -610,9 +563,9 @@ namespace Microsoft.PowerShell.Commands
         //
         private List<string> CombineMachinesAndCounterPaths()
         {
-            List<string> retColl = new List<string>();
+            List<string> retColl = new();
 
-            if (_computerName.Length == 0)
+            if (ComputerName.Length == 0)
             {
                 retColl.AddRange(_accumulatedCounters);
                 return retColl;
@@ -626,7 +579,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 else
                 {
-                    foreach (string machine in _computerName)
+                    foreach (string machine in ComputerName)
                     {
                         if (machine.StartsWith("\\\\", StringComparison.OrdinalIgnoreCase))
                         {
@@ -655,7 +608,7 @@ namespace Microsoft.PowerShell.Commands
                 if (sample.Status != 0)
                 {
                     string msg = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("CounterSampleDataInvalid"));
-                    Exception exc = new Exception(msg);
+                    Exception exc = new(msg);
                     WriteError(new ErrorRecord(exc, "CounterApiError", ErrorCategory.InvalidResult, null));
                     break;
                 }
@@ -666,12 +619,7 @@ namespace Microsoft.PowerShell.Commands
 
         private static CultureInfo GetCurrentCulture()
         {
-#if CORECLR
-            return CultureInfo.CurrentCulture;
-#else
             return Thread.CurrentThread.CurrentUICulture;
-#endif
         }
     }
 }
-

@@ -1,8 +1,7 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System;
-using System.Collections.Generic;
+using System.Globalization;
 
 namespace System.Management.Automation
 {
@@ -21,9 +20,8 @@ namespace System.Management.Automation
             return GetDamerauLevenshteinDistance(string1, string2) <= MinimumDistance;
         }
 
-
         /// <summary>
-        /// Compute the distance between two strings.
+        /// Compute the case-insensitive distance between two strings.
         /// Based off https://www.csharpstar.com/csharp-string-distance-algorithm/.
         /// </summary>
         /// <param name="string1">The first string to compare.</param>
@@ -31,12 +29,15 @@ namespace System.Management.Automation
         /// <returns>The distance value where the lower the value the shorter the distance between the two strings representing a closer match.</returns>
         public static int GetDamerauLevenshteinDistance(string string1, string string2)
         {
+            string1 = string1.ToUpper(CultureInfo.CurrentCulture);
+            string2 = string2.ToUpper(CultureInfo.CurrentCulture);
+
             var bounds = new { Height = string1.Length + 1, Width = string2.Length + 1 };
 
             int[,] matrix = new int[bounds.Height, bounds.Width];
 
-            for (int height = 0; height < bounds.Height; height++) { matrix[height, 0] = height; };
-            for (int width = 0; width < bounds.Width; width++) { matrix[0, width] = width; };
+            for (int height = 0; height < bounds.Height; height++) { matrix[height, 0] = height; }
+            for (int width = 0; width < bounds.Width; width++) { matrix[0, width] = width; }
 
             for (int height = 1; height < bounds.Height; height++)
             {

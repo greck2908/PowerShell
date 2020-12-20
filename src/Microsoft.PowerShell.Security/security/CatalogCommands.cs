@@ -1,17 +1,13 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 #if !UNIX
 
 using System;
+using System.Collections.ObjectModel;
+using System.IO;
 using System.Management.Automation;
 using Dbg = System.Management.Automation.Diagnostics;
-using System.Collections;
-using System.IO;
-using System.Management.Automation.Provider;
-using System.Runtime.InteropServices;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -60,7 +56,7 @@ namespace Microsoft.PowerShell.Commands
         //
         // name of this command
         //
-        private string commandName;
+        private readonly string commandName;
 
         /// <summary>
         /// Initializes a new instance of the CatalogCommandsBase class,
@@ -137,7 +133,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet generates the catalog for File or Folder.
     /// </summary>
     [Cmdlet(VerbsCommon.New, "FileCatalog", SupportsShouldProcess = true, DefaultParameterSetName = "ByPath",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=786749")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096596")]
     [OutputType(typeof(FileInfo))]
     public sealed class NewFileCatalogCommand : CatalogCommandsBase
     {
@@ -215,7 +211,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet validates the Integrity of catalog.
     /// </summary>
     [Cmdlet(VerbsDiagnostic.Test, "FileCatalog", SupportsShouldProcess = true, DefaultParameterSetName = "ByPath",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=786750")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096921")]
     [OutputType(typeof(CatalogValidationStatus))]
     [OutputType(typeof(CatalogInformation))]
     public sealed class TestFileCatalogCommand : CatalogCommandsBase

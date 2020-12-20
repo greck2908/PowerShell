@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -14,26 +14,22 @@ namespace Microsoft.PowerShell
     /// Wraps Hitesh's xml serializer in such a way that it will select the proper serializer based on the data
     /// format.
     /// </summary>
-
     internal class Serialization
     {
         /// <summary>
         /// Describes the format of the data streamed between minishells, e.g. the allowed arguments to the minishell
         /// -outputformat and -inputformat command line parameters.
         /// </summary>
-
         internal enum DataFormat
         {
             /// <summary>
             /// Text format -- i.e. stream text just as out-default would display it.
             /// </summary>
-
             Text = 0,
 
             /// <summary>
             /// XML-serialized format.
             /// </summary>
-
             XML = 1,
 
             /// <summary>
@@ -141,7 +137,7 @@ namespace Microsoft.PowerShell
         }
 
         internal TextWriter textWriter;
-        private XmlWriter _xmlWriter;
+        private readonly XmlWriter _xmlWriter;
         private Serializer _xmlSerializer;
         private bool _firstCall = true;
     }
@@ -162,7 +158,7 @@ namespace Microsoft.PowerShell
 
             textReader = input;
             _firstLine = textReader.ReadLine();
-            if (string.Compare(_firstLine, Serialization.XmlCliTag, StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(_firstLine, Serialization.XmlCliTag, StringComparison.OrdinalIgnoreCase))
             {
                 // format should be XML
 
@@ -271,10 +267,9 @@ namespace Microsoft.PowerShell
         }
 
         internal TextReader textReader;
-        private XmlReader _xmlReader;
-        private Deserializer _xmlDeserializer;
+        private readonly XmlReader _xmlReader;
+        private readonly Deserializer _xmlDeserializer;
         private string _firstLine;
         private bool _atEnd;
     }
 }   // namespace
-

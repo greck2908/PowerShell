@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -27,7 +27,7 @@ namespace Microsoft.PowerShell.Commands
     /// It contains tons of utility functions which are used all
     /// across the remoting cmdlets.
     /// </summary>
-    public abstract partial class PSRemotingCmdlet : PSCmdlet
+    public abstract class PSRemotingCmdlet : PSCmdlet
     {
         #region Overrides
 
@@ -146,7 +146,7 @@ namespace Microsoft.PowerShell.Commands
 
         #region Private Members
 
-        private static string s_LOCALHOST = "localhost";
+        private static readonly string s_LOCALHOST = "localhost";
 
         // private PSETWTracer tracer = PSETWTracer.GetETWTracer(PSKeyword.Cmdlets);
 
@@ -193,6 +193,11 @@ namespace Microsoft.PowerShell.Commands
         /// Runspace parameter set.
         /// </summary>
         protected const string SessionParameterSet = "Session";
+
+        /// <summary>
+        /// Parameter set to use Windows PowerShell.
+        /// </summary>
+        protected const string UseWindowsPowerShellParameterSet = "UseWindowsPowerShellParameterSet";
 
         /// <summary>
         /// Default shellname.
@@ -291,7 +296,7 @@ namespace Microsoft.PowerShell.Commands
     ///     2. Invoke-Expression
     ///     3. Start-PSJob.
     /// </summary>
-    public abstract partial class PSRemotingBaseCmdlet : PSRemotingCmdlet
+    public abstract class PSRemotingBaseCmdlet : PSRemotingCmdlet
     {
         #region Enums
 
@@ -615,7 +620,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = PSRemotingBaseCmdlet.ContainerIdParameterSet)]
         [Parameter(ParameterSetName = PSRemotingBaseCmdlet.VMIdParameterSet)]
         [Parameter(ParameterSetName = PSRemotingBaseCmdlet.VMNameParameterSet)]
-        public virtual int ThrottleLimit { set; get; } = 0;
+        public virtual int ThrottleLimit { get; set; } = 0;
 
         /// <summary>
         /// A complete URI(s) specified for the remote computer and shell to
@@ -668,6 +673,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         private PSSessionOption _sessionOption;
+
         internal const string DEFAULT_SESSION_OPTION = "PSSessionOption";
 
         // Quota related variables.
@@ -981,7 +987,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 ThrowTerminatingError(new ErrorRecord(new ArgumentException(
                     GetMessage(RemotingErrorIdStrings.RemoteRunspaceInfoHasDuplicates)),
-                        PSRemotingErrorId.RemoteRunspaceInfoHasDuplicates.ToString(),
+                        nameof(PSRemotingErrorId.RemoteRunspaceInfoHasDuplicates),
                             ErrorCategory.InvalidArgument, Session));
             }
 
@@ -992,7 +998,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 ThrowTerminatingError(new ErrorRecord(new ArgumentException(
                     GetMessage(RemotingErrorIdStrings.RemoteRunspaceInfoLimitExceeded)),
-                        PSRemotingErrorId.RemoteRunspaceInfoLimitExceeded.ToString(),
+                        nameof(PSRemotingErrorId.RemoteRunspaceInfoLimitExceeded),
                             ErrorCategory.InvalidArgument, Session));
             }
         }
@@ -1060,7 +1066,17 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>Parameter value as string.</returns>
         private static string GetSSHConnectionStringParameter(object param)
         {
-            if (param is string paramValue && !string.IsNullOrEmpty(paramValue))
+            string paramValue;
+            try
+            {
+                paramValue = LanguagePrimitives.ConvertTo<string>(param);
+            }
+            catch (PSInvalidCastException e)
+            {
+                throw new PSArgumentException(e.Message, e);
+            }
+
+            if (!string.IsNullOrEmpty(paramValue))
             {
                 return paramValue;
             }
@@ -1075,12 +1091,19 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>Parameter value as integer.</returns>
         private static int GetSSHConnectionIntParameter(object param)
         {
-            if (param is int paramValue)
+            if (param == null)
             {
-                return paramValue;
+                throw new PSArgumentException(RemotingErrorIdStrings.InvalidSSHConnectionParameter);
             }
 
-            throw new PSArgumentException(RemotingErrorIdStrings.InvalidSSHConnectionParameter);
+            try
+            {
+                return LanguagePrimitives.ConvertTo<int>(param);
+            }
+            catch (PSInvalidCastException e)
+            {
+                throw new PSArgumentException(e.Message, e);
+            }
         }
 
         #endregion Private Methods
@@ -1127,7 +1150,7 @@ namespace Microsoft.PowerShell.Commands
     ///     1. Invoke-Expression
     ///     2. Start-PSJob.
     /// </summary>
-    public abstract partial class PSExecutionCmdlet : PSRemotingBaseCmdlet
+    public abstract class PSExecutionCmdlet : PSRemotingBaseCmdlet
     {
         #region Strings
 
@@ -1586,7 +1609,7 @@ namespace Microsoft.PowerShell.Commands
                         ThrowTerminatingError(
                             new ErrorRecord(
                                 new ArgumentException(RemotingErrorIdStrings.HyperVModuleNotAvailable),
-                                PSRemotingErrorId.HyperVModuleNotAvailable.ToString(),
+                                nameof(PSRemotingErrorId.HyperVModuleNotAvailable),
                                 ErrorCategory.NotInstalled,
                                 null));
 
@@ -1634,7 +1657,7 @@ namespace Microsoft.PowerShell.Commands
                         ThrowTerminatingError(
                             new ErrorRecord(
                                 new ArgumentException(RemotingErrorIdStrings.HyperVModuleNotAvailable),
-                                PSRemotingErrorId.HyperVModuleNotAvailable.ToString(),
+                                nameof(PSRemotingErrorId.HyperVModuleNotAvailable),
                                 ErrorCategory.NotInstalled,
                                 null));
 
@@ -1670,7 +1693,7 @@ namespace Microsoft.PowerShell.Commands
                         new ErrorRecord(
                             new ArgumentException(GetMessage(RemotingErrorIdStrings.InvalidVMNameNotSingle,
                                                              this.VMName[index])),
-                            PSRemotingErrorId.InvalidVMNameNotSingle.ToString(),
+                            nameof(PSRemotingErrorId.InvalidVMNameNotSingle),
                             ErrorCategory.InvalidArgument,
                             null));
 
@@ -1684,7 +1707,7 @@ namespace Microsoft.PowerShell.Commands
                         new ErrorRecord(
                             new ArgumentException(GetMessage(RemotingErrorIdStrings.InvalidVMIdNotSingle,
                                                              this.VMId[index].ToString(null))),
-                            PSRemotingErrorId.InvalidVMIdNotSingle.ToString(),
+                            nameof(PSRemotingErrorId.InvalidVMIdNotSingle),
                             ErrorCategory.InvalidArgument,
                             null));
 
@@ -1696,7 +1719,7 @@ namespace Microsoft.PowerShell.Commands
                         new ErrorRecord(
                             new ArgumentException(GetMessage(RemotingErrorIdStrings.InvalidVMState,
                                                              this.VMName[index])),
-                            PSRemotingErrorId.InvalidVMState.ToString(),
+                            nameof(PSRemotingErrorId.InvalidVMState),
                             ErrorCategory.InvalidArgument,
                             null));
 
@@ -1856,7 +1879,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Check the powershell version of the remote server.
         /// </summary>
-        private string GetRemoteServerPsVersion(RemoteRunspace remoteRunspace)
+        private static string GetRemoteServerPsVersion(RemoteRunspace remoteRunspace)
         {
             if (remoteRunspace.ConnectionInfo is NewProcessConnectionInfo)
             {
@@ -1991,12 +2014,12 @@ namespace Microsoft.PowerShell.Commands
             // Make sure filepath doesn't contain wildcards
             if ((!isLiteralPath) && WildcardPattern.ContainsWildcardCharacters(filePath))
             {
-                throw new ArgumentException(PSRemotingErrorInvariants.FormatResourceString(RemotingErrorIdStrings.WildCardErrorFilePathParameter), "filePath");
+                throw new ArgumentException(PSRemotingErrorInvariants.FormatResourceString(RemotingErrorIdStrings.WildCardErrorFilePathParameter), nameof(filePath));
             }
 
             if (!filePath.EndsWith(".ps1", StringComparison.OrdinalIgnoreCase))
             {
-                throw new ArgumentException(PSRemotingErrorInvariants.FormatResourceString(RemotingErrorIdStrings.FilePathShouldPS1Extension), "filePath");
+                throw new ArgumentException(PSRemotingErrorInvariants.FormatResourceString(RemotingErrorIdStrings.FilePathShouldPS1Extension), nameof(filePath));
             }
 
             // Resolve file path
@@ -2404,11 +2427,11 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="localScriptBlock"></param>
         /// <returns>A list of UsingExpressionAsts ordered by the StartOffset.</returns>
-        private List<VariableExpressionAst> GetUsingVariables(ScriptBlock localScriptBlock)
+        private static List<VariableExpressionAst> GetUsingVariables(ScriptBlock localScriptBlock)
         {
             if (localScriptBlock == null)
             {
-                throw new ArgumentNullException("localScriptBlock", "Caller needs to make sure the parameter value is not null");
+                throw new ArgumentNullException(nameof(localScriptBlock), "Caller needs to make sure the parameter value is not null");
             }
 
             var allUsingExprs = UsingExpressionAstSearcher.FindAllUsingExpressionExceptForWorkflow(localScriptBlock.Ast);
@@ -2426,7 +2449,7 @@ namespace Microsoft.PowerShell.Commands
     ///     3. Disconnect-PSSession
     ///     4. Connect-PSSession.
     /// </summary>
-    public abstract partial class PSRunspaceCmdlet : PSRemotingCmdlet
+    public abstract class PSRunspaceCmdlet : PSRemotingCmdlet
     {
         #region Parameters
 
@@ -2980,9 +3003,9 @@ namespace Microsoft.PowerShell.Commands
                     var matchingRunspaceInfos = remoteRunspaceInfos
                         .Where<PSSession>(session => (supportWildChar ? inputNamePattern.IsMatch(session.VMName)
                                                                       : inputName.Equals(session.ContainerId)) &&
-                                                     ((sessionNamePattern == null) ? true : sessionNamePattern.IsMatch(session.Name)) &&
+                                                     (sessionNamePattern == null || sessionNamePattern.IsMatch(session.Name)) &&
                                                      QueryRunspaces.TestRunspaceState(session.Runspace, filterState) &&
-                                                     ((configurationNamePattern == null) ? true : configurationNamePattern.IsMatch(session.ConfigurationName)) &&
+                                                     (configurationNamePattern == null || configurationNamePattern.IsMatch(session.ConfigurationName)) &&
                                                      (session.ComputerType == computerType))
                         .ToList<PSSession>();
 
@@ -3040,7 +3063,7 @@ namespace Microsoft.PowerShell.Commands
                                                                       : inputName.Equals(session.ContainerId)) &&
                                                      sessionInstanceId.Equals(session.InstanceId) &&
                                                      QueryRunspaces.TestRunspaceState(session.Runspace, filterState) &&
-                                                     ((configurationNamePattern == null) ? true : configurationNamePattern.IsMatch(session.ConfigurationName)) &&
+                                                     (configurationNamePattern == null || configurationNamePattern.IsMatch(session.ConfigurationName)) &&
                                                      (session.ComputerType == computerType))
                         .ToList<PSSession>();
 
@@ -3083,9 +3106,9 @@ namespace Microsoft.PowerShell.Commands
 
                     var matchingRunspaceInfos = remoteRunspaceInfos
                         .Where<PSSession>(session => vmId.Equals(session.VMId) &&
-                                                     ((sessionNamePattern == null) ? true : sessionNamePattern.IsMatch(session.Name)) &&
+                                                     (sessionNamePattern == null || sessionNamePattern.IsMatch(session.Name)) &&
                                                      QueryRunspaces.TestRunspaceState(session.Runspace, filterState) &&
-                                                     ((configurationNamePattern == null) ? true : configurationNamePattern.IsMatch(session.ConfigurationName)) &&
+                                                     (configurationNamePattern == null || configurationNamePattern.IsMatch(session.ConfigurationName)) &&
                                                      (session.ComputerType == TargetMachineType.VirtualMachine))
                         .ToList<PSSession>();
 
@@ -3120,7 +3143,7 @@ namespace Microsoft.PowerShell.Commands
                         .Where<PSSession>(session => vmId.Equals(session.VMId) &&
                                                      sessionInstanceId.Equals(session.InstanceId) &&
                                                      QueryRunspaces.TestRunspaceState(session.Runspace, filterState) &&
-                                                     ((configurationNamePattern == null) ? true : configurationNamePattern.IsMatch(session.ConfigurationName)) &&
+                                                     (configurationNamePattern == null || configurationNamePattern.IsMatch(session.ConfigurationName)) &&
                                                      (session.ComputerType == TargetMachineType.VirtualMachine))
                         .ToList<PSSession>();
 
@@ -3200,7 +3223,7 @@ namespace Microsoft.PowerShell.Commands
     /// Base class for both the helpers. This is an abstract class
     /// and the helpers need to derive from this.
     /// </summary>
-    internal abstract partial class ExecutionCmdletHelper : IThrottleOperation
+    internal abstract class ExecutionCmdletHelper : IThrottleOperation
     {
         /// <summary>
         /// Pipeline associated with this operation.
@@ -3234,8 +3257,8 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         internal Runspace PipelineRunspace
         {
-            set;
             get;
+            set;
         }
 
         #region Runspace Debug
@@ -3305,7 +3328,7 @@ namespace Microsoft.PowerShell.Commands
         {
             this.pipeline = pipeline;
             PipelineRunspace = pipeline.Runspace;
-            this.pipeline.StateChanged += new EventHandler<PipelineStateEventArgs>(HandlePipelineStateChanged);
+            this.pipeline.StateChanged += HandlePipelineStateChanged;
         }
 
         /// <summary>
@@ -3413,7 +3436,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 // Dispose the pipeline object and release data and remoting resources.
                 // Pipeline object remains to provide information on final state and any errors incurred.
-                pipeline.StateChanged -= new EventHandler<PipelineStateEventArgs>(HandlePipelineStateChanged);
+                pipeline.StateChanged -= HandlePipelineStateChanged;
                 pipeline.Dispose();
             }
 
@@ -3449,7 +3472,7 @@ namespace Microsoft.PowerShell.Commands
         /// Determines if the command should be invoked and then disconnect the
         /// remote runspace from the client.
         /// </summary>
-        private bool _invokeAndDisconnect;
+        private readonly bool _invokeAndDisconnect;
 
         /// <summary>
         /// The remote runspace created using the computer name
@@ -3473,15 +3496,13 @@ namespace Microsoft.PowerShell.Commands
             _invokeAndDisconnect = invokeAndDisconnect;
 
             RemoteRunspace = remoteRunspace;
-            remoteRunspace.StateChanged +=
-                new EventHandler<RunspaceStateEventArgs>(HandleRunspaceStateChanged);
+            remoteRunspace.StateChanged += HandleRunspaceStateChanged;
 
             Dbg.Assert(pipeline != null,
                     "Pipeline cannot be null or empty");
 
             this.pipeline = pipeline;
-            pipeline.StateChanged +=
-                new EventHandler<PipelineStateEventArgs>(HandlePipelineStateChanged);
+            pipeline.StateChanged += HandlePipelineStateChanged;
         }
 
         /// <summary>
@@ -3652,7 +3673,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 // Dispose the pipeline object and release data and remoting resources.
                 // Pipeline object remains to provide information on final state and any errors incurred.
-                pipeline.StateChanged -= new EventHandler<PipelineStateEventArgs>(HandlePipelineStateChanged);
+                pipeline.StateChanged -= HandlePipelineStateChanged;
                 pipeline.Dispose();
             }
 
@@ -4307,7 +4328,7 @@ namespace System.Management.Automation.Remoting
         public bool NoCompression { get; set; } = false;
 
         /// <summary>
-        /// If <c>true</c> then Operating System won't load the user profile (i.e. registry keys under HKCU) on the remote server
+        /// If <see langword="true"/> then Operating System won't load the user profile (i.e. registry keys under HKCU) on the remote server
         /// which can result in a faster session creation time.  This option won't have any effect if the remote machine has
         /// already loaded the profile (i.e. in another session).
         /// </summary>
@@ -4346,9 +4367,9 @@ namespace System.Management.Automation.Remoting
                     default:
                         string message = PSRemotingErrorInvariants.FormatResourceString(RemotingErrorIdStrings.ProxyAmbiguousAuthentication,
                             value,
-                            AuthenticationMechanism.Basic.ToString(),
-                            AuthenticationMechanism.Negotiate.ToString(),
-                            AuthenticationMechanism.Digest.ToString());
+                            nameof(AuthenticationMechanism.Basic),
+                            nameof(AuthenticationMechanism.Negotiate),
+                            nameof(AuthenticationMechanism.Digest));
                         throw new ArgumentException(message);
                 }
             }

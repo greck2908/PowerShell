@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -104,7 +104,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             }
 
             var outParameters = allParameters_plus_returnValue
-                .Where(p => (0 != (p.Bindings & (MethodParameterBindings.Out | MethodParameterBindings.Error))));
+                .Where(p => ((p.Bindings & (MethodParameterBindings.Out | MethodParameterBindings.Error)) != 0));
 
             return outParameters;
         }

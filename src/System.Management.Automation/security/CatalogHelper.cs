@@ -1,19 +1,14 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+
 #if !UNIX
 
-using Dbg = System.Management.Automation;
-using System;
-using System.Text;
 using System.Security.Cryptography;
 using System.Collections.Generic;
-using System.Collections;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Management.Automation.Internal;
-using System.Management.Automation.Provider;
 using System.Management.Automation.Security;
 using System.Runtime.InteropServices;
 using DWORD = System.UInt32;
@@ -218,7 +213,7 @@ namespace System.Management.Automation
             if (dirInfo != null)
             {
                 // Relative path of the file is the path inside the containing folder excluding folder Name
-                relativePath = fileToHash.FullName.Substring(dirInfo.FullName.Length).TrimStart('\\');
+                relativePath = fileToHash.FullName.AsSpan(dirInfo.FullName.Length).TrimStart('\\').ToString();
             }
             else
             {
@@ -342,7 +337,7 @@ namespace System.Management.Automation
             {
                 // Generate Path for Catalog Definition File
                 string cdfFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
-                cdfFilePath = cdfFilePath + ".cdf";
+                cdfFilePath += ".cdf";
                 try
                 {
                     cdfFilePath = GenerateCDFFile(Path, catalogFilePath, cdfFilePath, catalogVersion, hashAlgorithm);
@@ -414,8 +409,8 @@ namespace System.Management.Automation
                 _cmdlet.ThrowTerminatingError(errorRecord);
             }
 
-            DWORD GENERIC_READ = 0x80000000;
-            DWORD OPEN_EXISTING = 3;
+            const DWORD GENERIC_READ = 0x80000000;
+            const DWORD OPEN_EXISTING = 3;
             IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
             // Open the file that is to be hashed for reading and get its handle
@@ -613,7 +608,7 @@ namespace System.Management.Automation
             if (dirInfo != null)
             {
                 // Relative path of the file is the path inside the containing folder excluding folder Name
-                relativePath = fileToHash.FullName.Substring(dirInfo.FullName.Length).TrimStart('\\');
+                relativePath = fileToHash.FullName.AsSpan(dirInfo.FullName.Length).TrimStart('\\').ToString();
                 exclude = fileToHash.Name;
             }
             else
@@ -631,9 +626,8 @@ namespace System.Management.Automation
                     fileHash = CalculateFileHash(fileToHash.FullName, hashAlgorithm);
                 }
 
-                if (!fileHashes.ContainsKey(relativePath))
+                if (fileHashes.TryAdd(relativePath, fileHash))
                 {
-                    fileHashes.Add(relativePath, fileHash);
                     _cmdlet.WriteVerbose(StringUtil.Format(CatalogStrings.FoundFileInPath, relativePath, fileHash));
                 }
                 else
@@ -750,7 +744,7 @@ namespace System.Management.Automation
                 catalog.CatalogItems = catalogHashes;
                 catalog.PathItems = fileHashes;
                 bool status = CompareDictionaries(catalogHashes, fileHashes);
-                if (status == true)
+                if (status)
                 {
                     catalog.Status = CatalogValidationStatus.Valid;
                 }

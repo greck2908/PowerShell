@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -33,7 +33,7 @@ namespace System.Management.Automation
         {
             if (script == null)
             {
-                throw PSTraceSource.NewArgumentException("script");
+                throw PSTraceSource.NewArgumentException(nameof(script));
             }
 
             this.ScriptBlock = script;
@@ -68,7 +68,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the ScriptBlock that represents the implementation of the script.
         /// </summary>
-        public ScriptBlock ScriptBlock { get; private set; }
+        public ScriptBlock ScriptBlock { get; }
 
         // Path
 
@@ -116,9 +116,8 @@ namespace System.Management.Automation
         {
             get
             {
-                return _commandMetadata ??
-                       (_commandMetadata =
-                        new CommandMetadata(this.ScriptBlock, this.Name, LocalPipeline.GetExecutionContextFromTLS()));
+                return _commandMetadata ??=
+                    new CommandMetadata(this.ScriptBlock, this.Name, LocalPipeline.GetExecutionContextFromTLS());
             }
         }
 

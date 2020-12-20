@@ -1,10 +1,8 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Management.Automation.Internal;
-
-using Dbg = System.Management.Automation;
 
 namespace System.Management.Automation.Provider
 {
@@ -238,4 +236,3 @@ namespace System.Management.Automation.Provider
 
     #endregion DriveCmdletProvider
 }
-

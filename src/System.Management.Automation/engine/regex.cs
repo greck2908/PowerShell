@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -43,7 +43,7 @@ namespace System.Management.Automation
         /// Specifies culture-invariant matching.
         /// </summary>
         CultureInvariant = 4
-    };
+    }
 
     /// <summary>
     /// Represents a wildcard pattern.
@@ -52,6 +52,10 @@ namespace System.Management.Automation
     {
         // char that escapes special chars
         private const char escapeChar = '`';
+
+        // Threshold for stack allocation.
+        // The size is less than MaxShortPath = 260.
+        private const int StackAllocThreshold = 256;
 
         // we convert a wildcard pattern to a predicate
         private Predicate<string> _isMatch;
@@ -65,8 +69,9 @@ namespace System.Management.Automation
         // wildcard pattern
         internal string Pattern { get; }
 
-        // options that control match behavior
-        internal WildcardOptions Options { get; } = WildcardOptions.None;
+        // Options that control match behavior.
+        // Default is WildcardOptions.None.
+        internal WildcardOptions Options { get; }
 
         /// <summary>
         /// Wildcard pattern converted to regex pattern.
@@ -86,15 +91,8 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="pattern">The wildcard pattern to match.</param>
         /// <returns>The constructed WildcardPattern object.</returns>
-        /// <remarks> if wildCardType == None, the pattern does not have wild cards</remarks>
-        public WildcardPattern(string pattern)
+        public WildcardPattern(string pattern) : this(pattern, WildcardOptions.None)
         {
-            if (pattern == null)
-            {
-                throw PSTraceSource.NewArgumentNullException("pattern");
-            }
-
-            Pattern = pattern;
         }
 
         /// <summary>
@@ -105,13 +103,11 @@ namespace System.Management.Automation
         /// <param name="pattern">The wildcard pattern to match.</param>
         /// <param name="options">Wildcard options.</param>
         /// <returns>The constructed WildcardPattern object.</returns>
-        /// <remarks> if wildCardType == None, the pattern does not have wild cards  </remarks>
-        public WildcardPattern(string pattern,
-                               WildcardOptions options)
+        public WildcardPattern(string pattern, WildcardOptions options)
         {
             if (pattern == null)
             {
-                throw PSTraceSource.NewArgumentNullException("pattern");
+                throw PSTraceSource.NewArgumentNullException(nameof(pattern));
             }
 
             Pattern = pattern;
@@ -129,7 +125,7 @@ namespace System.Management.Automation
         public static WildcardPattern Get(string pattern, WildcardOptions options)
         {
             if (pattern == null)
-                throw PSTraceSource.NewArgumentNullException("pattern");
+                throw PSTraceSource.NewArgumentNullException(nameof(pattern));
 
             if (pattern.Length == 1 && pattern[0] == '*')
                 return s_matchAllIgnoreCasePattern;
@@ -143,6 +139,29 @@ namespace System.Management.Automation
         /// <returns>True on success, false otherwise.</returns>
         private void Init()
         {
+            StringComparison GetStringComparison()
+            {
+                StringComparison stringComparison;
+                if (Options.HasFlag(WildcardOptions.IgnoreCase))
+                {
+                    stringComparison = Options.HasFlag(WildcardOptions.CultureInvariant)
+                        ? StringComparison.InvariantCultureIgnoreCase
+                        : CultureInfo.CurrentCulture.Name.Equals("en-US-POSIX", StringComparison.OrdinalIgnoreCase)
+                            // The collation behavior of the POSIX locale (also known as the C locale) is case sensitive.
+                            // For this specific locale, we use 'OrdinalIgnoreCase'.
+                            ? StringComparison.OrdinalIgnoreCase
+                            : StringComparison.CurrentCultureIgnoreCase;
+                }
+                else
+                {
+                    stringComparison = Options.HasFlag(WildcardOptions.CultureInvariant)
+                        ? StringComparison.InvariantCulture
+                        : StringComparison.CurrentCulture;
+                }
+
+                return stringComparison;
+            }
+
             if (_isMatch != null)
             {
                 return;
@@ -154,24 +173,19 @@ namespace System.Management.Automation
                 return;
             }
 
-            if (Pattern.IndexOfAny(s_specialChars) == -1)
+            int index = Pattern.IndexOfAny(s_specialChars);
+            if (index == -1)
             {
                 // No special characters present in the pattern, so we can just do a string comparison.
-                StringComparison stringComparison;
-                if (Options.HasFlag(WildcardOptions.IgnoreCase))
-                {
-                    stringComparison = Options.HasFlag(WildcardOptions.CultureInvariant)
-                        ? StringComparison.InvariantCultureIgnoreCase
-                        : StringComparison.CurrentCultureIgnoreCase;
-                }
-                else
-                {
-                    stringComparison = Options.HasFlag(WildcardOptions.CultureInvariant)
-                        ? StringComparison.InvariantCulture
-                        : StringComparison.CurrentCulture;
-                }
+                _isMatch = str => string.Equals(str, Pattern, GetStringComparison());
+                return;
+            }
 
-                _isMatch = str => string.Equals(str, Pattern, stringComparison);
+            if (index == Pattern.Length - 1 && Pattern[index] == '*')
+            {
+                // No special characters present in the pattern before last position and last character is asterisk.
+                var patternWithoutAsterisk = Pattern.AsMemory(0, index);
+                _isMatch = str => str.AsSpan().StartsWith(patternWithoutAsterisk.Span, GetStringComparison());
                 return;
             }
 
@@ -203,15 +217,20 @@ namespace System.Management.Automation
         {
             if (pattern == null)
             {
-                throw PSTraceSource.NewArgumentNullException("pattern");
+                throw PSTraceSource.NewArgumentNullException(nameof(pattern));
             }
 
             if (charsNotToEscape == null)
             {
-                throw PSTraceSource.NewArgumentNullException("charsNotToEscape");
+                throw PSTraceSource.NewArgumentNullException(nameof(charsNotToEscape));
             }
 
-            char[] temp = new char[pattern.Length * 2 + 1];
+            if (pattern == string.Empty)
+            {
+                return pattern;
+            }
+
+            Span<char> temp = pattern.Length < StackAllocThreshold ? stackalloc char[pattern.Length * 2 + 1] : new char[pattern.Length * 2 + 1];
             int tempIndex = 0;
 
             for (int i = 0; i < pattern.Length; i++)
@@ -231,13 +250,13 @@ namespace System.Management.Automation
 
             string s = null;
 
-            if (tempIndex > 0)
+            if (tempIndex == pattern.Length)
             {
-                s = new string(temp, 0, tempIndex);
+                s = pattern;
             }
             else
             {
-                s = string.Empty;
+                s = new string(temp.Slice(0, tempIndex));
             }
 
             return s;
@@ -306,16 +325,22 @@ namespace System.Management.Automation
         /// converted to their unescaped form.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        /// If <paramref name="pattern" /> is null.
+        /// If <paramref name="pattern"/> is null.
         /// </exception>
         public static string Unescape(string pattern)
         {
             if (pattern == null)
             {
-                throw PSTraceSource.NewArgumentNullException("pattern");
+                throw PSTraceSource.NewArgumentNullException(nameof(pattern));
             }
 
-            char[] temp = new char[pattern.Length];
+            if (pattern == string.Empty)
+            {
+                return pattern;
+            }
+
+            Span<char> temp = pattern.Length < StackAllocThreshold ? stackalloc char[pattern.Length] : new char[pattern.Length];
+
             int tempIndex = 0;
             bool prevCharWasEscapeChar = false;
 
@@ -361,13 +386,13 @@ namespace System.Management.Automation
 
             string s = null;
 
-            if (tempIndex > 0)
+            if (tempIndex == pattern.Length)
             {
-                s = new string(temp, 0, tempIndex);
+                s = pattern;
             }
             else
             {
-                s = string.Empty;
+                s = new string(temp.Slice(0, tempIndex));
             }
 
             return s;
@@ -424,14 +449,14 @@ namespace System.Management.Automation
         {
             if (errorRecord == null)
             {
-                throw new ArgumentNullException("errorRecord");
+                throw new ArgumentNullException(nameof(errorRecord));
             }
 
             _errorRecord = errorRecord;
         }
 
         [NonSerialized]
-        private ErrorRecord _errorRecord;
+        private readonly ErrorRecord _errorRecord;
 
         /// <summary>
         /// Constructs an instance of the WildcardPatternException object.
@@ -704,7 +729,7 @@ namespace System.Management.Automation
 
             return e;
         }
-    };
+    }
 
     /// <summary>
     /// Convert a string with wild cards into its equivalent regex.
@@ -727,6 +752,7 @@ namespace System.Management.Automation
         private RegexOptions _regexOptions;
 
         private const string regexChars = "()[.?*{}^$+|\\"; // ']' is missing on purpose
+
         private static bool IsRegexChar(char ch)
         {
             for (int i = 0; i < regexChars.Length; i++)
@@ -884,7 +910,7 @@ namespace System.Management.Automation
             WildcardPatternParser.Parse(wildcardPattern, parser);
             try
             {
-                return new Regex(parser._regexPattern.ToString(), parser._regexOptions);
+                return ParserOps.NewRegex(parser._regexPattern.ToString(), parser._regexOptions);
             }
             catch (ArgumentException)
             {
@@ -1233,22 +1259,22 @@ namespace System.Management.Automation
             protected override void EndBracketExpression()
             {
                 _bracketExpressionBuilder.Append(']');
-                Regex regex = new Regex(_bracketExpressionBuilder.ToString(), _regexOptions);
+                Regex regex = ParserOps.NewRegex(_bracketExpressionBuilder.ToString(), _regexOptions);
                 _patternElements.Add(new BracketExpressionElement(regex));
             }
         }
 
-        private struct CharacterNormalizer
+        private readonly struct CharacterNormalizer
         {
             private readonly CultureInfo _cultureInfo;
             private readonly bool _caseInsensitive;
 
             public CharacterNormalizer(WildcardOptions options)
             {
-                _caseInsensitive = 0 != (options & WildcardOptions.IgnoreCase);
+                _caseInsensitive = (options & WildcardOptions.IgnoreCase) != 0;
                 if (_caseInsensitive)
                 {
-                    _cultureInfo = 0 != (options & WildcardOptions.CultureInvariant)
+                    _cultureInfo = (options & WildcardOptions.CultureInvariant) != 0
                         ? CultureInfo.InvariantCulture
                         : CultureInfo.CurrentCulture;
                 }
@@ -1322,4 +1348,3 @@ namespace System.Management.Automation
         }
     }
 }
-

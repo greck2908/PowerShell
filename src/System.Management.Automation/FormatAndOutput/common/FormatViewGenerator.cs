@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -307,7 +307,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             // we were unable to find a best match so far..try
             // to get rid of Deserialization prefix and see if a
             // match can be found.
-            if (false == result)
+            if (!result)
             {
                 Collection<string> typesWithoutPrefix = Deserializer.MaskDeserializationPrefix(typeNames);
                 if (typesWithoutPrefix != null)

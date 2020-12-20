@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -179,8 +179,7 @@ namespace System.Management.Automation.Runspaces
                         // and support impersonation flow as needed (Windows only).
                         Thread invokeThread = new Thread(new ThreadStart(invokeThreadProcDelegate), DefaultPipelineStackSize);
                         SetupInvokeThread(invokeThread, true);
-#if !CORECLR
-                        // No ApartmentState in CoreCLR
+
                         ApartmentState apartmentState;
 
                         if (InvocationSettings != null && InvocationSettings.ApartmentState != ApartmentState.Unknown)
@@ -192,11 +191,13 @@ namespace System.Management.Automation.Runspaces
                             apartmentState = this.LocalRunspace.ApartmentState; // use the Runspace apartment state
                         }
 
-                        if (apartmentState != ApartmentState.Unknown)
+#if !UNIX
+                        if (apartmentState != ApartmentState.Unknown && !Platform.IsNanoServer && !Platform.IsIoT)
                         {
                             invokeThread.SetApartmentState(apartmentState);
                         }
 #endif
+
                         invokeThread.Start();
 
                         break;
@@ -248,7 +249,7 @@ namespace System.Management.Automation.Runspaces
                     }
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail(string.Empty);
                     break;
             }
         }
@@ -624,18 +625,11 @@ namespace System.Management.Automation.Runspaces
                 SetPipelineState(PipelineState.Failed, ex);
                 SetHadErrors(true);
             }
-#if !CORECLR // No ThreadAbortException In CoreCLR
-            catch (ThreadAbortException ex)
-            {
-                SetPipelineState(PipelineState.Failed, ex);
-                SetHadErrors(true);
-            }
-#endif
-            // 1021203-2005/05/09-JonN
-            // HaltCommandException will cause the command
-            // to stop, but not be reported as an error.
             catch (HaltCommandException)
             {
+                // 1021203-2005/05/09-JonN
+                // HaltCommandException will cause the command
+                // to stop, but not be reported as an error.
                 SetPipelineState(PipelineState.Completed);
             }
             finally
@@ -766,7 +760,7 @@ namespace System.Management.Automation.Runspaces
             StopHelper();
         }
 
-        private PipelineStopper _stopper;
+        private readonly PipelineStopper _stopper;
 
         /// <summary>
         /// Gets PipelineStopper object which maintains stack of PipelineProcessor
@@ -1120,31 +1114,6 @@ namespace System.Management.Automation.Runspaces
 
         #endregion private_fields
 
-        #region invoke_loop_detection
-
-        /// <summary>
-        /// This is list of HistoryInfo ids which have been executed in
-        /// this pipeline.
-        /// </summary>
-        private List<long> _invokeHistoryIds = new List<long>();
-
-        internal bool PresentInInvokeHistoryEntryList(HistoryInfo entry)
-        {
-            return _invokeHistoryIds.Contains(entry.Id);
-        }
-
-        internal void AddToInvokeHistoryEntryList(HistoryInfo entry)
-        {
-            _invokeHistoryIds.Add(entry.Id);
-        }
-
-        internal void RemoveFromInvokeHistoryEntryList(HistoryInfo entry)
-        {
-            _invokeHistoryIds.Remove(entry.Id);
-        }
-
-        #endregion invoke_loop_detection
-
         #region IDisposable Members
 
         /// <summary>
@@ -1162,7 +1131,7 @@ namespace System.Management.Automation.Runspaces
         {
             try
             {
-                if (_disposed == false)
+                if (!_disposed)
                 {
                     _disposed = true;
                     if (disposing)
@@ -1188,15 +1157,6 @@ namespace System.Management.Automation.Runspaces
         /// <summary>
         /// Creates the worker thread and waits for it to be ready.
         /// </summary>
-#if CORECLR
-        internal PipelineThread()
-        {
-            _worker = new Thread(WorkerProc, LocalPipeline.DefaultPipelineStackSize);
-            _workItem = null;
-            _workItemReady = new AutoResetEvent(false);
-            _closed = false;
-        }
-#else
         internal PipelineThread(ApartmentState apartmentState)
         {
             _worker = new Thread(WorkerProc, LocalPipeline.DefaultPipelineStackSize);
@@ -1204,12 +1164,13 @@ namespace System.Management.Automation.Runspaces
             _workItemReady = new AutoResetEvent(false);
             _closed = false;
 
-            if (apartmentState != ApartmentState.Unknown)
+#if !UNIX
+            if (apartmentState != ApartmentState.Unknown && !Platform.IsNanoServer && !Platform.IsIoT)
             {
                 _worker.SetApartmentState(apartmentState);
             }
-        }
 #endif
+        }
 
         /// <summary>
         /// Returns the worker thread.
@@ -1290,16 +1251,16 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Ensure we release the worker thread.
+        /// Finalizes an instance of the <see cref="PipelineThread"/> class.
         /// </summary>
         ~PipelineThread()
         {
             Dispose();
         }
 
-        private Thread _worker;
+        private readonly Thread _worker;
         private ThreadStart _workItem;
-        private AutoResetEvent _workItemReady;
+        private readonly AutoResetEvent _workItemReady;
         private bool _closed;
     }
 
@@ -1314,13 +1275,13 @@ namespace System.Management.Automation.Runspaces
         /// <summary>
         /// Stack of current executing pipeline processor.
         /// </summary>
-        private Stack<PipelineProcessor> _stack = new Stack<PipelineProcessor>();
+        private readonly Stack<PipelineProcessor> _stack = new Stack<PipelineProcessor>();
 
         /// <summary>
         /// Object used for synchronization.
         /// </summary>
-        private object _syncRoot = new object();
-        private LocalPipeline _localPipeline;
+        private readonly object _syncRoot = new object();
+        private readonly LocalPipeline _localPipeline;
 
         /// <summary>
         /// Default constructor.
@@ -1334,6 +1295,7 @@ namespace System.Management.Automation.Runspaces
         /// This is set true when stop is called.
         /// </summary>
         private bool _stopping;
+
         internal bool IsStopping
         {
             get
@@ -1355,7 +1317,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (item == null)
             {
-                throw PSTraceSource.NewArgumentNullException("item");
+                throw PSTraceSource.NewArgumentNullException(nameof(item));
             }
 
             lock (_syncRoot)
@@ -1408,7 +1370,7 @@ namespace System.Management.Automation.Runspaces
             PipelineProcessor[] copyStack;
             lock (_syncRoot)
             {
-                if (_stopping == true)
+                if (_stopping)
                 {
                     return;
                 }
@@ -1443,4 +1405,3 @@ namespace System.Management.Automation.Runspaces
         }
     }
 }
-

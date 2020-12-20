@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Management.Automation;
+using System.Management.Automation.Language;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -67,7 +68,7 @@ namespace Microsoft.PowerShell.Commands
             /// <param name="enumsAsStrings">Indicates whether to use enum names for the JSON conversion.</param>
             /// <param name="compressOutput">Indicates whether to get the compressed output.</param>
             public ConvertToJsonContext(int maxDepth, bool enumsAsStrings, bool compressOutput)
-                : this(maxDepth, enumsAsStrings, compressOutput, CancellationToken.None, StringEscapeHandling.Default, targetCmdlet: null)
+                : this(maxDepth, enumsAsStrings, compressOutput, StringEscapeHandling.Default, targetCmdlet: null, CancellationToken.None)
             {
             }
 
@@ -77,16 +78,16 @@ namespace Microsoft.PowerShell.Commands
             /// <param name="maxDepth">The maximum depth to visit the object.</param>
             /// <param name="enumsAsStrings">Indicates whether to use enum names for the JSON conversion.</param>
             /// <param name="compressOutput">Indicates whether to get the compressed output.</param>
-            /// <param name="cancellationToken">Specifies the cancellation token for cancelling the operation.</param>
             /// <param name="stringEscapeHandling">Specifies how strings are escaped when writing JSON text.</param>
             /// <param name="targetCmdlet">Specifies the cmdlet that is calling this method.</param>
+            /// <param name="cancellationToken">Specifies the cancellation token for cancelling the operation.</param>
             public ConvertToJsonContext(
                 int maxDepth,
                 bool enumsAsStrings,
                 bool compressOutput,
-                CancellationToken cancellationToken,
                 StringEscapeHandling stringEscapeHandling,
-                PSCmdlet targetCmdlet)
+                PSCmdlet targetCmdlet,
+                CancellationToken cancellationToken)
             {
                 this.MaxDepth = maxDepth;
                 this.CancellationToken = cancellationToken;
@@ -230,7 +231,7 @@ namespace Microsoft.PowerShell.Commands
                 // Case sensitive duplicates should normally not occur since JsonConvert.DeserializeObject
                 // does not throw when encountering duplicates and just uses the last entry.
                 if (memberHashTracker.TryGetValue(entry.Key, out var maybePropertyName)
-                    && string.Compare(entry.Key, maybePropertyName, StringComparison.CurrentCulture) == 0)
+                    && string.Equals(entry.Key, maybePropertyName, StringComparison.Ordinal))
                 {
                     var errorMsg = string.Format(CultureInfo.CurrentCulture, WebCmdletStrings.DuplicateKeysInJsonString, entry.Key);
                     error = new ErrorRecord(
@@ -343,7 +344,7 @@ namespace Microsoft.PowerShell.Commands
         private static Hashtable PopulateHashTableFromJDictionary(JObject entries, out ErrorRecord error)
         {
             error = null;
-            Hashtable result = new Hashtable(entries.Count);
+            Hashtable result = new(entries.Count);
             foreach (var entry in entries)
             {
                 // Case sensitive duplicates should normally not occur since JsonConvert.DeserializeObject
@@ -456,6 +457,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 // Pre-process the object so that it serializes the same, except that properties whose
                 // values cannot be evaluated are treated as having the value null.
+                _maxDepthWarningWritten = false;
                 object preprocessedObject = ProcessValue(objectToProcess, currentDepth: 0, in context);
                 var jsonSettings = new JsonSerializerSettings
                 {
@@ -483,6 +485,8 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
+        private static bool _maxDepthWarningWritten;
+
         /// <summary>
         /// Return an alternate representation of the specified object that serializes the same JSON, except
         /// that properties that cannot be evaluated are treated as having the value null.
@@ -496,6 +500,11 @@ namespace Microsoft.PowerShell.Commands
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
+            if (LanguagePrimitives.IsNull(obj))
+            {
+                return null;
+            }
+
             PSObject pso = obj as PSObject;
 
             if (pso != null)
@@ -507,18 +516,21 @@ namespace Microsoft.PowerShell.Commands
             bool isPurePSObj = false;
             bool isCustomObj = false;
 
-            if (obj == null
-                || DBNull.Value.Equals(obj)
-                || obj is string
-                || obj is char
-                || obj is bool
-                || obj is DateTime
-                || obj is DateTimeOffset
-                || obj is Guid
-                || obj is Uri
-                || obj is double
-                || obj is float
-                || obj is decimal)
+            if (obj == NullString.Value
+                || obj == DBNull.Value)
+            {
+                rv = null;
+            }
+            else if (obj is string
+                    || obj is char
+                    || obj is bool
+                    || obj is DateTime
+                    || obj is DateTimeOffset
+                    || obj is Guid
+                    || obj is Uri
+                    || obj is double
+                    || obj is float
+                    || obj is decimal)
             {
                 rv = obj;
             }
@@ -552,6 +564,16 @@ namespace Microsoft.PowerShell.Commands
                 {
                     if (currentDepth > context.MaxDepth)
                     {
+                        if (!_maxDepthWarningWritten && context.Cmdlet != null)
+                        {
+                            _maxDepthWarningWritten = true;
+                            string maxDepthMessage = string.Format(
+                                CultureInfo.CurrentCulture,
+                                WebCmdletStrings.JsonMaxDepthReached,
+                                context.MaxDepth);
+                            context.Cmdlet.WriteWarning(maxDepthMessage);
+                        }
+
                         if (pso != null && pso.ImmediateBaseObjectIsEmpty)
                         {
                             // The obj is a pure PSObject, we convert the original PSObject to a string,
@@ -562,7 +584,7 @@ namespace Microsoft.PowerShell.Commands
                         }
                         else
                         {
-                            rv = LanguagePrimitives.ConvertTo(obj, typeof(String),
+                            rv = LanguagePrimitives.ConvertTo(obj, typeof(string),
                                 CultureInfo.InvariantCulture);
                         }
                     }
@@ -611,9 +633,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         private static object AddPsProperties(object psObj, object obj, int depth, bool isPurePSObj, bool isCustomObj, in ConvertToJsonContext context)
         {
-            PSObject pso = psObj as PSObject;
-
-            if (pso == null)
+            if (!(psObj is PSObject pso))
             {
                 return obj;
             }
@@ -636,7 +656,7 @@ namespace Microsoft.PowerShell.Commands
 
             AppendPsProperties(pso, dict, depth, isCustomObj, in context);
 
-            if (wasDictionary == false && dict.Count == 1)
+            if (!wasDictionary && dict.Count == 1)
             {
                 return obj;
             }
@@ -688,7 +708,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private static object ProcessDictionary(IDictionary dict, int depth, in ConvertToJsonContext context)
         {
-            Dictionary<string, object> result = new Dictionary<string, object>(dict.Count);
+            Dictionary<string, object> result = new(dict.Count);
 
             foreach (DictionaryEntry entry in dict)
             {
@@ -725,7 +745,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private static object ProcessEnumerable(IEnumerable enumerable, int depth, in ConvertToJsonContext context)
         {
-            List<object> result = new List<object>();
+            List<object> result = new();
 
             foreach (object o in enumerable)
             {
@@ -745,7 +765,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private static object ProcessCustomObject<T>(object o, int depth, in ConvertToJsonContext context)
         {
-            Dictionary<string, object> result = new Dictionary<string, object>();
+            Dictionary<string, object> result = new();
             Type t = o.GetType();
 
             foreach (FieldInfo info in t.GetFields(BindingFlags.Public | BindingFlags.Instance))
@@ -771,7 +791,7 @@ namespace Microsoft.PowerShell.Commands
                 if (!info2.IsDefined(typeof(T), true))
                 {
                     MethodInfo getMethod = info2.GetGetMethod();
-                    if ((getMethod != null) && (getMethod.GetParameters().Length <= 0))
+                    if ((getMethod != null) && (getMethod.GetParameters().Length == 0))
                     {
                         object value;
                         try

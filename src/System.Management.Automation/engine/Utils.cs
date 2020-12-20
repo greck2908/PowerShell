@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -14,6 +14,7 @@ using System.Linq;
 using System.Management.Automation.Configuration;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Language;
+using System.Management.Automation.Remoting;
 using System.Management.Automation.Runspaces;
 using System.Management.Automation.Security;
 using System.Numerics;
@@ -48,7 +49,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out byte b)
         {
-            if (value < byte.MinValue || byte.MaxValue < value)
+            if (value < byte.MinValue || value > byte.MaxValue)
             {
                 b = 0;
                 return false;
@@ -60,7 +61,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out sbyte sb)
         {
-            if (value < sbyte.MinValue || sbyte.MaxValue < value)
+            if (value < sbyte.MinValue || value > sbyte.MaxValue)
             {
                 sb = 0;
                 return false;
@@ -72,7 +73,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out short s)
         {
-            if (value < short.MinValue || short.MaxValue < value)
+            if (value < short.MinValue || value > short.MaxValue)
             {
                 s = 0;
                 return false;
@@ -84,7 +85,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out ushort us)
         {
-            if (value < ushort.MinValue || ushort.MaxValue < value)
+            if (value < ushort.MinValue || value > ushort.MaxValue)
             {
                 us = 0;
                 return false;
@@ -96,7 +97,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out int i)
         {
-            if (value < int.MinValue || int.MaxValue < value)
+            if (value < int.MinValue || value > int.MaxValue)
             {
                 i = 0;
                 return false;
@@ -108,7 +109,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out uint u)
         {
-            if (value < uint.MinValue || uint.MaxValue < value)
+            if (value < uint.MinValue || value > uint.MaxValue)
             {
                 u = 0;
                 return false;
@@ -120,7 +121,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out long l)
         {
-            if (value < long.MinValue || long.MaxValue < value)
+            if (value < long.MinValue || value > long.MaxValue)
             {
                 l = 0;
                 return false;
@@ -132,7 +133,7 @@ namespace System.Management.Automation
 
         internal static bool TryCast(BigInteger value, out ulong ul)
         {
-            if (value < ulong.MinValue || ulong.MaxValue < value)
+            if (value < ulong.MinValue || value > ulong.MaxValue)
             {
                 ul = 0;
                 return false;
@@ -301,7 +302,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Allowed PowerShell Editions.
         /// </summary>
-        internal static string[] AllowedEditionValues = { "Desktop", "Core" };
+        internal static readonly string[] AllowedEditionValues = { "Desktop", "Core" };
 
         /// <summary>
         /// Helper fn to check byte[] arg for null.
@@ -446,9 +447,45 @@ namespace System.Management.Automation
 
             return null;
         }
+
+        private static string s_windowsPowerShellVersion = null;
+
+        /// <summary>
+        /// Get the Windows PowerShell version from registry.
+        /// </summary>
+        /// <returns>
+        /// String of Windows PowerShell version from registry.
+        /// </returns>
+        internal static string GetWindowsPowerShellVersionFromRegistry()
+        {
+            if (!string.IsNullOrEmpty(InternalTestHooks.TestWindowsPowerShellVersionString))
+            {
+                return InternalTestHooks.TestWindowsPowerShellVersionString;
+            }
+
+            if (s_windowsPowerShellVersion != null)
+            {
+                return s_windowsPowerShellVersion;
+            }
+
+            string engineKeyPath = RegistryStrings.MonadRootKeyPath + "\\" +
+                PSVersionInfo.RegistryVersionKey + "\\" + RegistryStrings.MonadEngineKey;
+
+            using (RegistryKey engineKey = Registry.LocalMachine.OpenSubKey(engineKeyPath))
+            {
+                if (engineKey != null)
+                {
+                    s_windowsPowerShellVersion = engineKey.GetValue(RegistryStrings.MonadEngine_MonadVersion) as string;
+                    return s_windowsPowerShellVersion;
+                }
+            }
+
+            return string.Empty;
+        }
 #endif
 
         internal static string DefaultPowerShellAppBase => GetApplicationBase(DefaultPowerShellShellID);
+
         internal static string GetApplicationBase(string shellId)
         {
             // Use the location of SMA.dll as the application base.
@@ -457,20 +494,6 @@ namespace System.Management.Automation
         }
 
         private static string[] s_productFolderDirectories;
-
-        /// <summary>
-        /// Specifies the per-user configuration settings directory in a platform agnostic manner.
-        /// </summary>
-        /// <returns>The current user's configuration settings directory.</returns>
-        internal static string GetUserConfigurationDirectory()
-        {
-#if UNIX
-            return Platform.SelectProductNameForDirectory(Platform.XDG_Type.CONFIG);
-#else
-            string basePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-            return IO.Path.Combine(basePath, Utils.ProductNameForDirectory);
-#endif
-        }
 
         private static string[] GetProductFolderDirectories()
         {
@@ -710,10 +733,15 @@ namespace System.Management.Automation
         internal const string ProductNameForDirectory = "PowerShell";
 
         /// <summary>
+        /// WSL introduces a new filesystem path to access the Linux filesystem from Windows, like '\\wsl$\ubuntu'.
+        /// </summary>
+        internal const string WslRootPath = @"\\wsl$";
+
+        /// <summary>
         /// The subdirectory of module paths
         /// e.g. ~\Documents\WindowsPowerShell\Modules and %ProgramFiles%\WindowsPowerShell\Modules.
         /// </summary>
-        internal static string ModuleDirectory = Path.Combine(ProductNameForDirectory, "Modules");
+        internal static readonly string ModuleDirectory = Path.Combine(ProductNameForDirectory, "Modules");
 
         internal static readonly ConfigScope[] SystemWideOnlyConfig = new[] { ConfigScope.AllUsers };
         internal static readonly ConfigScope[] CurrentUserOnlyConfig = new[] { ConfigScope.CurrentUser };
@@ -807,40 +835,43 @@ namespace System.Management.Automation
             {nameof(ConsoleSessionConfiguration), @"Software\Policies\Microsoft\PowerShellCore\ConsoleSessionConfiguration"}
         };
 
+        private static readonly Dictionary<string, string> WindowsPowershellGroupPolicyKeys = new Dictionary<string, string>
+        {
+            { nameof(ScriptExecution), @"Software\Policies\Microsoft\Windows\PowerShell" },
+            { nameof(ScriptBlockLogging), @"Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" },
+            { nameof(ModuleLogging), @"Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging" },
+            { nameof(Transcription), @"Software\Policies\Microsoft\Windows\PowerShell\Transcription" },
+            { nameof(UpdatableHelp), @"Software\Policies\Microsoft\Windows\PowerShell\UpdatableHelp" },
+        };
+
+        private const string PolicySettingFallbackKey = "UseWindowsPowerShellPolicySetting";
+
         private static readonly ConcurrentDictionary<ConfigScope, ConcurrentDictionary<string, PolicyBase>> s_cachedPoliciesFromRegistry =
             new ConcurrentDictionary<ConfigScope, ConcurrentDictionary<string, PolicyBase>>();
 
         private static readonly Func<ConfigScope, ConcurrentDictionary<string, PolicyBase>> s_subCacheCreationDelegate =
-            key => new ConcurrentDictionary<string, PolicyBase>(StringComparer.OrdinalIgnoreCase);
+            key => new ConcurrentDictionary<string, PolicyBase>(StringComparer.Ordinal);
 
         /// <summary>
-        /// The implementation of fetching a specific kind of policy setting from the given configuration scope.
+        /// Read policy settings from a registry key into a policy object.
         /// </summary>
-        private static T GetPolicySettingFromGPOImpl<T>(ConfigScope scope) where T : PolicyBase, new()
+        /// <param name="instance">Policy object that will be filled with values from registry.</param>
+        /// <param name="instanceType">Type of policy object used.</param>
+        /// <param name="gpoKey">Registry key that has policy settings.</param>
+        /// <returns>True if any property was successfully set on the policy object.</returns>
+        private static bool TrySetPolicySettingsFromRegistryKey(object instance, Type instanceType, RegistryKey gpoKey)
         {
-            Type tType = typeof(T);
-            // SystemWide scope means 'LocalMachine' root key when query from registry
-            RegistryKey rootKey = (scope == ConfigScope.AllUsers) ? Registry.LocalMachine : Registry.CurrentUser;
+            var properties = instanceType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            bool isAnyPropertySet = false;
 
-            GroupPolicyKeys.TryGetValue(tType.Name, out string gpoKeyPath);
-            Diagnostics.Assert(gpoKeyPath != null, StringUtil.Format("The GPO registry key path should be pre-defined for {0}", tType.Name));
+            string[] valueNames = gpoKey.GetValueNames();
+            string[] subKeyNames = gpoKey.GetSubKeyNames();
+            var valueNameSet = valueNames.Length > 0 ? new HashSet<string>(valueNames, StringComparer.OrdinalIgnoreCase) : null;
+            var subKeyNameSet = subKeyNames.Length > 0 ? new HashSet<string>(subKeyNames, StringComparer.OrdinalIgnoreCase) : null;
 
-            using (RegistryKey gpoKey = rootKey.OpenSubKey(gpoKeyPath))
+            // If there are any values or subkeys in the registry key - read them into the policy instance object
+            if ((valueNameSet != null) || (subKeyNameSet != null))
             {
-                // If the corresponding GPO key doesn't exist, return null
-                if (gpoKey == null) { return null; }
-
-                // The corresponding GPO key exists, then create an instance of T
-                // and populate its properties with the settings
-                object tInstance = Activator.CreateInstance(tType, nonPublic: true);
-                var properties = tType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-                bool isAnyPropertySet = false;
-
-                string[] valueNames = gpoKey.GetValueNames();
-                string[] subKeyNames = gpoKey.GetSubKeyNames();
-                var valueNameSet = valueNames.Length > 0 ? new HashSet<string>(valueNames, StringComparer.OrdinalIgnoreCase) : null;
-                var subKeyNameSet = subKeyNames.Length > 0 ? new HashSet<string>(subKeyNames, StringComparer.OrdinalIgnoreCase) : null;
-
                 foreach (var property in properties)
                 {
                     string settingName = property.Name;
@@ -855,7 +886,10 @@ namespace System.Management.Automation
                     {
                         using (RegistryKey subKey = gpoKey.OpenSubKey(settingName))
                         {
-                            if (subKey != null) { rawRegistryValue = subKey.GetValueNames(); }
+                            if (subKey != null)
+                            {
+                                rawRegistryValue = subKey.GetValueNames();
+                            }
                         }
                     }
 
@@ -871,8 +905,14 @@ namespace System.Management.Automation
                             case var _ when propertyType == typeof(bool?):
                                 if (rawRegistryValue is int rawIntValue)
                                 {
-                                    if (rawIntValue == 1) { propertyValue = true; }
-                                    else if (rawIntValue == 0) { propertyValue = false; }
+                                    if (rawIntValue == 1)
+                                    {
+                                        propertyValue = true;
+                                    }
+                                    else if (rawIntValue == 0)
+                                    {
+                                        propertyValue = false;
+                                    }
                                 }
 
                                 break;
@@ -895,16 +935,59 @@ namespace System.Management.Automation
 
                                 break;
                             default:
-                                Diagnostics.Assert(false, "Should be unreachable code. Update this switch block when properties of new types are added to PowerShell policy types.");
-                                break;
+                                throw System.Management.Automation.Interpreter.Assert.Unreachable;
                         }
 
                         // Set the property if the value is not null
                         if (propertyValue != null)
                         {
-                            property.SetValue(tInstance, propertyValue);
+                            property.SetValue(instance, propertyValue);
                             isAnyPropertySet = true;
                         }
+                    }
+                }
+            }
+
+            return isAnyPropertySet;
+        }
+
+        /// <summary>
+        /// The implementation of fetching a specific kind of policy setting from the given configuration scope.
+        /// </summary>
+        private static T GetPolicySettingFromGPOImpl<T>(ConfigScope scope) where T : PolicyBase, new()
+        {
+            Type tType = typeof(T);
+            // SystemWide scope means 'LocalMachine' root key when query from registry
+            RegistryKey rootKey = (scope == ConfigScope.AllUsers) ? Registry.LocalMachine : Registry.CurrentUser;
+
+            GroupPolicyKeys.TryGetValue(tType.Name, out string gpoKeyPath);
+            Diagnostics.Assert(gpoKeyPath != null, StringUtil.Format("The GPO registry key path should be pre-defined for {0}", tType.Name));
+
+            using (RegistryKey gpoKey = rootKey.OpenSubKey(gpoKeyPath))
+            {
+                // If the corresponding GPO key doesn't exist, return null
+                if (gpoKey == null) { return null; }
+
+                // The corresponding GPO key exists, then create an instance of T
+                // and populate its properties with the settings
+                object tInstance = Activator.CreateInstance(tType, nonPublic: true);
+                bool isAnyPropertySet = false;
+
+                // if PolicySettingFallbackKey is Not set - use PowerShell Core policy reg key
+                if ((int)gpoKey.GetValue(PolicySettingFallbackKey, 0) == 0)
+                {
+                    isAnyPropertySet = TrySetPolicySettingsFromRegistryKey(tInstance, tType, gpoKey);
+                }
+                else
+                {
+                    // when PolicySettingFallbackKey flag is set (REG_DWORD "1") use Windows PS policy reg key
+                    WindowsPowershellGroupPolicyKeys.TryGetValue(tType.Name, out string winPowershellGpoKeyPath);
+                    Diagnostics.Assert(winPowershellGpoKeyPath != null, StringUtil.Format("The Windows PS GPO registry key path should be pre-defined for {0}", tType.Name));
+                    using (RegistryKey winPowershellGpoKey = rootKey.OpenSubKey(winPowershellGpoKeyPath))
+                    {
+                        // If the corresponding Windows PS GPO key doesn't exist, return null
+                        if (winPowershellGpoKey == null) { return null; }
+                        isAnyPropertySet = TrySetPolicySettingsFromRegistryKey(tInstance, tType, winPowershellGpoKey);
                     }
                 }
 
@@ -1175,14 +1258,14 @@ namespace System.Management.Automation
         internal static bool IsReservedDeviceName(string destinationPath)
         {
 #if !UNIX
-            string[] reservedDeviceNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL",
+            string[] reservedDeviceNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL", "CONIN$", "CONOUT$",
                                              "COM0", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
                                              "LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
             string compareName = Path.GetFileName(destinationPath);
             string noExtensionCompareName = Path.GetFileNameWithoutExtension(destinationPath);
 
-            if (((compareName.Length < 3) || (compareName.Length > 6)) &&
-                ((noExtensionCompareName.Length < 3) || (noExtensionCompareName.Length > 6)))
+            if (((compareName.Length < 3) || (compareName.Length > 7)) &&
+                ((noExtensionCompareName.Length < 3) || (noExtensionCompareName.Length > 7)))
             {
                 return false;
             }
@@ -1205,8 +1288,19 @@ namespace System.Management.Automation
 #if UNIX
             return false;
 #else
+            if (string.IsNullOrEmpty(path) || !path.StartsWith('\\'))
+            {
+                return false;
+            }
+
+            // handle special cases like \\wsl$\ubuntu which isn't a UNC path, but we can say it is so the filesystemprovider can use it
+            if (path.StartsWith(WslRootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
             Uri uri;
-            return !string.IsNullOrEmpty(path) && Uri.TryCreate(path, UriKind.Absolute, out uri) && uri.IsUnc;
+            return Uri.TryCreate(path, UriKind.Absolute, out uri) && uri.IsUnc;
 #endif
         }
 
@@ -1297,96 +1391,11 @@ namespace System.Management.Automation
             return hresult >= 0;
         }
 
-        // Attempt to determine the existing encoding
-        internal static Encoding GetEncoding(string path)
-        {
-            if (!File.Exists(path))
-            {
-                return ClrFacade.GetDefaultEncoding();
-            }
-
-            byte[] initialBytes = new byte[100];
-            int bytesRead = 0;
-
-            try
-            {
-                using (FileStream stream = System.IO.File.OpenRead(path))
-                {
-                    using (BinaryReader reader = new BinaryReader(stream))
-                    {
-                        bytesRead = reader.Read(initialBytes, 0, 100);
-                    }
-                }
-            }
-            catch (IOException)
-            {
-                return ClrFacade.GetDefaultEncoding();
-            }
-
-            // Test for four-byte preambles
-            string preamble = null;
-            Encoding foundEncoding = ClrFacade.GetDefaultEncoding();
-
-            if (bytesRead > 3)
-            {
-                preamble = string.Join("-", initialBytes[0], initialBytes[1], initialBytes[2], initialBytes[3]);
-
-                if (encodingMap.TryGetValue(preamble, out foundEncoding))
-                {
-                    return foundEncoding;
-                }
-            }
-
-            // Test for three-byte preambles
-            if (bytesRead > 2)
-            {
-                preamble = string.Join("-", initialBytes[0], initialBytes[1], initialBytes[2]);
-                if (encodingMap.TryGetValue(preamble, out foundEncoding))
-                {
-                    return foundEncoding;
-                }
-            }
-
-            // Test for two-byte preambles
-            if (bytesRead > 1)
-            {
-                preamble = string.Join("-", initialBytes[0], initialBytes[1]);
-                if (encodingMap.TryGetValue(preamble, out foundEncoding))
-                {
-                    return foundEncoding;
-                }
-            }
-
-            // Check for binary
-            string initialBytesAsAscii = System.Text.Encoding.ASCII.GetString(initialBytes, 0, bytesRead);
-            if (initialBytesAsAscii.IndexOfAny(nonPrintableCharacters) >= 0)
-            {
-                return Encoding.Unicode;
-            }
-
-            return Encoding.ASCII;
-        }
-
         // BigEndianUTF32 encoding is possible, but requires creation
-        internal static Encoding BigEndianUTF32Encoding = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
+        internal static readonly Encoding BigEndianUTF32Encoding = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
         // [System.Text.Encoding]::GetEncodings() | Where-Object { $_.GetEncoding().GetPreamble() } |
         //     Add-Member ScriptProperty Preamble { $this.GetEncoding().GetPreamble() -join "-" } -PassThru |
         //     Format-Table -Auto
-        internal static Dictionary<string, Encoding> encodingMap =
-            new Dictionary<string, Encoding>()
-            {
-                { "255-254", Encoding.Unicode },
-                { "254-255", Encoding.BigEndianUnicode },
-                { "255-254-0-0", Encoding.UTF32 },
-                { "0-0-254-255", BigEndianUTF32Encoding },
-                { "239-187-191", Encoding.UTF8 },
-            };
-
-        internal static char[] nonPrintableCharacters = {
-            (char) 0, (char) 1, (char) 2, (char) 3, (char) 4, (char) 5, (char) 6, (char) 7, (char) 8,
-            (char) 11, (char) 12, (char) 14, (char) 15, (char) 16, (char) 17, (char) 18, (char) 19, (char) 20,
-            (char) 21, (char) 22, (char) 23, (char) 24, (char) 25, (char) 26, (char) 28, (char) 29, (char) 30,
-            (char) 31, (char) 127, (char) 129, (char) 141, (char) 143, (char) 144, (char) 157 };
 
         internal static readonly UTF8Encoding utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -1580,8 +1589,7 @@ namespace System.Management.Automation
                 try
                 {
                     var scriptBlock = ScriptBlock.Create(command);
-                    var scriptBlockAst = scriptBlock.Ast as ScriptBlockAst;
-                    if (scriptBlockAst == null)
+                    if (!(scriptBlock.Ast is ScriptBlockAst scriptBlockAst))
                     {
                         return false;
                     }
@@ -1738,6 +1746,7 @@ namespace System.Management.Automation
         }
 
         private const string WhereObjectCommandAlias = "?";
+
         private static bool TryGetCommandInfoList(PowerShell ps, HashSet<string> commandNames, out Collection<CommandInfo> cmdInfoList)
         {
             if (commandNames.Count == 0)
@@ -1778,6 +1787,107 @@ namespace System.Management.Automation
             return true;
         }
 
+        internal static bool ShouldOutputPlainText(bool isHost, bool? supportsVirtualTerminal)
+        {
+            var outputRendering = OutputRendering.Ansi;
+
+            if (ExperimentalFeature.IsEnabled("PSAnsiRendering"))
+            {
+                if (supportsVirtualTerminal != false)
+                {
+                    switch (PSStyle.Instance.OutputRendering)
+                    {
+                        case OutputRendering.Automatic:
+                            outputRendering = OutputRendering.Ansi;
+                            break;
+                        case OutputRendering.Host:
+                            outputRendering = isHost ? OutputRendering.Ansi : OutputRendering.PlainText;
+                            break;
+                        default:
+                            outputRendering = PSStyle.Instance.OutputRendering;
+                            break;
+                    }
+                }
+            }
+
+            return outputRendering == OutputRendering.PlainText;
+        }
+
+        internal static string GetOutputString(string s, bool isHost, bool? supportsVirtualTerminal = null, bool isOutputRedirected = false)
+        {
+            if (ExperimentalFeature.IsEnabled("PSAnsiRendering"))
+            {
+                var sd = new ValueStringDecorated(s);
+
+                if (sd.IsDecorated)
+                {
+                    var outputRendering = OutputRendering.Ansi;
+                    if (InternalTestHooks.BypassOutputRedirectionCheck)
+                    {
+                        isOutputRedirected = false;
+                    }
+
+                    if (isOutputRedirected || ShouldOutputPlainText(isHost, supportsVirtualTerminal))
+                    {
+                        outputRendering = OutputRendering.PlainText;
+                    }
+
+                    s = sd.ToString(outputRendering);
+                }
+            }
+
+            return s;
+        }
+
+        internal enum FormatStyle
+        {
+            Reset,
+            FormatAccent,
+            ErrorAccent,
+            Error,
+            Warning,
+            Verbose,
+            Debug,
+        }
+
+        internal static string GetFormatStyleString(FormatStyle formatStyle)
+        {
+            // redirected console gets plaintext output to preserve existing behavior
+            if (!InternalTestHooks.BypassOutputRedirectionCheck &&
+                ((PSStyle.Instance.OutputRendering == OutputRendering.PlainText) ||
+                (formatStyle == FormatStyle.Error && Console.IsErrorRedirected) ||
+                (formatStyle != FormatStyle.Error && Console.IsOutputRedirected)))
+            {
+                return string.Empty;
+            }
+
+            if (ExperimentalFeature.IsEnabled("PSAnsiRendering"))
+            {
+                PSStyle psstyle = PSStyle.Instance;                
+                switch (formatStyle)
+                {
+                    case FormatStyle.Reset:
+                        return psstyle.Reset;
+                    case FormatStyle.FormatAccent:
+                        return psstyle.Formatting.FormatAccent;
+                    case FormatStyle.ErrorAccent:
+                        return psstyle.Formatting.ErrorAccent;
+                    case FormatStyle.Error:
+                        return psstyle.Formatting.Error;
+                    case FormatStyle.Warning:
+                        return psstyle.Formatting.Warning;
+                    case FormatStyle.Verbose:
+                        return psstyle.Formatting.Verbose;
+                    case FormatStyle.Debug:
+                        return psstyle.Formatting.Debug;
+                    default:
+                        return string.Empty;
+                }
+            }
+
+            return string.Empty;
+        }
+
         #endregion
     }
 
@@ -1789,6 +1899,7 @@ namespace System.Management.Automation
     {
         internal readonly HashSet<string> ValidVariables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal readonly HashSet<string> Commands = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         internal ScriptBlockAst ScriptBeingConverted { get; set; }
 
         public override AstVisitAction VisitVariableExpression(VariableExpressionAst variableExpressionAst)
@@ -1936,11 +2047,7 @@ namespace System.Management.Automation
 
     internal class ImplicitRemotingBatchingNotSupportedException : Exception
     {
-        internal string ErrorId
-        {
-            get;
-            private set;
-        }
+        internal string ErrorId { get; }
 
         internal ImplicitRemotingBatchingNotSupportedException(string errorId) : base(
             ParserStrings.ImplicitRemotingPipelineBatchingNotSupported)
@@ -1964,6 +2071,7 @@ namespace System.Management.Automation.Internal
         internal static bool BypassAppLockerPolicyCaching;
         internal static bool BypassOnlineHelpRetrieval;
         internal static bool ForcePromptForChoiceDefaultOption;
+        internal static bool BypassOutputRedirectionCheck;
 
         // Stop/Restart/Rename Computer tests
         internal static bool TestStopComputer;
@@ -1984,7 +2092,12 @@ namespace System.Management.Automation.Internal
         // since we can't manipulate the System32 directory in a test
         internal static string TestWindowsPowerShellPSHomeLocation;
 
+        // A version of Windows PS that is installed on the system; normally this is retrieved from a reg key that is write-protected.
+        internal static string TestWindowsPowerShellVersionString;
+
         internal static bool ShowMarkdownOutputBypass;
+
+        internal static bool ThrowExdevErrorOnMoveDirectory;
 
         /// <summary>This member is used for internal test purposes.</summary>
         public static void SetTestHook(string property, object value)
@@ -2008,6 +2121,25 @@ namespace System.Management.Automation.Internal
         {
             return Utils.TryRunAsImplicitBatch(commandPipeline, runspace);
         }
+
+        /// <summary>
+        /// Constructs a custom PSSenderInfo instance that can be assigned to $PSSenderInfo
+        /// in order to simulate a remoting session with respect to the $PSSenderInfo.ConnectionString (connection URL)
+        /// and $PSSenderInfo.ApplicationArguments.PSVersionTable.PSVersion (the remoting client's PowerShell version).
+        /// See Get-FormatDataTest.ps1.
+        /// </summary>
+        /// <param name="url">The connection URL to reflect in the returned instance's ConnectionString property.</param>
+        /// <param name="clientVersion">The version number to report as the remoting client's PowerShell version.</param>
+        /// <returns>The newly constructed custom PSSenderInfo instance.</returns>
+        public static PSSenderInfo GetCustomPSSenderInfo(string url, Version clientVersion)
+        {
+            var dummyPrincipal = new PSPrincipal(new PSIdentity("none", true, "someuser", null), null);
+            var pssi = new PSSenderInfo(dummyPrincipal, url);
+            pssi.ApplicationArguments = new PSPrimitiveDictionary();
+            pssi.ApplicationArguments.Add("PSVersionTable", new PSObject(new PSPrimitiveDictionary()));
+            ((PSPrimitiveDictionary)PSObject.Base(pssi.ApplicationArguments["PSVersionTable"])).Add("PSVersion", new PSObject(clientVersion));
+            return pssi;
+        }
     }
 
     /// <summary>
@@ -2018,7 +2150,7 @@ namespace System.Management.Automation.Internal
         private readonly BoundedStack<T> _boundedUndoStack;
         private readonly BoundedStack<T> _boundedRedoStack;
 
-        internal HistoryStack(uint capacity)
+        internal HistoryStack(int capacity)
         {
             _boundedUndoStack = new BoundedStack<T>(capacity);
             _boundedRedoStack = new BoundedStack<T>(capacity);
@@ -2063,13 +2195,13 @@ namespace System.Management.Automation.Internal
     /// </summary>
     internal class BoundedStack<T> : LinkedList<T>
     {
-        private readonly uint _capacity;
+        private readonly int _capacity;
 
         /// <summary>
         /// Lazy initialisation, i.e. it sets only its limit but does not allocate the memory for the given capacity.
         /// </summary>
         /// <param name="capacity"></param>
-        internal BoundedStack(uint capacity)
+        internal BoundedStack(int capacity)
         {
             _capacity = capacity;
         }
@@ -2118,7 +2250,7 @@ namespace System.Management.Automation.Internal
     /// </summary>
     internal sealed class ReadOnlyBag<T> : IEnumerable
     {
-        private HashSet<T> _hashset;
+        private readonly HashSet<T> _hashset;
 
         /// <summary>
         /// Constructor for the readonly Hashset.
@@ -2157,5 +2289,35 @@ namespace System.Management.Automation.Internal
         /// Get an empty singleton.
         /// </summary>
         internal static readonly ReadOnlyBag<T> Empty = new ReadOnlyBag<T>(new HashSet<T>(capacity: 0));
+    }
+
+    /// <summary>
+    /// Helper class for simple argument validations.
+    /// </summary>
+    internal static class Requires
+    {
+        internal static void NotNull(object value, string paramName)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+        }
+
+        internal static void NotNullOrEmpty(string value, string paramName)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ArgumentNullException(paramName);
+            }
+        }
+
+        internal static void Condition([DoesNotReturnIf(false)] bool precondition, string paramName)
+        {
+            if (!precondition)
+            {
+                throw new ArgumentException(paramName);
+            }
+        }
     }
 }

@@ -1,14 +1,15 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+
+#if !UNIX
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -17,7 +18,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet clear all files in the RecycleBin for the given DriveLetter.
     /// If not DriveLetter is specified, then the RecycleBin for all drives are cleared.
     /// </summary>
-    [Cmdlet(VerbsCommon.Clear, "RecycleBin", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkId=524082", ConfirmImpact = ConfirmImpact.High)]
+    [Cmdlet(VerbsCommon.Clear, "RecycleBin", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2109377", ConfirmImpact = ConfirmImpact.High)]
     public class ClearRecycleBinCommand : PSCmdlet
     {
         private string[] _drivesList;
@@ -111,7 +112,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (DriveInfo drive in _availableDrives)
                 {
-                    if (string.Compare(drive.Name, drivePath, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(drive.Name, drivePath, StringComparison.OrdinalIgnoreCase))
                     {
                         actualDrive = drive;
                         break;
@@ -153,7 +154,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        private bool IsValidPattern(string input)
+        private static bool IsValidPattern(string input)
         {
             return Regex.IsMatch(input, @"^[a-z]{1}$|^[a-z]{1}:$|^[a-z]{1}:\\$", RegexOptions.IgnoreCase);
         }
@@ -164,7 +165,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="driveName"></param>
         /// <returns></returns>
-        private string GetDrivePath(string driveName)
+        private static string GetDrivePath(string driveName)
         {
             string drivePath;
             if (driveName.EndsWith(":\\", StringComparison.OrdinalIgnoreCase))
@@ -219,30 +220,19 @@ namespace Microsoft.PowerShell.Commands
                     statusDescription = string.Format(CultureInfo.InvariantCulture, ClearRecycleBinResources.ClearRecycleBinStatusDescriptionByDrive, drivePath);
                 }
 
-                ProgressRecord progress = new ProgressRecord(0, activity, statusDescription);
+                ProgressRecord progress = new(0, activity, statusDescription);
                 progress.PercentComplete = 30;
                 progress.RecordType = ProgressRecordType.Processing;
                 WriteProgress(progress);
 
+                // no need to check result as a failure is returned only if recycle bin is already empty
                 uint result = NativeMethod.SHEmptyRecycleBin(IntPtr.Zero, drivePath,
                                                             NativeMethod.RecycleFlags.SHERB_NOCONFIRMATION |
                                                             NativeMethod.RecycleFlags.SHERB_NOPROGRESSUI |
                                                             NativeMethod.RecycleFlags.SHERB_NOSOUND);
-                int lastError = Marshal.GetLastWin32Error();
-
-                // update the progress bar to completed
                 progress.PercentComplete = 100;
                 progress.RecordType = ProgressRecordType.Completed;
                 WriteProgress(progress);
-
-                // 0 is for a successful operation
-                // 203 comes up when trying to empty an already emptied recyclebin
-                // 18 comes up when there are no more files in the given recyclebin
-                if (!(lastError == 0 || lastError == 203 || lastError == 18))
-                {
-                    Win32Exception exception = new Win32Exception(lastError);
-                    WriteError(new ErrorRecord(exception, "FailedToClearRecycleBin", ErrorCategory.InvalidOperation, "RecycleBin"));
-                }
             }
         }
     }
@@ -261,3 +251,4 @@ namespace Microsoft.PowerShell.Commands
         internal static extern uint SHEmptyRecycleBin(IntPtr hwnd, string pszRootPath, RecycleFlags dwFlags);
     }
 }
+#endif

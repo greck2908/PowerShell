@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -540,7 +540,7 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="matches"></param>
         /// <param name="jobsToSearch"></param>
         /// <returns></returns>
-        private bool FindJobsMatchingByFilterHelper(List<Job> matches, List<Job> jobsToSearch)
+        private static bool FindJobsMatchingByFilterHelper(List<Job> matches, List<Job> jobsToSearch)
         {
             // check that filter only has job properties
             // if so, filter on one at a time using helpers.
@@ -768,7 +768,7 @@ namespace Microsoft.PowerShell.Commands
     /// through get-psjob command.
     /// </summary>
     [Cmdlet(VerbsCommon.Remove, "Job", SupportsShouldProcess = true, DefaultParameterSetName = JobCmdletBase.SessionIdParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113377")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096868")]
     [OutputType(typeof(Job), ParameterSetName = new string[] { JobCmdletBase.JobParameterSet })]
     public class RemoveJobCommand : JobCmdletBase, IDisposable
     {
@@ -1011,8 +1011,9 @@ namespace Microsoft.PowerShell.Commands
 
         #region Private Members
 
-        private HashSet<Guid> _pendingJobs = new HashSet<Guid>();
+        private readonly HashSet<Guid> _pendingJobs = new HashSet<Guid>();
         private readonly ManualResetEvent _waitForJobs = new ManualResetEvent(false);
+
         private readonly Dictionary<Job2, EventHandler<AsyncCompletedEventArgs>> _cleanUpActions =
             new Dictionary<Job2, EventHandler<AsyncCompletedEventArgs>>();
 

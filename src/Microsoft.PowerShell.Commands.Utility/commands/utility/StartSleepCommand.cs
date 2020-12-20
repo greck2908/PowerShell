@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -12,7 +12,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Suspend shell, script, or runspace activity for the specified period of time.
     /// </summary>
-    [Cmdlet(VerbsLifecycle.Start, "Sleep", DefaultParameterSetName = "Seconds", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113407")]
+    [Cmdlet(VerbsLifecycle.Start, "Sleep", DefaultParameterSetName = "Seconds", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097041")]
     public sealed class StartSleepCommand : PSCmdlet, IDisposable
     {
         private bool _disposed = false;
@@ -23,7 +23,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         public void Dispose()
         {
-            if (_disposed == false)
+            if (!_disposed)
             {
                 if (_waitHandle != null)
                 {
@@ -64,7 +64,7 @@ namespace Microsoft.PowerShell.Commands
 
         // object used for synchronizes pipeline thread and stop thread
         // access to waitHandle
-        private object _syncObject = new object();
+        private readonly object _syncObject = new();
 
         // this is set to true by stopProcessing
         private bool _stopping = false;
@@ -76,7 +76,7 @@ namespace Microsoft.PowerShell.Commands
         {
             lock (_syncObject)
             {
-                if (_stopping == false)
+                if (!_stopping)
                 {
                     _waitHandle = new ManualResetEvent(false);
                 }

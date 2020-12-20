@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -361,7 +361,6 @@ namespace System.Management.Automation
         public SteppablePipeline GetSteppablePipeline()
             => GetSteppablePipelineImpl(commandOrigin: CommandOrigin.Internal, args: null);
 
-
         /// <summary>
         /// Get a steppable pipeline object.
         /// </summary>
@@ -464,7 +463,7 @@ namespace System.Management.Automation
             if (variablesToDefine != null)
             {
                 // Extract the special variables "this", "input" and "_"
-                PSVariable located = variablesToDefine.FirstOrDefault(
+                PSVariable located = variablesToDefine.Find(
                     v => string.Equals(v.Name, "this", StringComparison.OrdinalIgnoreCase));
                 if (located != null)
                 {
@@ -472,7 +471,7 @@ namespace System.Management.Automation
                     variablesToDefine.Remove(located);
                 }
 
-                located = variablesToDefine.FirstOrDefault(
+                located = variablesToDefine.Find(
                     v => string.Equals(v.Name, "_", StringComparison.Ordinal));
                 if (located != null)
                 {
@@ -480,7 +479,7 @@ namespace System.Management.Automation
                     variablesToDefine.Remove(located);
                 }
 
-                located = variablesToDefine.FirstOrDefault(
+                located = variablesToDefine.Find(
                     v => string.Equals(v.Name, "input", StringComparison.OrdinalIgnoreCase));
                 if (located != null)
                 {
@@ -597,7 +596,7 @@ namespace System.Management.Automation
         /// Get the PSModuleInfo object for the module that defined this
         /// scriptblock.
         /// </summary>
-        public PSModuleInfo Module { get => SessionStateInternal != null ? SessionStateInternal.Module : null; }
+        public PSModuleInfo Module { get => SessionStateInternal?.Module; }
 
         /// <summary>
         /// Return the PSToken object for this function definition...
@@ -647,16 +646,17 @@ namespace System.Management.Automation
         /// <remarks>
         /// This does normal array reduction in the case of a one-element array.
         /// </remarks>
-        internal static object GetRawResult(List<object> result)
+        internal static object GetRawResult(List<object> result, bool wrapToPSObject)
         {
             switch (result.Count)
             {
                 case 0:
                     return AutomationNull.Value;
                 case 1:
-                    return LanguagePrimitives.AsPSObjectOrNull(result[0]);
+                    return wrapToPSObject ? LanguagePrimitives.AsPSObjectOrNull(result[0]) : result[0];
                 default:
-                    return LanguagePrimitives.AsPSObjectOrNull(result.ToArray());
+                    object resultArray = result.ToArray();
+                    return wrapToPSObject ? LanguagePrimitives.AsPSObjectOrNull(resultArray) : resultArray;
             }
         }
 
@@ -709,7 +709,7 @@ namespace System.Management.Automation
                     }
                 }
 
-                return SessionStateInternal != null ? SessionStateInternal.PublicSessionState : null;
+                return SessionStateInternal?.PublicSessionState;
             }
 
             set
@@ -807,7 +807,7 @@ namespace System.Management.Automation
                 outputPipe: outputPipe,
                 invocationInfo: null,
                 args: args);
-            return GetRawResult(rawResult);
+            return GetRawResult(rawResult, wrapToPSObject: false);
         }
 
         #endregion
@@ -934,7 +934,7 @@ namespace System.Management.Automation
                 outputPipe: outputPipe,
                 invocationInfo: null,
                 args: args);
-            return GetRawResult(result);
+            return GetRawResult(result, wrapToPSObject: true);
         }
 
         internal void InvokeWithPipe(
@@ -1113,21 +1113,21 @@ namespace System.Management.Automation
             _context = context;
         }
 
-        private PipelineProcessor _pipeline;
-        private ExecutionContext _context;
+        private readonly PipelineProcessor _pipeline;
+        private readonly ExecutionContext _context;
         private bool _expectInput;
 
         /// <summary>
         /// Begin execution of a steppable pipeline. This overload doesn't reroute output and error pipes.
         /// </summary>
-        /// <param name="expectInput"><c>true</c> if you plan to write input into this pipe; <c>false</c> otherwise.</param>
+        /// <param name="expectInput"><see langword="true"/> if you plan to write input into this pipe; <see langword="false"/> otherwise.</param>
         public void Begin(bool expectInput) => Begin(expectInput, commandRuntime: (ICommandRuntime)null);
 
         /// <summary>
         /// Begin execution of a steppable pipeline, using the command running currently in the specified context to figure
         /// out how to route the output and errors.
         /// </summary>
-        /// <param name="expectInput"><c>true</c> if you plan to write input into this pipe; <c>false</c> otherwise.</param>
+        /// <param name="expectInput"><see langword="true"/> if you plan to write input into this pipe; <see langword="false"/> otherwise.</param>
         /// <param name="contextToRedirectTo">Context used to figure out how to route the output and errors.</param>
         public void Begin(bool expectInput, EngineIntrinsics contextToRedirectTo)
         {
@@ -1138,7 +1138,7 @@ namespace System.Management.Automation
 
             ExecutionContext executionContext = contextToRedirectTo.SessionState.Internal.ExecutionContext;
             CommandProcessorBase commandProcessor = executionContext.CurrentCommandProcessor;
-            ICommandRuntime crt = commandProcessor == null ? null : commandProcessor.CommandRuntime;
+            ICommandRuntime crt = commandProcessor?.CommandRuntime;
             Begin(expectInput, crt);
         }
 
@@ -1313,14 +1313,6 @@ namespace System.Management.Automation
             _disposed = true;
         }
 
-        /// <summary>
-        /// Finalizer for class SteppablePipeline.
-        /// </summary>
-        ~SteppablePipeline()
-        {
-            Dispose(false);
-        }
-
         #endregion IDispose
     }
 
@@ -1447,13 +1439,21 @@ namespace System.Management.Automation
         }
 
         internal ScriptBlock ScriptBlock { get; set; }
+
         internal bool UseLocalScope { get; set; }
+
         internal ScriptBlock.ErrorHandlingBehavior ErrorHandlingBehavior { get; set; }
+
         internal object DollarUnder { get; set; }
+
         internal object Input { get; set; }
+
         internal object ScriptThis { get; set; }
+
         internal Pipe OutputPipe { get; set; }
+
         internal InvocationInfo InvocationInfo { get; set; }
+
         internal object[] Args { get; set; }
 
         /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -18,7 +18,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet generates a new encrypted CMS message given the
     /// recipient and content supplied.
     /// </summary>
-    [Cmdlet(VerbsSecurity.Protect, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=394373", DefaultParameterSetName = "ByContent")]
+    [Cmdlet(VerbsSecurity.Protect, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096826", DefaultParameterSetName = "ByContent")]
     [OutputType(typeof(string))]
     public sealed class ProtectCmsMessageCommand : PSCmdlet
     {
@@ -43,7 +43,7 @@ namespace Microsoft.PowerShell.Commands
             set;
         }
 
-        private PSDataCollection<PSObject> _inputObjects = new PSDataCollection<PSObject>();
+        private readonly PSDataCollection<PSObject> _inputObjects = new PSDataCollection<PSObject>();
 
         /// <summary>
         /// Gets or sets the content of the CMS Message by path.
@@ -190,7 +190,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet retrieves information about an encrypted CMS
     /// message.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=394370")]
+    [Cmdlet(VerbsCommon.Get, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096598")]
     [OutputType(typeof(EnvelopedCms))]
     public sealed class GetCmsMessageCommand : PSCmdlet
     {
@@ -206,7 +206,7 @@ namespace Microsoft.PowerShell.Commands
             set;
         }
 
-        private StringBuilder _contentBuffer = new StringBuilder();
+        private readonly StringBuilder _contentBuffer = new StringBuilder();
 
         /// <summary>
         /// Gets or sets the CMS Message by path.
@@ -314,7 +314,7 @@ namespace Microsoft.PowerShell.Commands
             cms.Decode(contentBytes);
 
             PSObject result = new PSObject(cms);
-            List<Object> recipients = new List<Object>();
+            List<object> recipients = new List<object>();
             foreach (RecipientInfo recipient in cms.RecipientInfos)
             {
                 recipients.Add(recipient.RecipientIdentifier.Value);
@@ -335,7 +335,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet retrieves the clear text content of an encrypted CMS
     /// message.
     /// </summary>
-    [Cmdlet(VerbsSecurity.Unprotect, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=394374", DefaultParameterSetName = "ByWinEvent")]
+    [Cmdlet(VerbsSecurity.Unprotect, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096701", DefaultParameterSetName = "ByWinEvent")]
     [OutputType(typeof(string))]
     public sealed class UnprotectCmsMessageCommand : PSCmdlet
     {
@@ -351,7 +351,7 @@ namespace Microsoft.PowerShell.Commands
             set;
         }
 
-        private StringBuilder _contentBuffer = new StringBuilder();
+        private readonly StringBuilder _contentBuffer = new StringBuilder();
 
         /// <summary>
         /// Gets or sets the Windows Event Log Message with contents to be decrypted.
@@ -577,7 +577,7 @@ namespace Microsoft.PowerShell.Commands
 
                 if (postContext != null)
                 {
-                    resultString = resultString + postContext;
+                    resultString += postContext;
                 }
             }
 
@@ -585,4 +585,3 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
-

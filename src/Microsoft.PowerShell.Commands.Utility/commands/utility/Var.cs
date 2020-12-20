@@ -1,8 +1,7 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
@@ -14,7 +13,6 @@ namespace Microsoft.PowerShell.Commands
     /// Base class for all variable commands.
     /// Because -Scope is defined in VariableCommandBase, all derived commands must implement -Scope.
     /// </summary>
-
     public abstract class VariableCommandBase : PSCmdlet
     {
         #region Parameters
@@ -101,7 +99,7 @@ namespace Microsoft.PowerShell.Commands
         {
             wasFiltered = false;
 
-            List<PSVariable> result = new List<PSVariable>();
+            List<PSVariable> result = new();
 
             if (string.IsNullOrEmpty(name))
             {
@@ -240,7 +238,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements get-variable command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "Variable", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113336")]
+    [Cmdlet(VerbsCommon.Get, "Variable", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096711")]
     [OutputType(typeof(PSVariable))]
     public class GetVariableCommand : VariableCommandBase
     {
@@ -338,10 +336,7 @@ namespace Microsoft.PowerShell.Commands
                     GetMatchingVariables(varName, Scope, out wasFiltered, /*quiet*/ false);
 
                 matchingVariables.Sort(
-                    delegate (PSVariable left, PSVariable right)
-                    {
-                        return StringComparer.CurrentCultureIgnoreCase.Compare(left.Name, right.Name);
-                    });
+                    (PSVariable left, PSVariable right) => StringComparer.CurrentCultureIgnoreCase.Compare(left.Name, right.Name));
 
                 bool matchFound = false;
                 foreach (PSVariable matchingVariable in matchingVariables)
@@ -360,7 +355,7 @@ namespace Microsoft.PowerShell.Commands
                 if (!matchFound && !wasFiltered)
                 {
                     ItemNotFoundException itemNotFound =
-                        new ItemNotFoundException(
+                        new(
                             varName,
                             "VariableNotFound",
                             SessionStateStrings.VariableNotFound);
@@ -378,7 +373,7 @@ namespace Microsoft.PowerShell.Commands
     /// Class implementing new-variable command.
     /// </summary>
     [Cmdlet(VerbsCommon.New, "Variable", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113361")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097121")]
     public sealed class NewVariableCommand : VariableCommandBase
     {
         #region parameters
@@ -495,7 +490,7 @@ namespace Microsoft.PowerShell.Commands
                 if (varFound != null)
                 {
                     SessionStateException sessionStateException =
-                        new SessionStateException(
+                        new(
                             Name,
                             SessionStateCategory.Variable,
                             "VariableAlreadyExists",
@@ -519,7 +514,7 @@ namespace Microsoft.PowerShell.Commands
 
             if (ShouldProcess(target, action))
             {
-                PSVariable newVariable = new PSVariable(Name, Value, Option);
+                PSVariable newVariable = new(Name, Value, Option);
 
                 if (_visibility != null)
                 {
@@ -570,7 +565,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This class implements set-variable command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "Variable", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113401")]
+    [Cmdlet(VerbsCommon.Set, "Variable", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096624")]
     [OutputType(typeof(PSVariable))]
     public sealed class SetVariableCommand : VariableCommandBase
     {
@@ -747,7 +742,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     if (_valueList == null)
                     {
-                        _valueList = new ArrayList();
+                        _valueList = new List<object>();
                     }
 
                     _valueList.Add(Value);
@@ -759,7 +754,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private ArrayList _valueList;
+        private List<object> _valueList;
 
         /// <summary>
         /// Sets the variable if the name was specified as a formal parameter
@@ -815,7 +810,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 // First look for existing variables to set.
 
-                List<PSVariable> matchingVariables = new List<PSVariable>();
+                List<PSVariable> matchingVariables = new();
 
                 bool wasFiltered = false;
 
@@ -870,7 +865,7 @@ namespace Microsoft.PowerShell.Commands
                         }
 
                         PSVariable varToSet =
-                            new PSVariable(
+                            new(
                                 varName,
                                 newVarValue,
                                 newOptions);
@@ -1033,7 +1028,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// The Remove-Variable cmdlet implementation.
     /// </summary>
-    [Cmdlet(VerbsCommon.Remove, "Variable", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113380")]
+    [Cmdlet(VerbsCommon.Remove, "Variable", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097123")]
     public sealed class RemoveVariableCommand : VariableCommandBase
     {
         #region parameters
@@ -1126,7 +1121,7 @@ namespace Microsoft.PowerShell.Commands
                     // characters were specified, write an error.
 
                     ItemNotFoundException itemNotFound =
-                        new ItemNotFoundException(
+                        new(
                             varName,
                             "VariableNotFound",
                             SessionStateStrings.VariableNotFound);
@@ -1184,7 +1179,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This class implements set-variable command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Clear, "Variable", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113285")]
+    [Cmdlet(VerbsCommon.Clear, "Variable", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096923")]
     [OutputType(typeof(PSVariable))]
     public sealed class ClearVariableCommand : VariableCommandBase
     {
@@ -1288,7 +1283,7 @@ namespace Microsoft.PowerShell.Commands
                     // characters were specified, write an error.
 
                     ItemNotFoundException itemNotFound =
-                        new ItemNotFoundException(
+                        new(
                             varName,
                             "VariableNotFound",
                             SessionStateStrings.VariableNotFound);

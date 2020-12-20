@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -18,13 +18,13 @@ namespace Microsoft.PowerShell.Commands
         #region Properties
 
         /// <summary>
-        /// Gets or protected sets the Content property.
+        /// Gets or protected sets the response body content.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public byte[] Content { get; protected set; }
 
         /// <summary>
-        /// Gets the StatusCode property.
+        /// Gets the response status code.
         /// </summary>
         public int StatusCode
         {
@@ -32,7 +32,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Gets the StatusDescription property.
+        /// Gets the response status description.
         /// </summary>
         public string StatusDescription
         {
@@ -41,7 +41,7 @@ namespace Microsoft.PowerShell.Commands
 
         private MemoryStream _rawContentStream;
         /// <summary>
-        /// Gets the RawContentStream property.
+        /// Gets the response body content as a <see cref="MemoryStream"/>.
         /// </summary>
         public MemoryStream RawContentStream
         {
@@ -49,7 +49,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Gets the RawContentLength property.
+        /// Gets the length (in bytes) of <see cref="RawContentStream"/>.
         /// </summary>
         public long RawContentLength
         {
@@ -57,8 +57,11 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Gets or protected sets the RawContent property.
+        /// Gets or protected sets the full response content.
         /// </summary>
+        /// <value>
+        /// Full response content, including the HTTP status line, headers, and body.
+        /// </value>
         public string RawContent { get; protected set; }
 
         #endregion Properties
@@ -73,7 +76,7 @@ namespace Microsoft.PowerShell.Commands
             this.Content = this.RawContentStream.ToArray();
         }
 
-        private bool IsPrintable(char c)
+        private static bool IsPrintable(char c)
         {
             return (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsSeparator(c) || char.IsSymbol(c) || char.IsWhiteSpace(c));
         }
@@ -141,7 +144,7 @@ namespace Microsoft.PowerShell.Commands
         #region Constructors
 
         /// <summary>
-        /// Constructor for WebResponseObject.
+        /// Initializes a new instance of the <see cref="WebResponseObject"/> class.
         /// </summary>
         /// <param name="response"></param>
         public WebResponseObject(HttpResponseMessage response)
@@ -149,7 +152,8 @@ namespace Microsoft.PowerShell.Commands
         { }
 
         /// <summary>
-        /// Constructor for WebResponseObject with contentStream.
+        /// Initializes a new instance of the <see cref="WebResponseObject"/> class
+        /// with the specified <paramref name="contentStream"/>.
         /// </summary>
         /// <param name="response"></param>
         /// <param name="contentStream"></param>
@@ -179,7 +183,7 @@ namespace Microsoft.PowerShell.Commands
 
         private void SetResponse(HttpResponseMessage response, Stream contentStream)
         {
-            if (response == null) { throw new ArgumentNullException("response"); }
+            if (response == null) { throw new ArgumentNullException(nameof(response)); }
 
             BaseResponse = response;
 
@@ -197,7 +201,7 @@ namespace Microsoft.PowerShell.Commands
                 }
 
                 long contentLength = response.Content.Headers.ContentLength.Value;
-                if (0 >= contentLength)
+                if (contentLength <= 0)
                 {
                     contentLength = StreamHelper.DefaultReadBuffer;
                 }

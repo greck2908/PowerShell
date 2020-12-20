@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 Describe "Basic FileSystem Provider Tests" -Tags "CI" {
     BeforeAll {
@@ -28,6 +28,8 @@ Describe "Basic FileSystem Provider Tests" -Tags "CI" {
                 @{ deviceName = 'AUX' }
                 @{ deviceName = 'CLOCK$' }
                 @{ deviceName = 'NUL' }
+                @{ deviceName = 'CONIN$' }
+                @{ deviceName = 'CONOUT$' }
                 @{ deviceName = 'COM0' }
                 @{ deviceName = 'COM1' }
                 @{ deviceName = 'COM2' }
@@ -104,7 +106,7 @@ Describe "Basic FileSystem Provider Tests" -Tags "CI" {
 
         It "Verify Rename-Item will not rename to an existing name" {
             { Rename-Item -Path $testFile -NewName $testDir -ErrorAction Stop } | Should -Throw -ErrorId "RenameItemIOError,Microsoft.PowerShell.Commands.RenameItemCommand"
-            $Error[0].Exception | Should -BeOfType System.IO.IOException
+            $error[0].Exception | Should -BeOfType System.IO.IOException
             $testFile | Should -Exist
         }
 
@@ -131,10 +133,34 @@ Describe "Basic FileSystem Provider Tests" -Tags "CI" {
             "$destDir/$testDir/$testFile" | Should -Exist
         }
 
+        It "Verify Move-Item across devices for directory" {
+            [System.Management.Automation.Internal.InternalTestHooks]::SetTestHook('ThrowExdevErrorOnMoveDirectory', $true)
+            try
+            {
+                $dir = (New-Item -Path TestDrive:/dir -ItemType Directory -ErrorAction Stop).FullName
+                $file = (New-Item -Path "$dir/file.txt" -Value "HELLO" -ErrorAction Stop).Name
+                $destination = "$TestDrive/destination"
+
+                Move-Item -Path $dir -Destination $destination -ErrorAction Stop
+
+                $dir | Should -Not -Exist
+                $destination | Should -Exist
+                "$destination/$file" | Should -Exist
+            }
+            finally
+            {
+                [System.Management.Automation.Internal.InternalTestHooks]::SetTestHook('ThrowExdevErrorOnMoveDirectory', $false)
+            }
+        }
+
         It "Verify Move-Item will not move to an existing file" {
             { Move-Item -Path $testDir -Destination $testFile -ErrorAction Stop } | Should -Throw -ErrorId "MoveDirectoryItemIOError,Microsoft.PowerShell.Commands.MoveItemCommand"
-            $Error[0].Exception | Should -BeOfType System.IO.IOException
+            $error[0].Exception | Should -BeOfType System.IO.IOException
             $testDir | Should -Exist
+        }
+
+        It "Verify Move-Item throws correct error for non-existent source" {
+            { Move-Item -Path /does/not/exist -Destination $testFile -ErrorAction Stop } | Should -Throw -ErrorId 'PathNotFound,Microsoft.PowerShell.Commands.MoveItemCommand'
         }
 
         It "Verify Move-Item as substitute for Rename-Item" {
@@ -276,6 +302,22 @@ Describe "Basic FileSystem Provider Tests" -Tags "CI" {
 
             $scriptBlock = [scriptblock]::Create($cmdline)
             $scriptBlock | Should -Throw -ErrorId $expectedError
+        }
+    }
+
+    Context "Appx path" {
+        BeforeAll {
+            $skipTest = $true
+            if ($IsWindows -and (Get-Command -Name Get-AppxPackage) ) {
+                $pkgDir = (Get-AppxPackage Microsoft.WindowsCalculator -ErrorAction SilentlyContinue).InstallLocation
+                $skipTest = $pkgDir -eq $null
+            }
+        }
+
+        It "Can get an appx package item" -Skip:$skipTest {
+            Get-Item $pkgDir\Calculator.exe -ErrorAction Stop | Should -BeOfType System.IO.FileInfo
+            Get-Item -Path $pkgDir -ErrorAction Stop | Should -BeOfType System.IO.DirectoryInfo
+            Get-ChildItem -Path $pkgDir -ErrorAction Stop | Should -Not -BeNullOrEmpty
         }
     }
 
@@ -554,10 +596,25 @@ Describe "Hard link and symbolic link tests" -Tags "CI", "RequireAdminOnWindows"
             $ci[1].Name | Should -MatchExactly $filenamePattern
             $ci[2].Name | Should -MatchExactly $filenamePattern
         }
+        It "Get-ChildItem -Name gets content of linked-to directory" {
+            # The test depends on the files created in previous test:
+            #$filenamePattern = "AlphaFile[12]\.txt"
+            #New-Item -ItemType SymbolicLink -Path $alphaLink -Value $alphaDir
+            $ci = Get-ChildItem $alphaLink -Name
+            $ci.Count | Should -Be 3
+            $ci[1] | Should -MatchExactly $filenamePattern
+            $ci[2] | Should -MatchExactly $filenamePattern
+        }
         It "Get-ChildItem does not recurse into symbolic links not explicitly given on the command line" {
             New-Item -ItemType SymbolicLink -Path $betaLink -Value $betaDir
             $ci = Get-ChildItem $alphaLink -Recurse
             $ci.Count | Should -BeExactly 7
+        }
+        It "Get-ChildItem -Name does not recurse into symbolic links not explicitly given on the command line" -Pending {
+            # The test depends on the files created in previous test:
+            #New-Item -ItemType SymbolicLink -Path $betaLink -Value $betaDir
+            $ci = Get-ChildItem $alphaLink -Recurse -Name
+            $ci.Count | Should -BeExactly 7 # returns 10 - unexpectly recurce in link-alpha\link-Beta. See https://github.com/PowerShell/PowerShell/issues/11614
         }
         It "Get-ChildItem will recurse into symlinks given -FollowSymlink, avoiding link loops" {
             New-Item -ItemType Directory -Path $gammaDir
@@ -565,6 +622,16 @@ Describe "Hard link and symbolic link tests" -Tags "CI", "RequireAdminOnWindows"
             New-Item -ItemType SymbolicLink -Path $uptwoLink -Value $alphaDir
             New-Item -ItemType SymbolicLink -Path $omegaLink -Value $omegaDir
             $ci = Get-ChildItem -Path $alphaDir -FollowSymlink -Recurse -WarningVariable w -WarningAction SilentlyContinue
+            $ci.Count | Should -BeExactly 13
+            $w.Count | Should -BeExactly 3
+        }
+        It "Get-ChildItem -Name will recurse into symlinks given -FollowSymlink, avoiding link loops" -Pending {
+            # The test depends on the files created in previous test:
+            # New-Item -ItemType Directory -Path $gammaDir
+            # New-Item -ItemType SymbolicLink -Path $uponeLink -Value $betaDir
+            # New-Item -ItemType SymbolicLink -Path $uptwoLink -Value $alphaDir
+            # New-Item -ItemType SymbolicLink -Path $omegaLink -Value $omegaDir
+            $ci = Get-ChildItem -Path $alphaDir -FollowSymlink -Recurse -WarningVariable w -WarningAction SilentlyContinue -Name # unexpectly dead cycle. See https://github.com/PowerShell/PowerShell/issues/11614
             $ci.Count | Should -BeExactly 13
             $w.Count | Should -BeExactly 3
         }
@@ -662,8 +729,8 @@ Describe "Hard link and symbolic link tests" -Tags "CI", "RequireAdminOnWindows"
             $link = Join-Path $TestDrive "sym-to-folder"
             New-Item -ItemType Directory -Path $folder > $null
             New-Item -ItemType File -Path $file -Value "some content" > $null
-            New-Item -ItemType SymbolicLink -Path $link -value $folder > $null
-            $childA = Get-Childitem $folder
+            New-Item -ItemType SymbolicLink -Path $link -Value $folder > $null
+            $childA = Get-ChildItem $folder
             Remove-Item -Path $link -Recurse
             $childB = Get-ChildItem $folder
             $childB.Count | Should -Be 1
@@ -732,8 +799,8 @@ Describe "Copy-Item can avoid copying an item onto itself" -Tags "CI", "RequireA
             else
             {
                 { Copy-Item -Path $sourcePath -Destination $destinationPath -ErrorAction Stop } | Should -Throw -ErrorId "CopyError,Microsoft.PowerShell.Commands.CopyItemCommand"
-                $Error[0].Exception | Should -BeOfType System.IO.IOException
-                $Error[0].Exception.Data[$selfCopyKey] | Should -Not -BeNullOrEmpty
+                $error[0].Exception | Should -BeOfType System.IO.IOException
+                $error[0].Exception.Data[$selfCopyKey] | Should -Not -BeNullOrEmpty
             }
         }
     }
@@ -795,8 +862,8 @@ Describe "Copy-Item can avoid copying an item onto itself" -Tags "CI", "RequireA
                 )
 
                 { Copy-Item -Path $Source -Destination $Destination -ErrorAction Stop } | Should -Throw -ErrorId "CopyError,Microsoft.PowerShell.Commands.CopyItemCommand"
-                $Error[0].Exception | Should -BeOfType System.IO.IOException
-                $Error[0].Exception.Data[$selfCopyKey] | Should -Not -BeNullOrEmpty
+                $error[0].Exception | Should -BeOfType System.IO.IOException
+                $error[0].Exception.Data[$selfCopyKey] | Should -Not -BeNullOrEmpty
             }
         }
 
@@ -942,7 +1009,7 @@ Describe "Extended FileSystem Item/Content Cmdlet Provider Tests" -Tags "Feature
         }
 
         It "Verify Filter" {
-            $result = Get-Item -Path "TestDrive:\*" -filter "*2.txt"
+            $result = Get-Item -Path "TestDrive:\*" -Filter "*2.txt"
             $result.Name | Should -BeExactly $testFile2
         }
 
@@ -1044,7 +1111,7 @@ Describe "Extended FileSystem Item/Content Cmdlet Provider Tests" -Tags "Feature
         }
 
         It "Verify Include and Exclude Intersection" {
-            Remove-Item "TestDrive:\*" -Include "*.txt" -exclude "*2*"
+            Remove-Item "TestDrive:\*" -Include "*.txt" -Exclude "*2*"
             $file1 = Get-Item $testFile -ErrorAction SilentlyContinue
             $file2 = Get-Item $testFile2 -ErrorAction SilentlyContinue
             $file1 | Should -BeNullOrEmpty
@@ -1421,7 +1488,7 @@ Describe "Verify sub-directory creation under root" -Tag 'CI','RequireSudoOnUnix
         }
     }
 
-    It "Can create a sub directory under root path" {
+    It "Can create a sub directory under root path" -Skip:$IsMacOs {
         New-Item -Path $dirPath -ItemType Directory -Force > $null
         $dirPath | Should -Exist
     }

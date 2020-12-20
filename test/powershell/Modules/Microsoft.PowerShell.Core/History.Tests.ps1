@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 Describe "History cmdlet test cases" -Tags "CI" {
     Context "Simple History Tests" {
@@ -65,9 +65,9 @@ Describe "History cmdlet test cases" -Tags "CI" {
             "Output"
         }
 
-        $informationPreference = "Continue"
-        $debugPreference = "Continue"
-        $verbosePreference = "Continue"
+        $InformationPreference = "Continue"
+        $DebugPreference = "Continue"
+        $VerbosePreference = "Continue"
         '
 
         $invocationSettings = New-Object System.Management.Automation.PSInvocationSettings
@@ -100,7 +100,7 @@ Describe "History cmdlet test cases" -Tags "CI" {
         $ps = [PowerShell]::Create()
         $null = $ps.AddScript("(Get-Command Get-Process).Visibility = 'Private'").Invoke()
         $ps.Commands.Clear()
-        $null = $ps.AddScript("Get-Process -id $pid")
+        $null = $ps.AddScript("Get-Process -id $PID")
         $null = $ps.Invoke($null, $invocationSettings)
         $ps.Commands.Clear()
         $null = $ps.AddScript("Invoke-History -id 1")
@@ -122,7 +122,48 @@ Describe "History cmdlet test cases" -Tags "CI" {
             EndExecutionTime   = $end
         }
         $history | Add-History
-        $h = Get-History -count 1
+        $h = Get-History -Count 1
         $h.Duration | Should -Be $duration
+    }
+
+    It "Simple recursive invocation of 'Invoke-History' can be detected" {
+        Set-Content -Path $TestDrive/history.csv -Value @'
+#TYPE Microsoft.PowerShell.Commands.HistoryInfo
+"Id","CommandLine","ExecutionStatus","StartExecutionTime","EndExecutionTime","Duration"
+"1","Invoke-History","Completed","7/16/2020 4:33:43 PM","7/16/2020 4:33:43 PM","00:00:00.0724719"
+'@
+        try {
+            $ps = [PowerShell]::Create()
+            $ps.AddScript("Import-Csv $TestDrive/history.csv | Add-History").Invoke() > $null
+            $ps.Commands.Clear()
+            $ps.AddCommand("Invoke-History").Invoke() > $null
+
+            $ps.Streams.Error.Count | Should -BeExactly 1
+            $ps.Streams.Error[0].FullyQualifiedErrorId | Should -BeExactly 'InvokeHistoryLoopDetected,Microsoft.PowerShell.Commands.InvokeHistoryCommand'
+        }
+        finally {
+            $ps.Dispose()
+        }
+    }
+
+    It "Nested recursive invocation of 'Invoke-History' can be detected" {
+        Set-Content -Path $TestDrive/history.csv -Value @'
+#TYPE Microsoft.PowerShell.Commands.HistoryInfo
+"Id","CommandLine","ExecutionStatus","StartExecutionTime","EndExecutionTime","Duration"
+"1","Invoke-History 2","Completed","7/16/2020 9:54:45 PM","7/16/2020 9:54:45 PM","00:00:00.0859151"
+"2","tt 1","Completed","7/16/2020 9:54:50 PM","7/16/2020 9:54:50 PM","00:00:00.1687306"
+'@
+        try {
+            $ps = [PowerShell]::Create()
+            $ps.AddScript("Import-Csv $TestDrive/history.csv | Add-History; Set-Alias -Name tt -Value Invoke-History").Invoke() > $null
+            $ps.Commands.Clear()
+            $ps.AddCommand("Invoke-History").Invoke() > $null
+
+            $ps.Streams.Error.Count | Should -BeExactly 1
+            $ps.Streams.Error[0].FullyQualifiedErrorId | Should -BeExactly 'InvokeHistoryLoopDetected,Microsoft.PowerShell.Commands.InvokeHistoryCommand'
+        }
+        finally {
+            $ps.Dispose()
+        }
     }
 }

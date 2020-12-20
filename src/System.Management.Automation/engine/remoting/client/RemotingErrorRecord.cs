@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
@@ -25,7 +25,7 @@ namespace System.Management.Automation.Runspaces
             }
         }
 
-        private OriginInfo _originInfo;
+        private readonly OriginInfo _originInfo;
 
         /// <summary>
         /// Constructor.
@@ -58,12 +58,11 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         /// <param name="info">Serializer information.</param>
         /// <param name="context">Streaming context.</param>
-        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
-                throw PSTraceSource.NewArgumentNullException("info");
+                throw PSTraceSource.NewArgumentNullException(nameof(info));
             }
 
             base.GetObjectData(info, context);
@@ -143,7 +142,7 @@ namespace System.Management.Automation.Runspaces
 
         private static ProgressRecord Validate(ProgressRecord progressRecord)
         {
-            if (progressRecord == null) throw new ArgumentNullException("progressRecord");
+            if (progressRecord == null) throw new ArgumentNullException(nameof(progressRecord));
             return progressRecord;
         }
     }
@@ -303,7 +302,7 @@ namespace System.Management.Automation.Remoting
         }
 
         [DataMemberAttribute()]
-        private string _computerName;
+        private readonly string _computerName;
 
         /// <summary>
         /// Runspace instance ID.
@@ -318,7 +317,7 @@ namespace System.Management.Automation.Remoting
         }
 
         [DataMemberAttribute()]
-        private Guid _runspaceID;
+        private readonly Guid _runspaceID;
 
         /// <summary>
         /// Error record source instance ID.
@@ -374,4 +373,3 @@ namespace System.Management.Automation.Remoting
         }
     }
 }
-

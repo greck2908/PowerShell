@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -18,7 +18,7 @@ namespace System.Management.Automation
         {
             if (powershell == null)
             {
-                throw PSTraceSource.NewArgumentNullException("powershell");
+                throw PSTraceSource.NewArgumentNullException(nameof(powershell));
             }
 
             CurrentPowerShell = powershell;
@@ -189,7 +189,7 @@ namespace System.Management.Automation
                 if (pso != null)
                 {
                     object baseObject = pso.BaseObject;
-                    if (baseObject != null && !(baseObject is PSCustomObject))
+                    if (baseObject != null && baseObject is not PSCustomObject)
                         result = baseObject.ToString();
                     else
                         result = pso.ToString();

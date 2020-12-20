@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Management.Automation.Provider;
-
-using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -145,7 +143,7 @@ namespace Microsoft.PowerShell.Commands
                         catch (Exception e) // Catch-all OK. 3rd party callout
                         {
                             ProviderInvocationException providerException =
-                               new ProviderInvocationException(
+                               new(
                                    "ProviderContentWriteError",
                                    SessionStateStrings.ProviderContentWriteError,
                                    holder.PathInfo.Provider,
@@ -260,7 +258,7 @@ namespace Microsoft.PowerShell.Commands
 
             // Create the results array
 
-            List<ContentHolder> results = new List<ContentHolder>();
+            List<ContentHolder> results = new();
 
             foreach (PathInfo pathInfo in pathInfos)
             {
@@ -313,7 +311,7 @@ namespace Microsoft.PowerShell.Commands
                     if (writers.Count == 1 && writers[0] != null)
                     {
                         ContentHolder holder =
-                            new ContentHolder(pathInfo, null, writers[0]);
+                            new(pathInfo, null, writers[0]);
 
                         results.Add(holder);
                     }
@@ -333,7 +331,7 @@ namespace Microsoft.PowerShell.Commands
         {
             Collection<PathInfo> pathInfos = ResolvePaths(unfilteredPaths, true, false, currentContext);
 
-            ArrayList paths = new ArrayList();
+            var paths = new List<string>();
 
             foreach (PathInfo pathInfo in pathInfos)
             {
@@ -343,7 +341,7 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-            return (string[])paths.ToArray(typeof(string));
+            return paths.ToArray();
         }
 
         #endregion protected members

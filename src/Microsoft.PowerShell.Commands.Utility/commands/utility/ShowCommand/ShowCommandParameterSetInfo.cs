@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -14,7 +14,8 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
     public class ShowCommandParameterSetInfo
     {
         /// <summary>
-        /// Creates an instance of the ShowCommandParameterSetInfo class based on a CommandParameterSetInfo object.
+        /// Initializes a new instance of the <see cref="ShowCommandParameterSetInfo"/> class
+        /// with the specified <see cref="CommandParameterSetInfo"/>.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -23,7 +24,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             this.Name = other.Name;
@@ -32,7 +33,8 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         }
 
         /// <summary>
-        /// Creates an instance of the ShowCommandParameterSetInfo class based on a PSObject object.
+        /// Initializes a new instance of the <see cref="ShowCommandParameterSetInfo"/> class
+        /// with the specified <see cref="PSObject"/>.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -41,7 +43,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             this.Name = other.Members["Name"].Value as string;
@@ -53,16 +55,16 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         /// <summary>
         /// Gets the name of the parameter set.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// Gets whether the parameter set is the default parameter set.
         /// </summary>
-        public bool IsDefault { get; private set; }
+        public bool IsDefault { get; }
 
         /// <summary>
         /// Gets the parameter information for the parameters in this parameter set.
         /// </summary>
-        public ICollection<ShowCommandParameterInfo> Parameters { get; private set; }
+        public ICollection<ShowCommandParameterInfo> Parameters { get; }
     }
 }

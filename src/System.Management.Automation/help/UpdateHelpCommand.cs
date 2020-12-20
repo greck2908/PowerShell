@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -18,7 +18,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     [Cmdlet(VerbsData.Update, "Help", DefaultParameterSetName = PathParameterSetName,
         SupportsShouldProcess = true,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=210614")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096805")]
     public sealed class UpdateHelpCommand : UpdatableHelpCommandBase
     {
         #region Constructor
@@ -143,9 +143,6 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void BeginProcessing()
         {
-            // Disable Get-Help prompt
-            UpdatableHelpSystem.SetDisablePromptToUpdateHelp();
-
             if (_path == null)
             {
                 // Pull default source path from GP
@@ -351,7 +348,7 @@ namespace Microsoft.PowerShell.Commands
 
             foreach (UpdatableHelpUri contentUri in newHelpInfo.HelpContentUriCollection)
             {
-                Version currentHelpVersion = (currentHelpInfo != null) ? currentHelpInfo.GetCultureVersion(contentUri.Culture) : null;
+                Version currentHelpVersion = currentHelpInfo?.GetCultureVersion(contentUri.Culture);
                 string updateHelpShouldProcessAction = string.Format(CultureInfo.InvariantCulture,
                     HelpDisplayStrings.UpdateHelpShouldProcessActionMessage,
                     module.ModuleName,
@@ -491,7 +488,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="path"></param>
         /// <param name="e"></param>
-        private void ThrowPathMustBeValidContainersException(string path, Exception e)
+        private static void ThrowPathMustBeValidContainersException(string path, Exception e)
         {
             throw new UpdatableHelpSystemException("PathMustBeValidContainers",
                 StringUtil.Format(HelpDisplayStrings.PathMustBeValidContainers, path), ErrorCategory.InvalidArgument,

@@ -1,5 +1,5 @@
 #requires -Version 6.0
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
 class CommitNode {
@@ -12,6 +12,7 @@ class CommitNode {
     [string] $Body
     [string] $PullRequest
     [string] $ChangeLogMessage
+    [string] $ThankYouMessage
     [bool] $IsBreakingChange
 
     CommitNode($hash, $parents, $name, $email, $subject, $body) {
@@ -33,6 +34,10 @@ class CommitNode {
 # We have their names in this array so that we don't need to query GitHub to find out if they are powershell team members.
 $Script:powershell_team = @(
     "Robert Holt"
+    "Travis Plunk"
+    "dependabot-preview[bot]"
+    "Joey Aiello"
+    "Tyler James Leonhardt"
 )
 
 # They are very active contributors, so we keep their email-login mappings here to save a few queries to Github.
@@ -134,8 +139,11 @@ function New-CommitNode
 function Get-ChangeLog
 {
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory = $true)]
         [string]$LastReleaseTag,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ThisReleaseTag,
 
         [Parameter(Mandatory)]
         [string]$Token,
@@ -150,7 +158,10 @@ function Get-ChangeLog
 
     # Find the merge commit that merged the release branch to master.
     $child_merge_commit = Get-ChildMergeCommit -CommitHash $tag_hash
-    $commit_hash, $parent_hashes = $child_merge_commit.Split("||")
+    if($child_merge_commit)
+    {
+        $commit_hash, $parent_hashes = $child_merge_commit.Split("||")
+    }
     # Find the other parent of the merge commit, which represents the original head of master right before merging.
     $other_parent_hash = ($parent_hashes -replace $tag_hash).Trim()
 
@@ -169,7 +180,11 @@ function Get-ChangeLog
         # Find the commits that were only in the release branch, excluding those that were cherry-picked from master branch.
         $new_commits_from_last_release = git --no-pager log --first-parent --cherry-pick --left-only "$tag_hash...$other_parent_hash" --format=$format | New-CommitNode
         # Find the commits that are actually duplicate but having different patch-ids due to resolving conflicts during the cherry-pick.
-        $duplicate_commits = Compare-Object $new_commits_from_last_release $new_commits_from_other_parent -Property PullRequest -ExcludeDifferent -IncludeEqual -PassThru
+        $duplicate_commits = $null
+        if($new_commits_from_last_release -and $new_commits_from_other_parent)
+        {
+            $duplicate_commits = Compare-Object $new_commits_from_last_release $new_commits_from_other_parent -Property PullRequest -ExcludeDifferent -IncludeEqual -PassThru
+        }
         if ($duplicate_commits) {
             $duplicate_pr_numbers = @($duplicate_commits | ForEach-Object -MemberName PullRequest)
             $new_commits_from_other_parent = $new_commits_from_other_parent | Where-Object PullRequest -NotIn $duplicate_pr_numbers
@@ -234,14 +249,17 @@ function Get-ChangeLog
     $clExperimental = @()
 
     foreach ($commit in $new_commits) {
+        Write-Verbose "authorname: $($commit.AuthorName)"
         if ($commit.AuthorEmail.EndsWith("@microsoft.com") -or $powershell_team -contains $commit.AuthorName -or $Script:attribution_ignore_list -contains $commit.AuthorEmail) {
-            $commit.ChangeLogMessage = "- {0}" -f $commit.Subject
+            $commit.ChangeLogMessage = "- {0}" -f (Get-ChangeLogMessage $commit.Subject)
         } else {
             if ($community_login_map.ContainsKey($commit.AuthorEmail)) {
                 $commit.AuthorGitHubLogin = $community_login_map[$commit.AuthorEmail]
             } else {
                 $uri = "https://api.github.com/repos/PowerShell/PowerShell/commits/$($commit.Hash)"
-                $response = Invoke-WebRequest -Uri $uri -Method Get -Headers $header -ErrorAction SilentlyContinue
+                try{
+                    $response = Invoke-WebRequest -Uri $uri -Method Get -Headers $header -ErrorAction Ignore
+                } catch{}
                 if($response)
                 {
                     $content = ConvertFrom-Json -InputObject $response.Content
@@ -249,7 +267,8 @@ function Get-ChangeLog
                     $community_login_map[$commit.AuthorEmail] = $commit.AuthorGitHubLogin
                 }
             }
-            $commit.ChangeLogMessage = "- {0} (Thanks @{1}!)" -f $commit.Subject, $commit.AuthorGitHubLogin
+            $commit.ChangeLogMessage = ("- {0} (Thanks @{1}!)" -f (Get-ChangeLogMessage $commit.Subject), $commit.AuthorGitHubLogin)
+            $commit.ThankYouMessage = ("@{0}" -f ($commit.AuthorGitHubLogin))
         }
 
         if ($commit.IsBreakingChange) {
@@ -262,12 +281,19 @@ function Get-ChangeLog
         }
         catch {
             if ($_.Exception.Response.StatusCode -eq '404') {
-                Write-Warning -Message "Ignoring commit $($commit.Hash) by $($commit.AuthorName), as it does not have a PR."
-                continue
+                $pr = $null
+                #continue
             }
         }
 
-        $clLabel = $pr.labels | Where-Object { $_.Name -match "^CL-"}
+        if($pr)
+        {
+            $clLabel = $pr.labels | Where-Object { $_.Name -match "^CL-"}
+        }
+        else {
+            Write-Warning -Message "Tagging $($commit.Hash) by $($commit.AuthorName), as CL-BuildPackaging as it does not have a PR."
+            $clLabel = [PSCustomObject]@{Name ='CL-BuildPackaging'}
+        }
 
         if ($clLabel.count -gt 1 -and $clLabel.Name -notcontains 'CL-BreakingChange') {
             $multipleLabelsPRs += $pr
@@ -308,24 +334,65 @@ function Get-ChangeLog
         throw "Some PRs are tagged multiple times or have no tags."
     }
 
+    # Write output
+
+    $version = $ThisReleaseTag.TrimStart('v')
+
+    Write-Output "## [${version}] - $(Get-Date -Format yyyy-MM-dd)`n"
+
     PrintChangeLog -clSection $clUntagged -sectionTitle 'UNTAGGED - Please classify'
     PrintChangeLog -clSection $clBreakingChange -sectionTitle 'Breaking Changes'
     PrintChangeLog -clSection $clEngine -sectionTitle 'Engine Updates and Fixes'
     PrintChangeLog -clSection $clExperimental -sectionTitle 'Experimental Features'
-    PrintChangeLog -clSection $clGeneral -sectionTitle 'General Cmdlet Updates and Fixes'
-    PrintChangeLog -clSection $clCodeCleanup -sectionTitle 'Code Cleanup'
     PrintChangeLog -clSection $clPerformance -sectionTitle 'Performance'
+    PrintChangeLog -clSection $clGeneral -sectionTitle 'General Cmdlet Updates and Fixes'
+    PrintChangeLog -clSection $clCodeCleanup -sectionTitle 'Code Cleanup' -Compress
     PrintChangeLog -clSection $clTools -sectionTitle 'Tools'
     PrintChangeLog -clSection $clTest -sectionTitle 'Tests'
-    PrintChangeLog -clSection $clBuildPackage -sectionTitle 'Build and Packaging Improvements'
+    PrintChangeLog -clSection $clBuildPackage -sectionTitle 'Build and Packaging Improvements' -Compress
     PrintChangeLog -clSection $clDocs -sectionTitle 'Documentation and Help Content'
+
+    Write-Output "[${version}]: https://github.com/PowerShell/PowerShell/compare/${LastReleaseTag}...${ThisReleaseTag}`n"
 }
 
-function PrintChangeLog($clSection, $sectionTitle) {
+function PrintChangeLog($clSection, $sectionTitle, [switch] $Compress) {
     if ($clSection.Count -gt 0) {
-        "### $sectionTitle"
-        $clSection | ForEach-Object -MemberName ChangeLogMessage
+        "### $sectionTitle`n"
+
+        if ($Compress) {
+            $items = $clSection.ChangeLogMessage -join "`n"
+            $thankYou = "We thank the following contributors!`n`n"
+            $thankYou += ($clSection.ThankYouMessage | Select-Object -Unique | Where-Object { if($_) { return $true} return $false}) -join ", "
+
+            "<details>`n"
+            "<summary>`n"
+            $thankYou | ConvertFrom-Markdown | Select-Object -ExpandProperty Html
+            "</summary>`n"
+            $items | ConvertFrom-Markdown | Select-Object -ExpandProperty Html
+            "</details>"
+        }
+        else {
+            $clSection | ForEach-Object -MemberName ChangeLogMessage
+        }
         ""
+    }
+}
+
+function Get-ChangeLogMessage
+{
+    param($OriginalMessage)
+
+    switch -regEx ($OriginalMessage)
+    {
+        '^Merged PR (\d*): ' {
+            return $OriginalMessage.replace($Matches.0,'') + " (Internal $($Matches.1))"
+        }
+        '^Build\(deps\): ' {
+            return $OriginalMessage.replace($Matches.0,'')
+        }
+        default {
+            return $OriginalMessage
+        }
     }
 }
 
@@ -346,7 +413,7 @@ function Get-NewOfficalPackage
 {
     param(
         [String]
-        $Path = (Join-path -Path $PSScriptRoot -ChildPath '..\src'),
+        $Path = (Join-Path -Path $PSScriptRoot -ChildPath '..\src'),
         [Switch]
         $IncludeAll
     )
@@ -358,7 +425,7 @@ function Get-NewOfficalPackage
         $file = $_
 
         # parse the csproj
-        [xml] $csprojXml = (Get-content -Raw -Path $_)
+        [xml] $csprojXml = (Get-Content -Raw -Path $_)
 
         # get the package references
         $packages=$csprojXml.Project.ItemGroup.PackageReference
@@ -372,7 +439,7 @@ function Get-NewOfficalPackage
             if ($name)
             {
                 # Get the current package from nuget
-                $versions = find-package -Name $name -Source https://nuget.org/api/v2/  -ErrorAction SilentlyContinue -AllVersions |
+                $versions = Find-Package -Name $name -Source https://nuget.org/api/v2/  -ErrorAction SilentlyContinue -AllVersions |
                     Add-Member -Type ScriptProperty -Name Published -Value { $this.Metadata['published']} -PassThru |
                         Where-Object { Test-IncludePackageVersion -NewVersion $_.Version -Version $package.version}
 
@@ -536,25 +603,25 @@ function Update-PsVersionInCode
         $NextReleaseTag,
 
         [String]
-        $Path = (Join-path -Path $PSScriptRoot -ChildPath '..')
+        $Path = (Join-Path -Path $PSScriptRoot -ChildPath '..')
     )
 
     $metaDataPath = (Join-Path -Path $PSScriptRoot -ChildPath 'metadata.json')
-    $metaData = Get-Content -Path $metaDataPath | convertfrom-json
+    $metaData = Get-Content -Path $metaDataPath | ConvertFrom-Json
     $currentTag = $metaData.StableReleaseTag
 
     $currentVersion = $currentTag -replace '^v'
     $newVersion = $NewReleaseTag -replace '^v'
     $metaData.NextReleaseTag = $NextReleaseTag
-    Set-Content -path $metaDataPath -Encoding ascii -Force -Value ($metaData | convertto-json)
+    Set-Content -Path $metaDataPath -Encoding ascii -Force -Value ($metaData | ConvertTo-Json)
 
     Get-ChildItem -Path $Path -Recurse -File |
         Where-Object {$_.Extension -notin '.icns','.svg' -and $_.NAME -ne 'CHANGELOG.md' -and $_.DirectoryName -notmatch '[\\/]docs|demos[\\/]'} |
             Where-Object {$_ | Select-String -SimpleMatch $currentVersion -List} |
-                Foreach-Object {
+                ForEach-Object {
                     $content = Get-Content -Path $_.FullName -Raw -ReadCount 0
                     $newContent = $content.Replace($currentVersion,$newVersion)
-                    Set-Content -path $_.FullName -Encoding ascii -Force -Value $newContent -NoNewline
+                    Set-Content -Path $_.FullName -Encoding ascii -Force -Value $newContent -NoNewline
                 }
 }
 

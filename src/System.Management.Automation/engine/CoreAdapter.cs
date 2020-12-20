@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.Concurrent;
@@ -1395,8 +1395,8 @@ namespace System.Management.Automation
             // We also skip the optimization if the number of arguments and parameters is different
             // so we let the loop deal with possible optional parameters.
             if ((methods.Length == 1) &&
-                (methods[0].hasVarArgs == false) &&
-                (methods[0].isGeneric == false) &&
+                (!methods[0].hasVarArgs) &&
+                (!methods[0].isGeneric) &&
                 (methods[0].method == null || !(methods[0].method.DeclaringType.IsGenericTypeDefinition)) &&
                 // generic methods need to be double checked in a loop below - generic methods can be rejected if type inference fails
                 (methods[0].parameters.Length == arguments.Length))
@@ -1658,8 +1658,7 @@ namespace System.Management.Automation
                     // It still might be an PSObject wrapping an PSReference
                     if (originalArgumentReference == null)
                     {
-                        PSObject originalArgumentObj = originalArgument as PSObject;
-                        if (originalArgumentObj == null)
+                        if (!(originalArgument is PSObject originalArgumentObj))
                         {
                             continue;
                         }
@@ -1856,7 +1855,7 @@ namespace System.Management.Automation
             {
                 if (resultType == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException("resultType");
+                    throw PSTraceSource.NewArgumentNullException(nameof(resultType));
                 }
 
                 bool isArgumentByRef;
@@ -1911,7 +1910,7 @@ namespace System.Management.Automation
             {
                 if (resultType == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException("resultType");
+                    throw PSTraceSource.NewArgumentNullException(nameof(resultType));
                 }
 
                 PSObject mshObj = valueToConvert as PSObject;
@@ -1983,13 +1982,39 @@ namespace System.Management.Automation
 
         #endregion base
     }
+
+    /// <summary>
+    /// The abstract cache entry type.
+    /// All specific cache entry types should derive from it.
+    /// </summary>
+    internal abstract class CacheEntry
+    {
+        /// <summary>
+        /// Gets the boolean value to indicate if the member is hidden.
+        /// </summary>
+        /// <remarks>
+        /// Currently, we only check the 'HiddenAttribute' declared for properties and methods,
+        /// because it can be done for them through the 'hidden' keyword in PowerShell Class.
+        ///
+        /// We can't currently write a parameterized property in a PowerShell class so it's not too important
+        /// to check for the 'HiddenAttribute' for parameterized properties. But if someone added the attribute
+        /// to their C#, it'd be good to set this property correctly.
+        /// </remarks>
+        internal virtual bool IsHidden => false;
+    }
+
     /// <summary>
     /// Ordered and case insensitive hashtable.
     /// </summary>
     internal class CacheTable
     {
+        /// <summary>
+        /// An object collection is used to help make populating method cache table more efficient
+        /// <see cref="DotNetAdapter.PopulateMethodReflectionTable(Type, CacheTable, BindingFlags)"/>.
+        /// </summary>
         internal Collection<object> memberCollection;
-        private Dictionary<string, int> _indexes;
+        private readonly Dictionary<string, int> _indexes;
+
         internal CacheTable()
         {
             memberCollection = new Collection<object>();
@@ -2012,17 +2037,30 @@ namespace System.Management.Automation
                     return null;
                 }
 
-                return this.memberCollection[indexObj];
+                return memberCollection[indexObj];
             }
         }
 
+        /// <summary>
+        /// Get the first non-hidden member that satisfies the predicate.
+        /// </summary>
+        /// <remarks>
+        /// Hidden members are not returned for any fuzzy searches (searching by 'match' or enumerating a collection).
+        /// A hidden member is returned only if the member name is explicitly looked for.
+        /// </remarks>
         internal object GetFirstOrDefault(MemberNamePredicate predicate)
         {
             foreach (var entry in _indexes)
             {
                 if (predicate(entry.Key))
                 {
-                    return this.memberCollection[entry.Value];
+                    object member = memberCollection[entry.Value];
+                    if (member is CacheEntry cacheEntry && cacheEntry.IsHidden)
+                    {
+                        continue;
+                    }
+
+                    return member;
                 }
             }
 
@@ -2041,6 +2079,7 @@ namespace System.Management.Automation
     {
         internal MethodBase method;
         private string _cachedMethodDefinition;
+
         internal string methodDefinition
         {
             get
@@ -2062,7 +2101,9 @@ namespace System.Management.Automation
         internal bool isGeneric;
 
         private bool _useReflection;
+
         private delegate object MethodInvoker(object target, object[] arguments);
+
         private MethodInvoker _methodInvoker;
 
         /// <summary>
@@ -2101,7 +2142,7 @@ namespace System.Management.Automation
                     // This inconsistent behavior affects OneCore powershell because we are using the extension method here when compiling
                     // against CoreCLR. So we need to add a null check until this is fixed in CLR.
                     var paramArrayAttrs = lastParameter.GetCustomAttributes(typeof(ParamArrayAttribute), false);
-                    if (paramArrayAttrs != null && paramArrayAttrs.Any())
+                    if (paramArrayAttrs != null && paramArrayAttrs.Length > 0)
                     {
                         this.hasVarArgs = true;
                         this.parameters[parametersLength - 1].isParamArray = true;
@@ -2175,7 +2216,7 @@ namespace System.Management.Automation
             return method.Invoke(target, arguments);
         }
 
-        private static OpCode[] s_ldc = new OpCode[] {
+        private static readonly OpCode[] s_ldc = new OpCode[] {
             OpCodes.Ldc_I4_0, OpCodes.Ldc_I4_1, OpCodes.Ldc_I4_2, OpCodes.Ldc_I4_3, OpCodes.Ldc_I4_4,
             OpCodes.Ldc_I4_5, OpCodes.Ldc_I4_6, OpCodes.Ldc_I4_7, OpCodes.Ldc_I4_8
         };
@@ -2516,9 +2557,11 @@ namespace System.Management.Automation
 
         private const BindingFlags instanceBindingFlags = (BindingFlags.FlattenHierarchy | BindingFlags.Public |
                                                               BindingFlags.IgnoreCase | BindingFlags.Instance);
+
         private const BindingFlags staticBindingFlags = (BindingFlags.FlattenHierarchy | BindingFlags.Public |
                                                               BindingFlags.IgnoreCase | BindingFlags.Static);
-        private bool _isStatic;
+
+        private readonly bool _isStatic;
 
         internal DotNetAdapter() { }
 
@@ -2531,25 +2574,25 @@ namespace System.Management.Automation
         /// <summary>
         /// CLR reflection property cache for instance properties.
         /// </summary>
-        private static Dictionary<Type, CacheTable> s_instancePropertyCacheTable = new Dictionary<Type, CacheTable>();
+        private static readonly Dictionary<Type, CacheTable> s_instancePropertyCacheTable = new Dictionary<Type, CacheTable>();
 
         // This static is thread safe based on the lock in GetStaticPropertyReflectionTable
         /// <summary>
         /// CLR reflection property cache for static properties.
         /// </summary>
-        private static Dictionary<Type, CacheTable> s_staticPropertyCacheTable = new Dictionary<Type, CacheTable>();
+        private static readonly Dictionary<Type, CacheTable> s_staticPropertyCacheTable = new Dictionary<Type, CacheTable>();
 
         // This static is thread safe based on the lock in GetInstanceMethodReflectionTable
         /// <summary>
         /// CLR reflection method cache for instance methods.
         /// </summary>
-        private static Dictionary<Type, CacheTable> s_instanceMethodCacheTable = new Dictionary<Type, CacheTable>();
+        private static readonly Dictionary<Type, CacheTable> s_instanceMethodCacheTable = new Dictionary<Type, CacheTable>();
 
         // This static is thread safe based on the lock in GetStaticMethodReflectionTable
         /// <summary>
         /// CLR reflection method cache for static methods.
         /// </summary>
-        private static Dictionary<Type, CacheTable> s_staticMethodCacheTable = new Dictionary<Type, CacheTable>();
+        private static readonly Dictionary<Type, CacheTable> s_staticMethodCacheTable = new Dictionary<Type, CacheTable>();
 
         // This static is thread safe based on the lock in GetInstanceMethodReflectionTable
         /// <summary>
@@ -2565,9 +2608,9 @@ namespace System.Management.Automation
         private static readonly Dictionary<Type, Dictionary<string, EventCacheEntry>> s_staticEventCacheTable
             = new Dictionary<Type, Dictionary<string, EventCacheEntry>>();
 
-        internal class MethodCacheEntry
+        internal class MethodCacheEntry : CacheEntry
         {
-            internal MethodInformation[] methodInformationStructures;
+            internal readonly MethodInformation[] methodInformationStructures;
             /// <summary>
             /// Cache delegate to the ctor of PSMethod&lt;&gt; with a template parameter derived from the methodInformationStructures.
             /// </summary>
@@ -2585,9 +2628,34 @@ namespace System.Management.Automation
                     return methodInformationStructures[i];
                 }
             }
+
+            private bool? _isHidden;
+
+            internal override bool IsHidden
+            {
+                get
+                {
+                    if (_isHidden == null)
+                    {
+                        bool hasHiddenAttribute = false;
+                        foreach (var method in methodInformationStructures)
+                        {
+                            if (method.method.GetCustomAttributes(typeof(HiddenAttribute), inherit: false).Length != 0)
+                            {
+                                hasHiddenAttribute = true;
+                                break;
+                            }
+                        }
+
+                        _isHidden = hasHiddenAttribute;
+                    }
+
+                    return _isHidden.Value;
+                }
+            }
         }
 
-        internal class EventCacheEntry
+        internal class EventCacheEntry : CacheEntry
         {
             internal EventInfo[] events;
 
@@ -2597,7 +2665,7 @@ namespace System.Management.Automation
             }
         }
 
-        internal class ParameterizedPropertyCacheEntry
+        internal class ParameterizedPropertyCacheEntry : CacheEntry
         {
             internal MethodInformation[] getterInformation;
             internal MethodInformation[] setterInformation;
@@ -2653,7 +2721,7 @@ namespace System.Management.Automation
 
                     definition.Append(" {");
                     definition.Append(extraDefinition);
-                    definition.Append("}");
+                    definition.Append('}');
                     definitionArray.Add(definition.ToString());
                 }
 
@@ -2676,9 +2744,10 @@ namespace System.Management.Automation
             }
         }
 
-        internal class PropertyCacheEntry
+        internal class PropertyCacheEntry : CacheEntry
         {
             internal delegate object GetterDelegate(object instance);
+
             internal delegate void SetterDelegate(object instance, object setValue);
 
             internal PropertyCacheEntry(PropertyInfo property)
@@ -2916,7 +2985,23 @@ namespace System.Management.Automation
             internal bool isStatic;
             internal Type propertyType;
 
+            private bool? _isHidden;
+
+            internal override bool IsHidden
+            {
+                get
+                {
+                    if (_isHidden == null)
+                    {
+                        _isHidden = member.GetCustomAttributes(typeof(HiddenAttribute), inherit: false).Length != 0;
+                    }
+
+                    return _isHidden.Value;
+                }
+            }
+
             private AttributeCollection _attributes;
+
             internal AttributeCollection Attributes
             {
                 get
@@ -3578,8 +3663,7 @@ namespace System.Management.Automation
                 case null:
                     return null;
                 case PropertyCacheEntry cacheEntry when lookingForProperties:
-                    var isHidden = cacheEntry.member.GetCustomAttributes(typeof(HiddenAttribute), false).Any();
-                    return new PSProperty(cacheEntry.member.Name, this, obj, cacheEntry) { IsHidden = isHidden } as T;
+                    return new PSProperty(cacheEntry.member.Name, this, obj, cacheEntry) { IsHidden = cacheEntry.IsHidden } as T;
                 case ParameterizedPropertyCacheEntry paramCacheEntry when lookingForParameterizedProperties:
 
                     // TODO: check for HiddenAttribute
@@ -3612,17 +3696,8 @@ namespace System.Management.Automation
 
             var isCtor = methods[0].method is ConstructorInfo;
             bool isSpecial = !isCtor && methods[0].method.IsSpecialName;
-            bool isHidden = false;
-            foreach (var method in methods.methodInformationStructures)
-            {
-                if (method.method.GetCustomAttributes(typeof(HiddenAttribute), false).Any())
-                {
-                    isHidden = true;
-                    break;
-                }
-            }
 
-            return PSMethod.Create(methods[0].method.Name, this, obj, methods, isSpecial, isHidden) as T;
+            return PSMethod.Create(methods[0].method.Name, this, obj, methods, isSpecial, methods.IsHidden) as T;
         }
 
         internal T GetDotNetProperty<T>(object obj, string propertyName) where T : PSMemberInfo
@@ -3712,10 +3787,13 @@ namespace System.Management.Automation
                     {
                         if (!ignoreDuplicates || (members[propertyEntry.member.Name] == null))
                         {
-                            var isHidden = propertyEntry.member.GetCustomAttributes(typeof(HiddenAttribute), false).Any();
-                            members.Add(new PSProperty(propertyEntry.member.Name, this,
-                                obj, propertyEntry)
-                            { IsHidden = isHidden } as T);
+                            members.Add(
+                                new PSProperty(
+                                    name: propertyEntry.member.Name,
+                                    adapter: this,
+                                    baseObject: obj,
+                                    adapterData: propertyEntry)
+                                { IsHidden = propertyEntry.IsHidden } as T);
                         }
                     }
                 }
@@ -3754,17 +3832,7 @@ namespace System.Management.Automation
                 if (!ignoreDuplicates || (members[name] == null))
                 {
                     bool isSpecial = !isCtor && method[0].method.IsSpecialName;
-                    bool isHidden = false;
-                    foreach (var m in method.methodInformationStructures)
-                    {
-                        if (m.method.GetCustomAttributes(typeof(HiddenAttribute), false).Any())
-                        {
-                            isHidden = true;
-                            break;
-                        }
-                    }
-
-                    members.Add(PSMethod.Create(name, this, obj, method, isSpecial, isHidden) as T);
+                    members.Add(PSMethod.Create(name, this, obj, method, isSpecial, method.IsHidden) as T);
                 }
             }
         }
@@ -3810,8 +3878,7 @@ namespace System.Management.Automation
 
         private static bool PropertyIsStatic(PSProperty property)
         {
-            PropertyCacheEntry entry = property.adapterData as PropertyCacheEntry;
-            if (entry == null)
+            if (!(property.adapterData is PropertyCacheEntry entry))
             {
                 return false;
             }
@@ -3827,7 +3894,7 @@ namespace System.Management.Automation
 
         internal override bool CanSiteBinderOptimize(MemberTypes typeToOperateOn) { return true; }
 
-        private static ConcurrentDictionary<Type, ConsolidatedString> s_typeToTypeNameDictionary =
+        private static readonly ConcurrentDictionary<Type, ConsolidatedString> s_typeToTypeNameDictionary =
             new ConcurrentDictionary<Type, ConsolidatedString>();
 
         internal static ConsolidatedString GetInternedTypeNameHierarchy(Type type)
@@ -3927,7 +3994,7 @@ namespace System.Management.Automation
             }
 
             returnValue.Append(PropertyType(property, forDisplay: true));
-            returnValue.Append(" ");
+            returnValue.Append(' ');
             returnValue.Append(property.Name);
             returnValue.Append(" {");
             if (PropertyIsGettable(property))
@@ -3940,7 +4007,7 @@ namespace System.Management.Automation
                 returnValue.Append("set;");
             }
 
-            returnValue.Append("}");
+            returnValue.Append('}');
             return returnValue.ToString();
         }
 
@@ -4347,7 +4414,7 @@ namespace System.Management.Automation
             if (method != null)
             {
                 builder.Append(ToStringCodeMethods.Type(method.ReturnType));
-                builder.Append(" ");
+                builder.Append(' ');
             }
             else
             {
@@ -4355,20 +4422,20 @@ namespace System.Management.Automation
                 if (ctorInfo != null)
                 {
                     builder.Append(ToStringCodeMethods.Type(ctorInfo.DeclaringType));
-                    builder.Append(" ");
+                    builder.Append(' ');
                 }
             }
 
             if (methodEntry.DeclaringType.IsInterface)
             {
                 builder.Append(ToStringCodeMethods.Type(methodEntry.DeclaringType, dropNamespaces: true));
-                builder.Append(".");
+                builder.Append('.');
             }
 
             builder.Append(memberName ?? methodEntry.Name);
             if (methodEntry.IsGenericMethodDefinition)
             {
-                builder.Append("[");
+                builder.Append('[');
 
                 Type[] genericArgs = methodEntry.GetGenericArguments();
                 for (int i = 0; i < genericArgs.Length; i++)
@@ -4378,10 +4445,10 @@ namespace System.Management.Automation
                     builder.Append(ToStringCodeMethods.Type(genericArgs[i]));
                 }
 
-                builder.Append("]");
+                builder.Append(']');
             }
 
-            builder.Append("(");
+            builder.Append('(');
             System.Reflection.ParameterInfo[] parameters = methodEntry.GetParameters();
             int parametersLength = parameters.Length - parametersToIgnore;
             if (parametersLength > 0)
@@ -4405,12 +4472,12 @@ namespace System.Management.Automation
                         // This inconsistent behavior affects OneCore powershell because we are using the extension method here when compiling
                         // against CoreCLR. So we need to add a null check until this is fixed in CLR.
                         var paramArrayAttrs = parameter.GetCustomAttributes(typeof(ParamArrayAttribute), false);
-                        if (paramArrayAttrs != null && paramArrayAttrs.Any())
+                        if (paramArrayAttrs != null && paramArrayAttrs.Length > 0)
                             builder.Append("Params ");
                     }
 
                     builder.Append(ToStringCodeMethods.Type(parameterType));
-                    builder.Append(" ");
+                    builder.Append(' ');
                     builder.Append(parameter.Name);
                     builder.Append(", ");
                 }
@@ -4418,7 +4485,7 @@ namespace System.Management.Automation
                 builder.Remove(builder.Length - 2, 2);
             }
 
-            builder.Append(")");
+            builder.Append(')');
 
             return builder.ToString();
         }
@@ -4688,7 +4755,8 @@ namespace System.Management.Automation
     /// </summary>
     internal class DotNetAdapterWithComTypeName : DotNetAdapter
     {
-        private ComTypeInfo _comTypeInfo;
+        private readonly ComTypeInfo _comTypeInfo;
+
         internal DotNetAdapterWithComTypeName(ComTypeInfo comTypeInfo)
         {
             _comTypeInfo = comTypeInfo;
@@ -5187,9 +5255,9 @@ namespace System.Management.Automation
                     if (firstType == null)
                     {
                         firstType = new StringBuilder(baseType);
-                        firstType.Append("#");
+                        firstType.Append('#');
                         firstType.Append(node.NamespaceURI);
-                        firstType.Append("#");
+                        firstType.Append('#');
                         firstType.Append(node.LocalName);
                         yield return firstType.ToString();
                     }
@@ -5872,7 +5940,7 @@ namespace System.Management.Automation
 
             using (s_tracer.TraceScope("Inferring type parameters for the following method: {0}", genericMethod))
             {
-                if (PSTraceSourceOptions.WriteLine == (s_tracer.Options & PSTraceSourceOptions.WriteLine))
+                if ((s_tracer.Options & PSTraceSourceOptions.WriteLine) == PSTraceSourceOptions.WriteLine)
                 {
                     s_tracer.WriteLine(
                         "Types of method arguments: {0}",

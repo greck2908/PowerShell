@@ -1,8 +1,8 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.Management.Automation;
 using System.Management.Automation.Host;
 using System.Management.Automation.Internal;
@@ -15,14 +15,14 @@ namespace Microsoft.PowerShell.Commands
     /// Null sink to absorb pipeline output.
     /// </summary>
     [CmdletAttribute("Out", "Null", SupportsShouldProcess = false,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113366", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096792", RemotingCapability = RemotingCapability.None)]
     public class OutNullCommand : PSCmdlet
     {
         /// <summary>
         /// This parameter specifies the current pipeline object.
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { set; get; } = AutomationNull.Value;
+        public PSObject InputObject { get; set; } = AutomationNull.Value;
 
         /// <summary>
         /// Do nothing.
@@ -40,7 +40,7 @@ namespace Microsoft.PowerShell.Commands
     /// powershell host at the end of the pipeline as the
     /// default sink (display to console screen)
     /// </summary>
-    [Cmdlet(VerbsData.Out, "Default", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113362", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.Out, "Default", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096486", RemotingCapability = RemotingCapability.None)]
     public class OutDefaultCommand : FrontEndCommandBase
     {
         /// <summary>
@@ -88,7 +88,7 @@ namespace Microsoft.PowerShell.Commands
 
             if (Context.CurrentCommandProcessor.CommandRuntime.OutVarList != null)
             {
-                _outVarResults = new ArrayList();
+                _outVarResults = new List<PSObject>();
             }
         }
 
@@ -109,11 +109,10 @@ namespace Microsoft.PowerShell.Commands
                 object inputObjectBase = PSObject.Base(InputObject);
 
                 // Ignore errors and formatting records, as those can't be captured
-                if (
-                    (inputObjectBase != null) &&
-                    (!(inputObjectBase is ErrorRecord)) &&
-                    (!inputObjectBase.GetType().FullName.StartsWith(
-                        "Microsoft.PowerShell.Commands.Internal.Format", StringComparison.OrdinalIgnoreCase)))
+                if (inputObjectBase != null &&
+                    inputObjectBase is not ErrorRecord &&
+                    !inputObjectBase.GetType().FullName.StartsWith(
+                        "Microsoft.PowerShell.Commands.Internal.Format", StringComparison.OrdinalIgnoreCase))
                 {
                     _outVarResults.Add(InputObject);
                 }
@@ -132,7 +131,7 @@ namespace Microsoft.PowerShell.Commands
             if ((_outVarResults != null) && (_outVarResults.Count > 0))
             {
                 Context.CurrentCommandProcessor.CommandRuntime.OutVarList.Clear();
-                foreach (Object item in _outVarResults)
+                foreach (object item in _outVarResults)
                 {
                     Context.CurrentCommandProcessor.CommandRuntime.OutVarList.Add(item);
                 }
@@ -162,14 +161,14 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private ArrayList _outVarResults = null;
+        private List<PSObject> _outVarResults = null;
         private IDisposable _transcribeOnlyCookie = null;
     }
 
     /// <summary>
     /// Implementation for the out-host command.
     /// </summary>
-    [Cmdlet(VerbsData.Out, "Host", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113365", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.Out, "Host", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096863", RemotingCapability = RemotingCapability.None)]
     public class OutHostCommand : FrontEndCommandBase
     {
         #region Command Line Parameters

@@ -57,7 +57,7 @@ namespace System.Management.Automation.Interpreter
 
         public bool InClosureOrBoxed
         {
-            get { return InClosure | IsBoxed; }
+            get { return InClosure || IsBoxed; }
         }
 
         internal LocalVariable(int index, bool closure, bool boxed)
@@ -78,7 +78,7 @@ namespace System.Management.Automation.Interpreter
         }
     }
 
-    internal struct LocalDefinition
+    internal readonly struct LocalDefinition
     {
         private readonly int _index;
         private readonly ParameterExpression _parameter;

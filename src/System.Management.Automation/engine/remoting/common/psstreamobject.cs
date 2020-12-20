@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Runspaces;
@@ -75,7 +75,9 @@ namespace System.Management.Automation.Remoting.Internal
         /// <summary>
         /// </summary>
         public PSStreamObjectType ObjectType { get; set; }
+
         internal object Value { get; set; }
+
         internal Guid Id { get; set; }
 
         internal PSStreamObject(PSStreamObjectType objectType, object value, Guid id)
@@ -489,7 +491,7 @@ namespace System.Management.Automation.Remoting.Internal
         internal static string CreateInformationalMessage(Guid instanceId, string message)
         {
             var newMessage = new StringBuilder(instanceId.ToString());
-            newMessage.Append(":");
+            newMessage.Append(':');
             newMessage.Append(message);
             return newMessage.ToString();
         }

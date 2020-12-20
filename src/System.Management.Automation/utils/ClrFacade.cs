@@ -1,25 +1,17 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Language;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
 using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Management.Automation
 {
@@ -58,9 +50,36 @@ namespace System.Management.Automation
         /// </param>
         internal static IEnumerable<Assembly> GetAssemblies(string namespaceQualifiedTypeName = null)
         {
-            return PSAssemblyLoadContext.GetAssembly(namespaceQualifiedTypeName) ??
-                   AppDomain.CurrentDomain.GetAssemblies().Where(a =>
-                       !a.FullName.StartsWith(TypeDefiner.DynamicClassAssemblyFullNamePrefix, StringComparison.Ordinal));
+            return PSAssemblyLoadContext.GetAssembly(namespaceQualifiedTypeName) ?? GetPSVisibleAssemblies();
+        }
+
+        /// <summary>
+        /// Return assemblies from the default load context and the 'individual' load contexts.
+        /// The 'individual' load contexts are the ones holding assemblies loaded via 'Assembly.Load(byte[])' and 'Assembly.LoadFile'.
+        /// Assemblies loaded in any custom load contexts are not consider visible to PowerShell to avoid type identity issues.
+        /// </summary>
+        private static IEnumerable<Assembly> GetPSVisibleAssemblies()
+        {
+            const string IndividualAssemblyLoadContext = "System.Runtime.Loader.IndividualAssemblyLoadContext";
+
+            foreach (Assembly assembly in AssemblyLoadContext.Default.Assemblies)
+            {
+                if (!assembly.FullName.StartsWith(TypeDefiner.DynamicClassAssemblyFullNamePrefix, StringComparison.Ordinal))
+                {
+                    yield return assembly;
+                }
+            }
+
+            foreach (AssemblyLoadContext context in AssemblyLoadContext.All)
+            {
+                if (IndividualAssemblyLoadContext.Equals(context.GetType().FullName, StringComparison.Ordinal))
+                {
+                    foreach (Assembly assembly in context.Assemblies)
+                    {
+                        yield return assembly;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -182,8 +201,19 @@ namespace System.Management.Automation
         /// </remarks>
         private static SecurityZone MapSecurityZone(string filePath)
         {
+            // WSL introduces a new filesystem path to access the Linux filesystem from Windows, like '\\wsl$\ubuntu'.
+            // If the given file path is such a special case, we consider it's in 'MyComputer' zone.
+            if (filePath.StartsWith(Utils.WslRootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return SecurityZone.MyComputer;
+            }
+
             SecurityZone reval = ReadFromZoneIdentifierDataStream(filePath);
-            if (reval != SecurityZone.NoZone) { return reval; }
+            if (reval != SecurityZone.NoZone)
+            {
+                return reval;
+            }
+
             // If it reaches here, then we either couldn't get the ZoneId information, or the ZoneId is invalid.
             // In this case, we try to determine the SecurityZone by analyzing the file path.
             Uri uri = new Uri(filePath);
@@ -204,7 +234,7 @@ namespace System.Management.Automation
                 // has 'dot' in it, the file will be treated as in Internet security zone. Otherwise, it's
                 // in Intranet security zone.
                 string hostName = uri.Host;
-                return hostName.IndexOf('.') == -1 ? SecurityZone.Intranet : SecurityZone.Internet;
+                return hostName.Contains('.') ? SecurityZone.Internet : SecurityZone.Intranet;
             }
 
             string root = Path.GetPathRoot(filePath);
@@ -319,12 +349,12 @@ namespace System.Management.Automation
 
             string dmtfDateTime = date.Year.ToString(frmInt32).PadLeft(4, '0');
 
-            dmtfDateTime = (dmtfDateTime + date.Month.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Day.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Hour.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Minute.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Second.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + ".");
+            dmtfDateTime += date.Month.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Day.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Hour.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Minute.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Second.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += ".";
 
             // Construct a DateTime with with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
@@ -338,9 +368,9 @@ namespace System.Management.Automation
                 strMicrosec = strMicrosec.Substring(0, 6);
             }
 
-            dmtfDateTime = dmtfDateTime + strMicrosec.PadLeft(6, '0');
+            dmtfDateTime += strMicrosec.PadLeft(6, '0');
             // adding the UTC offset
-            dmtfDateTime = dmtfDateTime + UtcString;
+            dmtfDateTime += UtcString;
 
             return dmtfDateTime;
 #else

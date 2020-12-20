@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -68,9 +68,9 @@ namespace System.Management.Automation
     /// Type used to define a parameter on a cmdlet script of function that
     /// can only be used as a switch.
     /// </summary>
-    public struct SwitchParameter
+    public readonly struct SwitchParameter
     {
-        private bool _isPresent;
+        private readonly bool _isPresent;
         /// <summary>
         /// Returns true if the parameter was specified on the command line, false otherwise.
         /// </summary>
@@ -233,9 +233,9 @@ namespace System.Management.Automation
     /// </summary>
     public class CommandInvocationIntrinsics
     {
-        private ExecutionContext _context;
-        private PSCmdlet _cmdlet;
-        private MshCommandRuntime _commandRuntime;
+        private readonly ExecutionContext _context;
+        private readonly PSCmdlet _cmdlet;
+        private readonly MshCommandRuntime _commandRuntime;
 
         internal CommandInvocationIntrinsics(ExecutionContext context, PSCmdlet cmdlet)
         {
@@ -388,7 +388,7 @@ namespace System.Management.Automation
                     SearchResolutionOptions.None,
                     CommandTypes.Cmdlet,
                     context);
-            do
+            while (true)
             {
                 try
                 {
@@ -419,7 +419,7 @@ namespace System.Management.Automation
                 }
 
                 current = ((IEnumerator)searcher).Current as CmdletInfo;
-            } while (true);
+            }
 
             return current;
         }
@@ -435,7 +435,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(cmdletTypeName))
             {
-                throw PSTraceSource.NewArgumentNullException("cmdletTypeName");
+                throw PSTraceSource.NewArgumentNullException(nameof(cmdletTypeName));
             }
 
             Exception e = null;
@@ -486,7 +486,7 @@ namespace System.Management.Automation
         public List<CmdletInfo> GetCmdlets(string pattern)
         {
             if (pattern == null)
-                throw PSTraceSource.NewArgumentNullException("pattern");
+                throw PSTraceSource.NewArgumentNullException(nameof(pattern));
 
             List<CmdletInfo> cmdlets = new List<CmdletInfo>();
 
@@ -497,7 +497,7 @@ namespace System.Management.Automation
                     SearchResolutionOptions.CommandNameIsPattern,
                     CommandTypes.Cmdlet,
                     _context);
-            do
+            while (true)
             {
                 try
                 {
@@ -530,7 +530,7 @@ namespace System.Management.Automation
                 current = ((IEnumerator)searcher).Current as CmdletInfo;
                 if (current != null)
                     cmdlets.Add(current);
-            } while (true);
+            }
 
             return cmdlets;
         }
@@ -548,7 +548,7 @@ namespace System.Management.Automation
         {
             if (name == null)
             {
-                throw PSTraceSource.NewArgumentNullException("name");
+                throw PSTraceSource.NewArgumentNullException(nameof(name));
             }
 
             List<string> commands = new List<string>();
@@ -608,7 +608,7 @@ namespace System.Management.Automation
         {
             if (name == null)
             {
-                throw PSTraceSource.NewArgumentNullException("name");
+                throw PSTraceSource.NewArgumentNullException(nameof(name));
             }
 
             SearchResolutionOptions options = nameIsPattern ?
@@ -631,7 +631,7 @@ namespace System.Management.Automation
                 searcher.CommandOrigin = commandOrigin.Value;
             }
 
-            do
+            while (true)
             {
                 try
                 {
@@ -666,7 +666,7 @@ namespace System.Management.Automation
                 {
                     yield return commandInfo;
                 }
-            } while (true);
+            }
         }
 
         /// <summary>
@@ -707,12 +707,12 @@ namespace System.Management.Automation
         {
             if (scriptBlock == null)
             {
-                throw PSTraceSource.NewArgumentNullException("scriptBlock");
+                throw PSTraceSource.NewArgumentNullException(nameof(scriptBlock));
             }
 
             if (sessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException("sessionState");
+                throw PSTraceSource.NewArgumentNullException(nameof(sessionState));
             }
 
             SessionStateInternal _oldSessionState = _context.EngineSessionState;
@@ -745,7 +745,7 @@ namespace System.Management.Automation
         {
             if (scriptBlock == null)
             {
-                throw PSTraceSource.NewArgumentNullException("scriptBlock");
+                throw PSTraceSource.NewArgumentNullException(nameof(scriptBlock));
             }
 
             // Force the current runspace onto the callers thread - this is needed
@@ -784,7 +784,7 @@ namespace System.Management.Automation
             PipelineResultTypes writeToPipeline, IList input, params object[] args)
         {
             if (script == null)
-                throw new ArgumentNullException("script");
+                throw new ArgumentNullException(nameof(script));
 
             // Compile the script text into an executable script block.
             ScriptBlock sb = ScriptBlock.Create(_context, script);
@@ -956,7 +956,7 @@ namespace System.Management.Automation
         /// <summary>
         /// If the cmdlet declares paging support (via <see cref="CmdletCommonMetadataAttribute.SupportsPaging"/>),
         /// then <see cref="PagingParameters"/> property contains arguments of the paging parameters.
-        /// Otherwise <see cref="PagingParameters"/> property is <c>null</c>.
+        /// Otherwise <see cref="PagingParameters"/> property is <see langword="null"/>.
         /// </summary>
         public PagingParameters PagingParameters
         {
@@ -999,7 +999,7 @@ namespace System.Management.Automation
             {
                 using (PSTransactionManager.GetEngineProtectionScope())
                 {
-                    return _invokeCommand ?? (_invokeCommand = new CommandInvocationIntrinsics(Context, this));
+                    return _invokeCommand ??= new CommandInvocationIntrinsics(Context, this);
                 }
             }
         }
@@ -1009,4 +1009,3 @@ namespace System.Management.Automation
 
     }
 }
-

@@ -1,8 +1,7 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 #if CORECLR
-using System.ComponentModel;
 
 namespace System.Diagnostics
 {
@@ -29,8 +28,8 @@ namespace System.Diagnostics
     }
 
     /// <summary>
-    /// Specifies the formula used to calculate the <see cref="M:System.Diagnostics.PerformanceCounter.NextValue" />
-    /// method for a <see cref="T:System.Diagnostics.PerformanceCounter" /> instance.
+    /// Specifies the formula used to calculate the <see cref="M:System.Diagnostics.PerformanceCounter.NextValue"/>
+    /// method for a <see cref="T:System.Diagnostics.PerformanceCounter"/> instance.
     /// </summary>
     /// <filterpriority>2</filterpriority>
     public enum PerformanceCounterType

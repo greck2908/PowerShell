@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,18 +20,29 @@ namespace System.Management.Automation
         // This is how we can tell if we're trying to complete part of something (like a member)
         // or complete an argument, where TokenBeforeCursor could be a parameter name.
         internal Token TokenAtCursor { get; set; }
+
         internal Token TokenBeforeCursor { get; set; }
+
         internal IScriptPosition CursorPosition { get; set; }
 
         internal PowerShellExecutionHelper Helper { get; set; }
+
         internal Hashtable Options { get; set; }
+
         internal Dictionary<string, ScriptBlock> CustomArgumentCompleters { get; set; }
+
         internal Dictionary<string, ScriptBlock> NativeArgumentCompleters { get; set; }
+
         internal string WordToComplete { get; set; }
+
         internal int ReplacementIndex { get; set; }
+
         internal int ReplacementLength { get; set; }
+
         internal ExecutionContext ExecutionContext { get; set; }
+
         internal PseudoBindingInfo PseudoBindingInfo { get; set; }
+
         internal TypeInferenceContext TypeInferenceContext { get; set; }
 
         internal bool GetOption(string option, bool @default)
@@ -94,6 +106,58 @@ namespace System.Management.Automation
             return cursor.Offset < extent.StartOffset || cursor.Offset > extent.EndOffset;
         }
 
+        internal readonly struct AstAnalysisContext
+        {
+            internal AstAnalysisContext(Token tokenAtCursor, Token tokenBeforeCursor, List<Ast> relatedAsts, int replacementIndex)
+            {
+                TokenAtCursor = tokenAtCursor;
+                TokenBeforeCursor = tokenBeforeCursor;
+                RelatedAsts = relatedAsts;
+                ReplacementIndex = replacementIndex;
+            }
+
+            internal readonly Token TokenAtCursor;
+            internal readonly Token TokenBeforeCursor;
+            internal readonly List<Ast> RelatedAsts;
+            internal readonly int ReplacementIndex;
+        }
+
+        internal static AstAnalysisContext ExtractAstContext(Ast inputAst, Token[] inputTokens, IScriptPosition cursor)
+        {
+            bool adjustLineAndColumn = false;
+            IScriptPosition positionForAstSearch = cursor;
+
+            Token tokenBeforeCursor = null;
+            Token tokenAtCursor = InterstingTokenAtCursorOrDefault(inputTokens, cursor);
+            if (tokenAtCursor == null)
+            {
+                tokenBeforeCursor = InterstingTokenBeforeCursorOrDefault(inputTokens, cursor);
+                if (tokenBeforeCursor != null)
+                {
+                    positionForAstSearch = tokenBeforeCursor.Extent.EndScriptPosition;
+                    adjustLineAndColumn = true;
+                }
+            }
+            else
+            {
+                var stringExpandableToken = tokenAtCursor as StringExpandableToken;
+                if (stringExpandableToken?.NestedTokens != null)
+                {
+                    tokenAtCursor = InterstingTokenAtCursorOrDefault(stringExpandableToken.NestedTokens, cursor) ?? stringExpandableToken;
+                }
+            }
+
+            int replacementIndex = adjustLineAndColumn ? cursor.Offset : 0;
+            List<Ast> relatedAsts = AstSearcher.FindAll(
+                inputAst,
+                ast => IsCursorWithinOrJustAfterExtent(positionForAstSearch, ast.Extent),
+                searchNestedScriptBlocks: true).ToList();
+
+            Diagnostics.Assert(tokenAtCursor == null || tokenBeforeCursor == null, "Only one of these tokens can be non-null");
+
+            return new AstAnalysisContext(tokenAtCursor, tokenBeforeCursor, relatedAsts, replacementIndex);
+        }
+
         internal CompletionContext CreateCompletionContext(PowerShell powerShell)
         {
             var typeInferenceContext = new TypeInferenceContext(powerShell);
@@ -107,48 +171,24 @@ namespace System.Management.Automation
 
         private CompletionContext InitializeCompletionContext(TypeInferenceContext typeInferenceContext)
         {
-            Token tokenBeforeCursor = null;
-            IScriptPosition positionForAstSearch = _cursorPosition;
-            var adjustLineAndColumn = false;
-            var tokenAtCursor = InterstingTokenAtCursorOrDefault(_tokens, _cursorPosition);
-            if (tokenAtCursor == null)
-            {
-                tokenBeforeCursor = InterstingTokenBeforeCursorOrDefault(_tokens, _cursorPosition);
-                if (tokenBeforeCursor != null)
-                {
-                    positionForAstSearch = tokenBeforeCursor.Extent.EndScriptPosition;
-                    adjustLineAndColumn = true;
-                }
-            }
-            else
-            {
-                var stringExpandableToken = tokenAtCursor as StringExpandableToken;
-                if (stringExpandableToken?.NestedTokens != null)
-                {
-                    tokenAtCursor = InterstingTokenAtCursorOrDefault(stringExpandableToken.NestedTokens, _cursorPosition) ?? stringExpandableToken;
-                }
-            }
-
-            var asts = AstSearcher.FindAll(_ast, ast => IsCursorWithinOrJustAfterExtent(positionForAstSearch, ast.Extent), searchNestedScriptBlocks: true).ToList();
-
-            Diagnostics.Assert(tokenAtCursor == null || tokenBeforeCursor == null, "Only one of these tokens can be non-null");
+            var astContext = ExtractAstContext(_ast, _tokens, _cursorPosition);
 
             if (typeInferenceContext.CurrentTypeDefinitionAst == null)
             {
-                typeInferenceContext.CurrentTypeDefinitionAst = Ast.GetAncestorTypeDefinitionAst(asts.Last());
+                typeInferenceContext.CurrentTypeDefinitionAst = Ast.GetAncestorTypeDefinitionAst(astContext.RelatedAsts.Last());
             }
 
             ExecutionContext executionContext = typeInferenceContext.ExecutionContext;
 
             return new CompletionContext
             {
-                TokenAtCursor = tokenAtCursor,
-                TokenBeforeCursor = tokenBeforeCursor,
-                CursorPosition = _cursorPosition,
-                RelatedAsts = asts,
                 Options = _options,
+                CursorPosition = _cursorPosition,
+                TokenAtCursor = astContext.TokenAtCursor,
+                TokenBeforeCursor = astContext.TokenBeforeCursor,
+                RelatedAsts = astContext.RelatedAsts,
+                ReplacementIndex = astContext.ReplacementIndex,
                 ExecutionContext = executionContext,
-                ReplacementIndex = adjustLineAndColumn ? _cursorPosition.Offset : 0,
                 TypeInferenceContext = typeInferenceContext,
                 Helper = typeInferenceContext.Helper,
                 CustomArgumentCompleters = executionContext.CustomArgumentCompleters,
@@ -156,14 +196,32 @@ namespace System.Management.Automation
             };
         }
 
-        private static Token InterstingTokenAtCursorOrDefault(IEnumerable<Token> tokens, IScriptPosition cursorPosition)
+        private static Token InterstingTokenAtCursorOrDefault(IReadOnlyList<Token> tokens, IScriptPosition cursorPosition)
         {
-            return tokens.LastOrDefault(token => IsCursorWithinOrJustAfterExtent(cursorPosition, token.Extent) && IsInterestingToken(token));
+            for (int i = tokens.Count - 1; i >= 0; --i)
+            {
+                Token token = tokens[i];
+                if (IsCursorWithinOrJustAfterExtent(cursorPosition, token.Extent) && IsInterestingToken(token))
+                {
+                    return token;
+                }
+            }
+
+            return null;
         }
 
-        private static Token InterstingTokenBeforeCursorOrDefault(IEnumerable<Token> tokens, IScriptPosition cursorPosition)
+        private static Token InterstingTokenBeforeCursorOrDefault(IReadOnlyList<Token> tokens, IScriptPosition cursorPosition)
         {
-            return tokens.LastOrDefault(token => IsCursorAfterExtent(cursorPosition, token.Extent) && IsInterestingToken(token));
+            for (int i = tokens.Count - 1; i >= 0; --i)
+            {
+                Token token = tokens[i];
+                if (IsCursorAfterExtent(cursorPosition, token.Extent) && IsInterestingToken(token))
+                {
+                    return token;
+                }
+            }
+
+            return null;
         }
 
         private static Ast GetLastAstAtCursor(ScriptBlockAst scriptBlockAst, IScriptPosition cursorPosition)
@@ -192,8 +250,7 @@ namespace System.Management.Automation
             if (lastAst.Parent is CommandExpressionAst)
             {
                 // Handle "switch -file m<tab>" or "switch -file *.ps1<tab>"
-                var pipeline = lastAst.Parent.Parent as PipelineAst;
-                if (pipeline == null)
+                if (!(lastAst.Parent.Parent is PipelineAst pipeline))
                 {
                     return false;
                 }
@@ -404,6 +461,7 @@ namespace System.Management.Automation
 
                     case TokenKind.Dot:
                     case TokenKind.ColonColon:
+                    case TokenKind.QuestionDot:
                         replacementIndex += tokenAtCursor.Text.Length;
                         replacementLength = 0;
                         result = CompletionCompleters.CompleteMember(completionContext, @static: tokenAtCursor.Kind == TokenKind.ColonColon);
@@ -420,6 +478,17 @@ namespace System.Management.Automation
 
                     case TokenKind.StringExpandable:
                     case TokenKind.StringLiteral:
+                        // Search to see if we're looking at an assignment
+                        if (lastAst.Parent is CommandExpressionAst
+                            && lastAst.Parent.Parent is AssignmentStatementAst assignmentAst)
+                        {
+                            // Handle scenarios like `$ErrorActionPreference = '<tab>`
+                            if (TryGetCompletionsForVariableAssignment(completionContext, assignmentAst, out List<CompletionResult> completions))
+                            {
+                                return completions;
+                            }
+                        }
+
                         result = GetResultForString(completionContext, ref replacementIndex, ref replacementLength, isQuotedString);
                         break;
 
@@ -505,6 +574,15 @@ namespace System.Management.Automation
                             replacementIndex = completionContext.ReplacementIndex;
                             replacementLength = completionContext.ReplacementLength;
                         }
+                        else if (lastAst.Parent is CommandExpressionAst
+                            && lastAst.Parent.Parent is AssignmentStatementAst assignmentAst2)
+                        {
+                            // Handle scenarios like '[ValidateSet(11,22)][int]$i = 11; $i = 2<tab>'
+                            if (TryGetCompletionsForVariableAssignment(completionContext, assignmentAst2, out List<CompletionResult> completions))
+                            {
+                                result = completions;
+                            }
+                        }
 
                         break;
 
@@ -559,10 +637,21 @@ namespace System.Management.Automation
                                 completionContext.ReplacementLength = replacementLength = 0;
                                 result = GetResultForAttributeArgument(completionContext, ref replacementIndex, ref replacementLength);
                             }
-                            else if (lastAst is HashtableAst hashTableAst && !(lastAst.Parent is DynamicKeywordStatementAst) && CheckForPendingAssignment(hashTableAst))
+                            else if (lastAst is HashtableAst hashTableAst && lastAst.Parent is not DynamicKeywordStatementAst && CheckForPendingAssignment(hashTableAst))
                             {
                                 // Handle scenarios such as 'gci | Format-Table @{Label=<tab>' if incomplete parsing of the assignment.
                                 return null;
+                            }
+                            else if (lastAst is AssignmentStatementAst assignmentAst2)
+                            {
+                                completionContext.ReplacementIndex = replacementIndex += tokenAtCursor.Text.Length;
+                                completionContext.ReplacementLength = replacementLength = 0;
+
+                                // Handle scenarios like '$ErrorActionPreference =<tab>'
+                                if (TryGetCompletionsForVariableAssignment(completionContext, assignmentAst2, out List<CompletionResult> completions))
+                                {
+                                    return completions;
+                                }
                             }
                             else
                             {
@@ -732,6 +821,15 @@ namespace System.Management.Automation
                                 case TokenKind.Comma:
                                 case TokenKind.AtParen:
                                     {
+                                        if (lastAst is AssignmentStatementAst assignmentAst)
+                                        {
+                                            // Handle scenarios like '$ErrorActionPreference = <tab>'
+                                            if (TryGetCompletionsForVariableAssignment(completionContext, assignmentAst, out result))
+                                            {
+                                                break;
+                                            }
+                                        }
+
                                         bool unused;
                                         result = GetResultForEnumPropertyValueOfDSCResource(completionContext, string.Empty, ref replacementIndex, ref replacementLength, out unused);
                                         break;
@@ -838,7 +936,7 @@ namespace System.Management.Automation
         }
 
         // Helper method to auto complete hashtable key
-        private List<CompletionResult> GetResultForHashtable(CompletionContext completionContext)
+        private static List<CompletionResult> GetResultForHashtable(CompletionContext completionContext)
         {
             var lastAst = completionContext.RelatedAsts.Last();
             HashtableAst tempHashtableAst = null;
@@ -899,7 +997,7 @@ namespace System.Management.Automation
         }
 
         // Helper method to look for an incomplete assignment pair in hash table.
-        private bool CheckForPendingAssignment(HashtableAst hashTableAst)
+        private static bool CheckForPendingAssignment(HashtableAst hashTableAst)
         {
             foreach (var keyValue in hashTableAst.KeyValuePairs)
             {
@@ -967,7 +1065,7 @@ namespace System.Management.Automation
             return stringToComplete;
         }
 
-        private Tuple<ExpressionAst, StatementAst> GetHashEntryContainsCursor(
+        private static Tuple<ExpressionAst, StatementAst> GetHashEntryContainsCursor(
             IScriptPosition cursor,
             HashtableAst hashTableAst,
             bool isCursorInString)
@@ -1025,7 +1123,240 @@ namespace System.Management.Automation
             return keyValuePairWithCursor;
         }
 
-        private List<CompletionResult> GetResultForEnumPropertyValueOfDSCResource(
+        // Pulls the variable out of an assignment's LHS expression
+        // Also brings back the innermost type constraint if there is one
+        private static VariableExpressionAst GetVariableFromExpressionAst(
+            ExpressionAst expression,
+            ref Type typeConstraint,
+            ref ValidateSetAttribute setConstraint)
+        {
+            switch (expression)
+            {
+                // $x = ...
+                case VariableExpressionAst variableExpression:
+                    return variableExpression;
+
+                // [type]$x = ...
+                case ConvertExpressionAst convertExpression:
+                    typeConstraint = convertExpression.Type.TypeName.GetReflectionType();
+                    return GetVariableFromExpressionAst(convertExpression.Child, ref typeConstraint, ref setConstraint);
+
+                // [attribute()][type]$x = ...
+                case AttributedExpressionAst attributedExpressionAst:
+
+                    try
+                    {
+                        setConstraint = attributedExpressionAst.Attribute.GetAttribute() as ValidateSetAttribute;
+                    }
+                    catch
+                    {
+                        // Do nothing, just prevent fallout from an unsuccessful attribute conversion
+                    }
+
+                    return GetVariableFromExpressionAst(attributedExpressionAst.Child, ref typeConstraint, ref setConstraint);
+
+                // Something else, like `MemberExpressionAst` $a.p = <tab> which isn't currently handled
+                default:
+                    return null;
+            }
+        }
+
+        // Gets any type constraints or validateset constraints on a given variable
+        private static bool TryGetTypeConstraintOnVariable(
+            CompletionContext completionContext,
+            string variableName,
+            out Type typeConstraint,
+            out ValidateSetAttribute setConstraint)
+        {
+            typeConstraint = null;
+            setConstraint = null;
+
+            PSVariable variable = completionContext.ExecutionContext.EngineSessionState.GetVariable(variableName);
+
+            if (variable == null || variable.Attributes.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (Attribute attribute in variable.Attributes)
+            {
+                if (attribute is ArgumentTypeConverterAttribute typeConverterAttribute)
+                {
+                    typeConstraint = typeConverterAttribute.TargetType;
+                    continue;
+                }
+
+                if (attribute is ValidateSetAttribute validateSetAttribute)
+                {
+                    setConstraint = validateSetAttribute;
+                }
+            }
+
+            return typeConstraint != null || setConstraint != null;
+        }
+
+        private static bool TryGetCompletionsForVariableAssignment(
+            CompletionContext completionContext,
+            AssignmentStatementAst assignmentAst,
+            out List<CompletionResult> completions)
+        {
+            bool TryGetResultForEnum(Type typeConstraint, CompletionContext completionContext, out List<CompletionResult> completions)
+            {
+                completions = null;
+
+                if (typeConstraint != null && typeConstraint.IsEnum)
+                {
+                    completions = GetResultForEnum(typeConstraint, completionContext);
+                    return true;
+                }
+
+                return false;
+            }
+
+            bool TryGetResultForSet(Type typeConstraint, ValidateSetAttribute setConstraint, CompletionContext completionContext1, out List<CompletionResult> completions)
+            {
+                completions = null;
+
+                if (setConstraint?.ValidValues != null)
+                {
+                    completions = GetResultForSet(typeConstraint, setConstraint.ValidValues, completionContext);
+                    return true;
+                }
+
+                return false;
+            }
+
+            completions = null;
+
+            // Try to get the variable from the assignment, plus any type constraint on it
+            Type typeConstraint = null;
+            ValidateSetAttribute setConstraint = null;
+            VariableExpressionAst variableAst = GetVariableFromExpressionAst(assignmentAst.Left, ref typeConstraint, ref setConstraint);
+
+            if (variableAst == null)
+            {
+                return false;
+            }
+
+            // Assignment constraints override any existing ones, so try them first
+
+            // Check any [ValidateSet()] constraint first since it's likely to be narrow
+            if (TryGetResultForSet(typeConstraint, setConstraint, completionContext, out completions))
+            {
+                return true;
+            }
+
+            // Then try to complete for an enum type
+            if (TryGetResultForEnum(typeConstraint, completionContext, out completions))
+            {
+                return true;
+            }
+
+            // If the assignment itself was unconstrained, the variable still might be
+            if (!TryGetTypeConstraintOnVariable(completionContext, variableAst.VariablePath.UserPath, out typeConstraint, out setConstraint))
+            {
+                return false;
+            }
+
+            // Again try the [ValidateSet()] constraint first
+            if (TryGetResultForSet(typeConstraint, setConstraint, completionContext, out completions))
+            {
+                return true;
+            }
+
+            // Then try to complete for an enum type again
+            if (TryGetResultForEnum(typeConstraint, completionContext, out completions))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static List<CompletionResult> GetResultForSet(
+            Type typeConstraint,
+            IList<string> validValues,
+            CompletionContext completionContext)
+        {
+            var allValues = new List<string>();
+            foreach (string value in validValues)
+            {
+                if (typeConstraint != null && (typeConstraint == typeof(string) || typeConstraint.IsEnum))
+                {
+                    allValues.Add(GetQuotedString(value, completionContext));
+                }
+                else
+                {
+                    allValues.Add(value);
+                }
+            }
+
+            return GetMatchedResults(allValues, completionContext);
+        }
+
+        private static List<CompletionResult> GetMatchedResults(
+            List<string> allValues,
+            CompletionContext completionContext)
+        {
+            var stringToComplete = string.Empty;
+            if (completionContext.TokenAtCursor != null && completionContext.TokenAtCursor.Kind != TokenKind.Equals)
+            {
+                stringToComplete = completionContext.TokenAtCursor.Text;
+            }
+
+            IEnumerable<string> matchedResults = null;
+
+            if (!string.IsNullOrEmpty(stringToComplete))
+            {
+                string matchString = stringToComplete + "*";
+                var wildcardPattern = WildcardPattern.Get(matchString, WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant);
+
+                matchedResults = allValues.Where(r => wildcardPattern.IsMatch(r));
+            }
+            else
+            {
+                matchedResults = allValues;
+            }
+
+            var result = new List<CompletionResult>();
+            foreach (var match in matchedResults)
+            {
+                result.Add(new CompletionResult(match));
+            }
+
+            return result;
+        }
+
+        private static string GetQuotedString(
+            string value,
+            CompletionContext completionContext)
+        {
+            var stringToComplete = string.Empty;
+            if (completionContext.TokenAtCursor != null)
+            {
+                stringToComplete = completionContext.TokenAtCursor.Text;
+            }
+
+            var quote = stringToComplete.StartsWith('"') ? "\"" : "'";
+            return quote + value + quote;
+        }
+
+        private static List<CompletionResult> GetResultForEnum(
+            Type type,
+            CompletionContext completionContext)
+        {
+            var allNames = new List<string>();
+            foreach (var name in Enum.GetNames(type))
+            {
+                allNames.Add(GetQuotedString(name, completionContext));
+            }
+
+            allNames.Sort();
+
+            return GetMatchedResults(allNames, completionContext);
+        }
+
+        private static List<CompletionResult> GetResultForEnumPropertyValueOfDSCResource(
             CompletionContext completionContext,
             string stringToComplete,
             ref int replacementIndex,
@@ -1122,7 +1453,7 @@ namespace System.Management.Automation
                                     {
                                         string completionText = isCursorInString ? value : stringQuote + value + stringQuote;
                                         if (hasNewLine)
-                                            completionText = completionText + stringQuote;
+                                            completionText += stringQuote;
                                         result.Add(new CompletionResult(
                                             completionText,
                                             value,
@@ -1150,7 +1481,7 @@ namespace System.Management.Automation
                                                     {
                                                         StringBuilder sb = new StringBuilder("[", 50);
                                                         sb.Append(dynamicKeywordAst.Keyword.Keyword);
-                                                        sb.Append("]");
+                                                        sb.Append(']');
                                                         sb.Append(dynamicKeywordAst.ElementName);
                                                         var resource = sb.ToString();
                                                         if (!existingValues.Contains(resource, StringComparer.OrdinalIgnoreCase) &&
@@ -1173,7 +1504,7 @@ namespace System.Management.Automation
                                             {
                                                 string completionText = isCursorInString ? resource : stringQuote + resource + stringQuote;
                                                 if (hasNewLine)
-                                                    completionText = completionText + stringQuote;
+                                                    completionText += stringQuote;
                                                 result.Add(new CompletionResult(
                                                     completionText,
                                                     resource,
@@ -1240,19 +1571,18 @@ namespace System.Management.Automation
                 var analysis = new CompletionAnalysis(_ast, _tokens, _cursorPosition, _options);
                 var subContext = analysis.CreateCompletionContext(completionContext.TypeInferenceContext);
 
-                int subReplaceIndex, subReplaceLength;
-                var subResult = analysis.GetResultHelper(subContext, out subReplaceIndex, out subReplaceLength, true);
+                var subResult = analysis.GetResultHelper(subContext, out int subReplaceIndex, out _, true);
 
                 if (subResult != null && subResult.Count > 0)
                 {
                     result = new List<CompletionResult>();
                     replacementIndex = stringStartIndex + 1 + (cursorIndexInString - subInput.Length);
                     replacementLength = subInput.Length;
-                    string prefix = subInput.Substring(0, subReplaceIndex);
+                    ReadOnlySpan<char> prefix = subInput.AsSpan(0, subReplaceIndex);
 
                     foreach (CompletionResult entry in subResult)
                     {
-                        string completionText = prefix + entry.CompletionText;
+                        string completionText = string.Concat(prefix, entry.CompletionText.AsSpan());
                         if (entry.ResultType == CompletionResultType.Property)
                         {
                             completionText = TokenKind.DollarParen.Text() + completionText + TokenKind.RParen.Text();
@@ -1291,7 +1621,7 @@ namespace System.Management.Automation
                         result = new List<CompletionResult>(CompletionCompleters.CompleteFilename(completionContext));
 
                         // Try command name completion only if the text contains '-'
-                        if (wordToComplete.IndexOf('-') != -1)
+                        if (wordToComplete.Contains('-'))
                         {
                             var commandNameResult = CompletionCompleters.CompleteCommand(completionContext);
                             if (commandNameResult != null && commandNameResult.Count > 0)
@@ -1313,7 +1643,7 @@ namespace System.Management.Automation
         /// <param name="ast"></param>
         /// <param name="keywordAst"></param>
         /// <returns></returns>
-        private ConfigurationDefinitionAst GetAncestorConfigurationAstAndKeywordAst(
+        private static ConfigurationDefinitionAst GetAncestorConfigurationAstAndKeywordAst(
             IScriptPosition cursorPosition,
             Ast ast,
             out DynamicKeywordStatementAst keywordAst)
@@ -1349,7 +1679,7 @@ namespace System.Management.Automation
         /// <param name="keywordAst"></param>
         /// <param name="matched"></param>
         /// <returns></returns>
-        private List<CompletionResult> GetResultForIdentifierInConfiguration(
+        private static List<CompletionResult> GetResultForIdentifierInConfiguration(
             CompletionContext completionContext,
             ConfigurationDefinitionAst configureAst,
             DynamicKeywordStatementAst keywordAst,
@@ -1360,7 +1690,7 @@ namespace System.Management.Automation
 
             IEnumerable<DynamicKeyword> keywords = configureAst.DefinedKeywords.Where(
                 k => // Node is special case, legal in both Resource and Meta configuration
-                    string.Compare(k.Keyword, @"Node", StringComparison.OrdinalIgnoreCase) == 0 ||
+                    string.Equals(k.Keyword, @"Node", StringComparison.OrdinalIgnoreCase) ||
                     (
                         // Check compatibility between Resource and Configuration Type
                         k.IsCompatibleWithConfigurationType(configureAst.ConfigurationType) &&
@@ -1532,7 +1862,7 @@ namespace System.Management.Automation
                             }
                         }
                         // Continue trying the filename/commandname completion for scenarios like this: $aa[get-<tab>
-                        else if (!(cursorAst is ErrorExpressionAst && cursorAst.Parent is IndexExpressionAst))
+                        else if (cursorAst is not ErrorExpressionAst || cursorAst.Parent is not IndexExpressionAst)
                         {
                             return result;
                         }
@@ -1681,7 +2011,7 @@ namespace System.Management.Automation
                 // If the last token was just a '.', we tried to complete members.  That may
                 // have failed because it wasn't really an attempt to complete a member, in
                 // which case we should try to complete as an argument.
-                if (result.Any())
+                if (result.Count > 0)
                 {
                     if (!isWildcard && memberOperator != TokenKind.Unknown)
                     {
@@ -1696,7 +2026,7 @@ namespace System.Management.Automation
             if (lastAst.Parent is HashtableAst)
             {
                 result = CompletionCompleters.CompleteHashtableKey(completionContext, (HashtableAst)lastAst.Parent);
-                if (result != null && result.Any())
+                if (result != null && result.Count > 0)
                 {
                     return result;
                 }
@@ -1719,7 +2049,7 @@ namespace System.Management.Automation
             else if (tokenAtCursorText.IndexOfAny(Utils.Separators.Directory) == 0)
             {
                 var command = lastAst.Parent as CommandBaseAst;
-                if (command != null && command.Redirections.Any())
+                if (command != null && command.Redirections.Count > 0)
                 {
                     var fileRedirection = command.Redirections[0] as FileRedirectionAst;
                     if (fileRedirection != null &&
@@ -1763,7 +2093,7 @@ namespace System.Management.Automation
             return result;
         }
 
-        private List<CompletionResult> GetResultForAttributeArgument(CompletionContext completionContext, ref int replacementIndex, ref int replacementLength)
+        private static List<CompletionResult> GetResultForAttributeArgument(CompletionContext completionContext, ref int replacementIndex, ref int replacementLength)
         {
             // Attribute member arguments
             Type attributeType = null;

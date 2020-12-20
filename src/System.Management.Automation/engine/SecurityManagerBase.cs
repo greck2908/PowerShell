@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Host;
@@ -55,7 +55,7 @@ namespace System.Management.Automation
 
         #endregion constructor
 
-        private object _policyCheckLock = new object();
+        private readonly object _policyCheckLock = new object();
 
         #region methods to use internally
 
@@ -181,4 +181,3 @@ namespace System.Management.Automation
         #endregion methods for derived class to override
     }
 }
-

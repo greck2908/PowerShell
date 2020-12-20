@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -173,7 +173,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                     PSPropertyExpressionResult r = PSObjectHelper.GetDisplayName(PSObjectHelper.AsPSObject(x), expressionFactory);
                     if ((r != null) && (r.Exception == null))
                     {
-                        objName = PSObjectHelper.AsPSObject(r.Result).ToString(); ;
+                        objName = PSObjectHelper.AsPSObject(r.Result).ToString();
                     }
                     else
                     {
@@ -213,7 +213,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 if (e != null)
                 {
                     StringBuilder sb = new StringBuilder();
-                    sb.Append("{");
+                    sb.Append('{');
 
                     bool first = true;
                     int enumCount = 0;
@@ -283,7 +283,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                         }
                     }
 
-                    sb.Append("}");
+                    sb.Append('}');
                     return sb.ToString();
                 }
 
@@ -333,7 +333,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 {
                     // use some heuristics to determine if we have "composite formatting"
                     // 2004/11/16-JonN This is heuristic but should be safe enough
-                    if (directive.formatString.Contains("{0") || directive.formatString.Contains("}"))
+                    if (directive.formatString.Contains("{0") || directive.formatString.Contains('}'))
                     {
                         // we do have it, just use it
                         return string.Format(CultureInfo.CurrentCulture, directive.formatString, so);
@@ -626,4 +626,3 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         private Dictionary<ExpressionToken, PSPropertyExpression> _expressionCache;
     }
 }
-

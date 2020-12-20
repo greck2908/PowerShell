@@ -1,9 +1,9 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections;
-using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -39,6 +39,7 @@ namespace System.Management.Automation
         internal const string PSOSName = "OS";
         internal const string SerializationVersionName = "SerializationVersion";
         internal const string WSManStackVersionName = "WSManStackVersion";
+
         private static readonly PSVersionHashTable s_psVersionTable;
 
         /// <summary>
@@ -59,6 +60,10 @@ namespace System.Management.Automation
         private static readonly Version s_psV5Version = new Version(5, 0);
         private static readonly Version s_psV51Version = new Version(5, 1, NTVerpVars.PRODUCTBUILD, NTVerpVars.PRODUCTBUILD_QFE);
         private static readonly SemanticVersion s_psV6Version = new SemanticVersion(6, 0, 0, preReleaseLabel: null, buildLabel: null);
+        private static readonly SemanticVersion s_psV61Version = new SemanticVersion(6, 1, 0, preReleaseLabel: null, buildLabel: null);
+        private static readonly SemanticVersion s_psV62Version = new SemanticVersion(6, 2, 0, preReleaseLabel: null, buildLabel: null);
+        private static readonly SemanticVersion s_psV7Version = new SemanticVersion(7, 0, 0, preReleaseLabel: null, buildLabel: null);
+        private static readonly SemanticVersion s_psV71Version = new SemanticVersion(7, 1, 0, preReleaseLabel: null, buildLabel: null);
         private static readonly SemanticVersion s_psSemVersion;
         private static readonly Version s_psVersion;
 
@@ -72,8 +77,8 @@ namespace System.Management.Automation
         {
             s_psVersionTable = new PSVersionHashTable(StringComparer.OrdinalIgnoreCase);
 
-            string assemblyPath = typeof(PSVersionInfo).Assembly.Location;
-            string productVersion = FileVersionInfo.GetVersionInfo(assemblyPath).ProductVersion;
+            Assembly currentAssembly = typeof(PSVersionInfo).Assembly;
+            string productVersion = currentAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
             // Get 'GitCommitId' and 'PSVersion' from the 'productVersion' assembly attribute.
             //
@@ -105,12 +110,12 @@ namespace System.Management.Automation
             s_psVersionTable[PSVersionInfo.PSVersionName] = s_psSemVersion;
             s_psVersionTable[PSVersionInfo.PSEditionName] = PSEditionValue;
             s_psVersionTable[PSGitCommitIdName] = rawGitCommitId;
-            s_psVersionTable[PSCompatibleVersionsName] = new Version[] { s_psV1Version, s_psV2Version, s_psV3Version, s_psV4Version, s_psV5Version, s_psV51Version, s_psV6Version, s_psVersion };
+            s_psVersionTable[PSCompatibleVersionsName] = new Version[] { s_psV1Version, s_psV2Version, s_psV3Version, s_psV4Version, s_psV5Version, s_psV51Version, s_psV6Version, s_psV61Version, s_psV62Version, s_psV7Version, s_psV71Version, s_psVersion };
             s_psVersionTable[PSVersionInfo.SerializationVersionName] = new Version(InternalSerializer.DefaultVersion);
             s_psVersionTable[PSVersionInfo.PSRemotingProtocolVersionName] = RemotingConstants.ProtocolVersion;
             s_psVersionTable[PSVersionInfo.WSManStackVersionName] = GetWSManStackVersion();
             s_psVersionTable[PSPlatformName] = Environment.OSVersion.Platform.ToString();
-            s_psVersionTable[PSOSName] = Runtime.InteropServices.RuntimeInformation.OSDescription.ToString();
+            s_psVersionTable[PSOSName] = Runtime.InteropServices.RuntimeInformation.OSDescription;
         }
 
         internal static PSVersionHashTable GetPSVersionTable()
@@ -327,6 +332,11 @@ namespace System.Management.Automation
             get { return s_psV6Version; }
         }
 
+        internal static SemanticVersion PSV7Version
+        {
+            get { return s_psV7Version; }
+        }
+
         internal static SemanticVersion PSCurrentVersion
         {
             get { return s_psSemVersion; }
@@ -342,6 +352,7 @@ namespace System.Management.Automation
     public sealed class PSVersionHashTable : Hashtable, IEnumerable
     {
         private static readonly PSVersionTableComparer s_keysComparer = new PSVersionTableComparer();
+
         internal PSVersionHashTable(IEqualityComparer equalityComparer) : base(equalityComparer)
         {
         }
@@ -421,6 +432,7 @@ namespace System.Management.Automation
         private const string PreLabelPropertyName = "PSSemVerPreReleaseLabel";
         private const string BuildLabelPropertyName = "PSSemVerBuildLabel";
         private const string TypeNameForVersionWithLabel = "System.Version#IncludeLabel";
+
         private string versionString;
 
         /// <summary>
@@ -791,12 +803,12 @@ namespace System.Management.Automation
 
                 if (!string.IsNullOrEmpty(PreReleaseLabel))
                 {
-                    result.Append("-").Append(PreReleaseLabel);
+                    result.Append('-').Append(PreReleaseLabel);
                 }
 
                 if (!string.IsNullOrEmpty(BuildLabel))
                 {
-                    result.Append("+").Append(BuildLabel);
+                    result.Append('+').Append(BuildLabel);
                 }
 
                 versionString = result.ToString();
@@ -833,8 +845,7 @@ namespace System.Management.Automation
                 return 1;
             }
 
-            var v = version as SemanticVersion;
-            if (v == null)
+            if (!(version is SemanticVersion v))
             {
                 throw PSTraceSource.NewArgumentException(nameof(version));
             }
@@ -848,7 +859,7 @@ namespace System.Management.Automation
         /// </summary>
         public int CompareTo(SemanticVersion value)
         {
-            if ((object)value == null)
+            if (value is null)
                 return 1;
 
             if (Major != value.Major)
@@ -896,9 +907,9 @@ namespace System.Management.Automation
         /// </summary>
         public static bool operator ==(SemanticVersion v1, SemanticVersion v2)
         {
-            if (object.ReferenceEquals(v1, null))
+            if (v1 is null)
             {
-                return object.ReferenceEquals(v2, null);
+                return v2 is null;
             }
 
             return v1.Equals(v2);

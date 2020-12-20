@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -83,7 +83,7 @@ namespace Microsoft.PowerShell
         {
             if (string.IsNullOrEmpty(shellId))
             {
-                throw PSTraceSource.NewArgumentNullException("shellId");
+                throw PSTraceSource.NewArgumentNullException(nameof(shellId));
             }
 
             _shellId = shellId;
@@ -368,7 +368,7 @@ namespace Microsoft.PowerShell
             return policyCheckPassed;
         }
 
-        private bool SetPolicyFromAuthenticodePrompt(string path, PSHost host, ref Exception reason, Signature signature)
+        private static bool SetPolicyFromAuthenticodePrompt(string path, PSHost host, ref Exception reason, Signature signature)
         {
             bool policyCheckPassed = false;
 
@@ -383,7 +383,9 @@ namespace Microsoft.PowerShell
                     {
                         TrustPublisher(signature);
                         policyCheckPassed = true;
-                    }; break;
+                    }
+
+                    break;
                 case RunPromptDecision.DoNotRun:
                     policyCheckPassed = false;
                     reasonMessage = StringUtil.Format(Authenticode.Reason_DoNotRun, path);
@@ -395,13 +397,15 @@ namespace Microsoft.PowerShell
                         reasonMessage = StringUtil.Format(Authenticode.Reason_NeverRun, path);
                         reason = new UnauthorizedAccessException(reasonMessage);
                         policyCheckPassed = false;
-                    }; break;
+                    }
+
+                    break;
             }
 
             return policyCheckPassed;
         }
 
-        private bool IsLocalFile(string filename)
+        private static bool IsLocalFile(string filename)
         {
 #if UNIX
             return true;
@@ -421,7 +425,7 @@ namespace Microsoft.PowerShell
 
         // Checks that a publisher is trusted by the system or is one of
         // the signed product binaries
-        private bool IsTrustedPublisher(Signature signature, string file)
+        private static bool IsTrustedPublisher(Signature signature, string file)
         {
             // Get the thumbprint of the current signature
             X509Certificate2 signerCertificate = signature.SignerCertificate;
@@ -440,7 +444,7 @@ namespace Microsoft.PowerShell
             return false;
         }
 
-        private bool IsUntrustedPublisher(Signature signature, string file)
+        private static bool IsUntrustedPublisher(Signature signature, string file)
         {
             // Get the thumbprint of the current signature
             X509Certificate2 signerCertificate = signature.SignerCertificate;
@@ -463,7 +467,7 @@ namespace Microsoft.PowerShell
         /// Trust a publisher by adding it to the "Trusted Publishers" store.
         /// </summary>
         /// <param name="signature"></param>
-        private void TrustPublisher(Signature signature)
+        private static void TrustPublisher(Signature signature)
         {
             // Get the certificate of the signer
             X509Certificate2 signerCertificate = signature.SignerCertificate;
@@ -481,7 +485,7 @@ namespace Microsoft.PowerShell
             }
         }
 
-        private void UntrustPublisher(Signature signature)
+        private static void UntrustPublisher(Signature signature)
         {
             // Get the certificate of the signer
             X509Certificate2 signerCertificate = signature.SignerCertificate;
@@ -512,7 +516,7 @@ namespace Microsoft.PowerShell
             }
         }
 
-        private Signature GetSignatureWithEncodingRetry(string path, ExternalScriptInfo script)
+        private static Signature GetSignatureWithEncodingRetry(string path, ExternalScriptInfo script)
         {
             string verificationContents = System.Text.Encoding.Unicode.GetString(script.OriginalEncoding.GetPreamble()) + script.ScriptContents;
             Signature signature = SignatureHelper.GetSignature(path, verificationContents);
@@ -636,7 +640,7 @@ namespace Microsoft.PowerShell
             return allowRun;
         }
 
-        private RunPromptDecision AuthenticodePrompt(string path,
+        private static RunPromptDecision AuthenticodePrompt(string path,
                                                 Signature signature,
                                                 PSHost host)
         {
@@ -709,7 +713,7 @@ namespace Microsoft.PowerShell
             return decision;
         }
 
-        private RunPromptDecision RemoteFilePrompt(string path, PSHost host)
+        private static RunPromptDecision RemoteFilePrompt(string path, PSHost host)
         {
             if ((host == null) || (host.UI == null))
             {
@@ -739,7 +743,7 @@ namespace Microsoft.PowerShell
             }
         }
 
-        private Collection<ChoiceDescription> GetAuthenticodePromptChoices()
+        private static Collection<ChoiceDescription> GetAuthenticodePromptChoices()
         {
             Collection<ChoiceDescription> choices = new Collection<ChoiceDescription>();
 
@@ -760,7 +764,7 @@ namespace Microsoft.PowerShell
             return choices;
         }
 
-        private Collection<ChoiceDescription> GetRemoteFilePromptChoices()
+        private static Collection<ChoiceDescription> GetRemoteFilePromptChoices()
         {
             Collection<ChoiceDescription> choices = new Collection<ChoiceDescription>();
 
@@ -779,4 +783,3 @@ namespace Microsoft.PowerShell
         }
     }
 }
-

@@ -1,13 +1,17 @@
 
 jobs:
 - job: ComponentRegistrationJob
+  variables:
+    runCodesignValidationInjection: false
   displayName: Component Registration
   condition: succeeded()
 
   pool:
-    name: PowerShell
+    name: Package ES Standard Build
 
   steps:
+  - checkout: self
+    clean: true
 
   - template: SetVersionVariables.yml
     parameters:

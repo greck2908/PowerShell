@@ -1,9 +1,7 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System;
 using System.Collections.ObjectModel;
-using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -23,11 +21,11 @@ namespace System.Management.Automation.Internal
         /// </summary>
         /// <param name="stream">The stream to read.</param>
         /// <exception cref="ArgumentNullException">Thrown if the specified stream is null.</exception>
-        public ObjectReaderBase([In, Out] ObjectStreamBase stream)
+        protected ObjectReaderBase([In, Out] ObjectStreamBase stream)
         {
             if (stream == null)
             {
-                throw new ArgumentNullException("stream", "stream may not be null");
+                throw new ArgumentNullException(nameof(stream), "stream may not be null");
             }
 
             _stream = stream;
@@ -48,7 +46,7 @@ namespace System.Management.Automation.Internal
                     InternalDataReady += value;
                     if (firstRegistrant)
                     {
-                        _stream.DataReady += new EventHandler(this.OnDataReady);
+                        _stream.DataReady += this.OnDataReady;
                     }
                 }
             }
@@ -60,7 +58,7 @@ namespace System.Management.Automation.Internal
                     InternalDataReady -= value;
                     if (InternalDataReady == null)
                     {
-                        _stream.DataReady -= new EventHandler(this.OnDataReady);
+                        _stream.DataReady -= this.OnDataReady;
                     }
                 }
             }
@@ -203,7 +201,7 @@ namespace System.Management.Automation.Internal
         /// we are protected from outside code interfering in our
         /// critical section.  Thanks to Wintellect for the hint.
         /// </remarks>
-        private object _monitorObject = new Object();
+        private readonly object _monitorObject = new object();
 
         #endregion Private fields
 
@@ -490,7 +488,7 @@ namespace System.Management.Automation.Internal
     {
         #region Private Data
 
-        private PSDataCollectionEnumerator<DataStoreType> _enumerator;
+        private readonly PSDataCollectionEnumerator<DataStoreType> _enumerator;
 
         #endregion
 
@@ -573,7 +571,7 @@ namespace System.Management.Automation.Internal
         {
             if (maxRequested < 0)
             {
-                throw PSTraceSource.NewArgumentOutOfRangeException("maxRequested", maxRequested);
+                throw PSTraceSource.NewArgumentOutOfRangeException(nameof(maxRequested), maxRequested);
             }
 
             if (maxRequested == 0)
@@ -619,7 +617,7 @@ namespace System.Management.Automation.Internal
             }
         }
 
-        private ReturnType ConvertToReturnType(object inputObject)
+        private static ReturnType ConvertToReturnType(object inputObject)
         {
             Type resultType = typeof(ReturnType);
             if (typeof(PSObject) == resultType || typeof(object) == resultType)
@@ -649,7 +647,7 @@ namespace System.Management.Automation.Internal
     {
         #region Private Data
 
-        private PSDataCollection<DataStoreType> _datastore;
+        private readonly PSDataCollection<DataStoreType> _datastore;
 
         #endregion Private Data
 
@@ -755,7 +753,7 @@ namespace System.Management.Automation.Internal
         {
             if (maxRequested < 0)
             {
-                throw PSTraceSource.NewArgumentOutOfRangeException("maxRequested", maxRequested);
+                throw PSTraceSource.NewArgumentOutOfRangeException(nameof(maxRequested), maxRequested);
             }
 
             if (maxRequested == 0)
@@ -795,7 +793,7 @@ namespace System.Management.Automation.Internal
         /// </summary>
         /// <param name="inputObject">Input object to convert.</param>
         /// <returns>Input object converted to the specified return type.</returns>
-        private ReturnType ConvertToReturnType(object inputObject)
+        private static ReturnType ConvertToReturnType(object inputObject)
         {
             Type resultType = typeof(ReturnType);
             if (typeof(PSObject) == resultType || typeof(object) == resultType)

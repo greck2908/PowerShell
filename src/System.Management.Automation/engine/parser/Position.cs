@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
@@ -51,12 +51,13 @@ namespace System.Management.Automation.Language
     /// <summary>
     /// Represents the a span of text in a script.
     /// </summary>
+#nullable enable
     public interface IScriptExtent
     {
         /// <summary>
         /// The filename the extent includes, or null if the extent is not included in any file.
         /// </summary>
-        string File { get; }
+        string? File { get; }
 
         /// <summary>
         /// The starting position of the extent.
@@ -103,6 +104,7 @@ namespace System.Management.Automation.Language
         /// </summary>
         int EndOffset { get; }
     }
+#nullable restore
 
     /// <summary>
     /// A few utility functions for script positions.
@@ -145,12 +147,12 @@ namespace System.Management.Automation.Language
             if (!string.IsNullOrEmpty(sourceLine))
             {
                 int spacesBeforeError = position.StartColumnNumber - 1;
-                int errorLength = (position.StartLineNumber == position.EndLineNumber)
+                int errorLength = (position.StartLineNumber == position.EndLineNumber && position.EndColumnNumber <= sourceLine.Length + 1)
                                       ? position.EndColumnNumber - position.StartColumnNumber
-                                      : sourceLine.TrimEnd().Length - position.StartColumnNumber + 1;
+                                      : sourceLine.Length - position.StartColumnNumber + 1;
 
                 // Expand tabs before figuring out if we need to truncate the line
-                if (sourceLine.IndexOf('\t') != -1)
+                if (sourceLine.Contains('\t'))
                 {
                     var copyLine = new StringBuilder(sourceLine.Length * 2);
 
@@ -230,20 +232,32 @@ namespace System.Management.Automation.Language
                 }
 
                 if (needsPrefixDots)
-                    sb.Append("... ");
+                {
+                    sb.Append("\u2026 "); // Unicode ellipsis character
+                }
+
                 sb.Append(sourceLine);
+
                 if (needsSuffixDots)
-                    sb.Append(" ...");
+                {
+                    sb.Append(" \u2026"); // Unicode ellipsis character
+                }
+
                 sb.Append(Environment.NewLine);
                 sb.Append("+ ");
-                sb.Append(' ', spacesBeforeError + (needsPrefixDots ? 4 : 0));
+                sb.Append(' ', spacesBeforeError + (needsPrefixDots ? 2 : 0));
                 // errorLength of 0 happens at EOF - always write out 1.
                 sb.Append('~', errorLength > 0 ? errorLength : 1);
+
                 message = sb.ToString();
             }
 
-            return StringUtil.Format(ParserStrings.TextForPositionMessage, fileName, position.StartLineNumber,
-                                     position.StartColumnNumber, message);
+            return StringUtil.Format(
+                ParserStrings.TextForPositionMessage,
+                fileName,
+                position.StartLineNumber,
+                position.StartColumnNumber,
+                message);
         }
 
         /// <summary>
@@ -559,8 +573,7 @@ namespace System.Management.Automation.Language
 
         public override bool Equals(object obj)
         {
-            IScriptExtent otherPosition = obj as IScriptExtent;
-            if (otherPosition == null)
+            if (!(obj is IScriptExtent otherPosition))
             {
                 return false;
             }

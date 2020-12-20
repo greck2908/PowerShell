@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -113,9 +113,7 @@ namespace System.Management.Automation
                 context = LocalPipeline.GetExecutionContextFromTLS();
             }
 
-            return (context != null)
-                       ? context.IsStrictVersion(majorVersion)
-                       : false;
+            return (context != null) && context.IsStrictVersion(majorVersion);
         }
         /// <summary>
         /// Check to see a specific version of strict mode is enabled.  The check is always scoped,
@@ -172,7 +170,7 @@ namespace System.Management.Automation
         /// trace flag.
         /// </summary>
         /// <value>The current state of the IgnoreScriptDebug flag.</value>
-        internal bool IgnoreScriptDebug { set; get; } = true;
+        internal bool IgnoreScriptDebug { get; set; } = true;
 
         /// <summary>
         /// Gets the automation engine instance.
@@ -488,11 +486,11 @@ namespace System.Management.Automation
         {
             get
             {
-                return InitialSessionState != null ? InitialSessionState.UseFullLanguageModeInDebugger : false;
+                return InitialSessionState != null && InitialSessionState.UseFullLanguageModeInDebugger;
             }
         }
 
-        internal static List<string> ModulesWithJobSourceAdapters = new List<string>
+        internal static readonly List<string> ModulesWithJobSourceAdapters = new List<string>
             {
                 Utils.ScheduledJobModuleName,
             };
@@ -570,23 +568,12 @@ namespace System.Management.Automation
 
         internal T GetEnumPreference<T>(VariablePath preferenceVariablePath, T defaultPref, out bool defaultUsed)
         {
-            CmdletProviderContext context = null;
-            SessionStateScope scope = null;
-            object val = EngineSessionState.GetVariableValue(preferenceVariablePath, out context, out scope);
+            object val = EngineSessionState.GetVariableValue(preferenceVariablePath, out _, out _);
             if (val is T)
             {
-                // We don't want to support "Ignore" as action preferences, as it leads to bad
-                // scripting habits. They are only supported as cmdlet overrides.
-                if (val is ActionPreference)
+                if (val is ActionPreference actionPreferenceValue)
                 {
-                    ActionPreference preference = (ActionPreference)val;
-                    if ((preference == ActionPreference.Ignore) || (preference == ActionPreference.Suspend))
-                    {
-                        // Reset the variable value
-                        EngineSessionState.SetVariableValue(preferenceVariablePath.UserPath, defaultPref);
-                        string message = StringUtil.Format(ErrorPackage.UnsupportedPreferenceError, preference);
-                        throw new NotSupportedException(message);
-                    }
+                    CheckActionPreference(preferenceVariablePath, actionPreferenceValue, defaultPref);
                 }
 
                 T convertedResult = (T)val;
@@ -613,6 +600,11 @@ namespace System.Management.Automation
                         result = (T)PSObject.Base(val);
                         defaultUsed = false;
                     }
+
+                    if (result is ActionPreference actionPreferenceValue)
+                    {
+                        CheckActionPreference(preferenceVariablePath, actionPreferenceValue, defaultPref);
+                    }
                 }
                 catch (InvalidCastException)
                 {
@@ -625,6 +617,18 @@ namespace System.Management.Automation
             }
 
             return result;
+        }
+
+        private void CheckActionPreference(VariablePath preferenceVariablePath, ActionPreference preference, object defaultValue)
+        {
+            if (preference == ActionPreference.Suspend)
+            {
+                // ActionPreference.Suspend is reserved for future use. When it is used, reset
+                // the variable to its default.
+                string message = StringUtil.Format(ErrorPackage.ReservedActionPreferenceReplacedError, preference, preferenceVariablePath.UserPath, defaultValue);
+                EngineSessionState.SetVariable(preferenceVariablePath, defaultValue, true, CommandOrigin.Internal);
+                throw new NotSupportedException(message);
+            }
         }
 
         /// <summary>
@@ -660,7 +664,7 @@ namespace System.Management.Automation
         /// <value></value>
         internal HelpSystem HelpSystem
         {
-            get { return _helpSystem ?? (_helpSystem = new HelpSystem(this)); }
+            get { return _helpSystem ??= new HelpSystem(this); }
         }
 
         private HelpSystem _helpSystem;
@@ -673,6 +677,7 @@ namespace System.Management.Automation
         #endregion
 
         internal Dictionary<string, ScriptBlock> CustomArgumentCompleters { get; set; }
+
         internal Dictionary<string, ScriptBlock> NativeArgumentCompleters { get; set; }
 
         /// <summary>
@@ -738,7 +743,7 @@ namespace System.Management.Automation
         /// </summary>
         internal EngineIntrinsics EngineIntrinsics
         {
-            get { return _engineIntrinsics ?? (_engineIntrinsics = new EngineIntrinsics(this)); }
+            get { return _engineIntrinsics ??= new EngineIntrinsics(this); }
         }
 
         private EngineIntrinsics _engineIntrinsics;
@@ -766,11 +771,11 @@ namespace System.Management.Automation
 
         internal class SavedContextData
         {
-            private bool _stepScript;
-            private bool _ignoreScriptDebug;
-            private int _PSDebug;
+            private readonly bool _stepScript;
+            private readonly bool _ignoreScriptDebug;
+            private readonly int _PSDebug;
 
-            private Pipe _shellFunctionErrorOutputPipe;
+            private readonly Pipe _shellFunctionErrorOutputPipe;
 
             public SavedContextData(ExecutionContext context)
             {
@@ -869,7 +874,7 @@ namespace System.Management.Automation
         internal void AppendDollarError(object obj)
         {
             ErrorRecord objAsErrorRecord = obj as ErrorRecord;
-            if (objAsErrorRecord == null && !(obj is Exception))
+            if (objAsErrorRecord == null && obj is not Exception)
             {
                 Diagnostics.Assert(false, "Object to append was neither an ErrorRecord nor an Exception in ExecutionContext.AppendDollarError");
                 return;
@@ -900,7 +905,7 @@ namespace System.Management.Automation
             const int maxErrorCount = 256;
 
             int numToErase = arraylist.Count - (maxErrorCount - 1);
-            if (0 < numToErase)
+            if (numToErase > 0)
             {
                 arraylist.RemoveRange(
                     maxErrorCount - 1,
@@ -1048,9 +1053,9 @@ namespace System.Management.Automation
             get
             {
                 bool defaultUsed = false;
-                return this.GetEnumPreference<ActionPreference>(
+                return this.GetEnumPreference(
                     SpecialVariables.DebugPreferenceVarPath,
-                    InitialSessionState.defaultDebugPreference,
+                    InitialSessionState.DefaultDebugPreference,
                     out defaultUsed);
             }
 
@@ -1069,9 +1074,9 @@ namespace System.Management.Automation
             get
             {
                 bool defaultUsed = false;
-                return this.GetEnumPreference<ActionPreference>(
+                return this.GetEnumPreference(
                     SpecialVariables.VerbosePreferenceVarPath,
-                    InitialSessionState.defaultVerbosePreference,
+                    InitialSessionState.DefaultVerbosePreference,
                     out defaultUsed);
             }
 
@@ -1090,9 +1095,9 @@ namespace System.Management.Automation
             get
             {
                 bool defaultUsed = false;
-                return this.GetEnumPreference<ActionPreference>(
+                return this.GetEnumPreference(
                     SpecialVariables.ErrorActionPreferenceVarPath,
-                    InitialSessionState.defaultErrorActionPreference,
+                    InitialSessionState.DefaultErrorActionPreference,
                     out defaultUsed);
             }
 
@@ -1111,9 +1116,9 @@ namespace System.Management.Automation
             get
             {
                 bool defaultUsed = false;
-                return this.GetEnumPreference<ActionPreference>(
+                return this.GetEnumPreference(
                     SpecialVariables.WarningPreferenceVarPath,
-                    InitialSessionState.defaultWarningPreference,
+                    InitialSessionState.DefaultWarningPreference,
                     out defaultUsed);
             }
 
@@ -1132,9 +1137,9 @@ namespace System.Management.Automation
             get
             {
                 bool defaultUsed = false;
-                return this.GetEnumPreference<ActionPreference>(
+                return this.GetEnumPreference(
                     SpecialVariables.InformationPreferenceVarPath,
-                    InitialSessionState.defaultInformationPreference,
+                    InitialSessionState.DefaultInformationPreference,
                     out defaultUsed);
             }
 
@@ -1178,9 +1183,9 @@ namespace System.Management.Automation
             get
             {
                 bool defaultUsed = false;
-                return this.GetEnumPreference<ConfirmImpact>(
+                return this.GetEnumPreference(
                     SpecialVariables.ConfirmPreferenceVarPath,
-                    InitialSessionState.defaultConfirmPreference,
+                    InitialSessionState.DefaultConfirmPreference,
                     out defaultUsed);
             }
 
@@ -1631,7 +1636,7 @@ namespace System.Management.Automation
             Modules = new ModuleIntrinsics(this);
         }
 
-        private static object lockObject = new Object();
+        private static readonly object lockObject = new object();
 
 #if !CORECLR // System.AppDomain is not in CoreCLR
         private static bool _assemblyEventHandlerSet = false;
@@ -1692,5 +1697,5 @@ namespace System.Management.Automation
         /// Engine is stopped.
         /// </summary>
         Stopped = 4
-    };
+    }
 }

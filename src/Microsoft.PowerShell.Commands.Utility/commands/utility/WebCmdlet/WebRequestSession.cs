@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -75,7 +75,7 @@ namespace Microsoft.PowerShell.Commands
         public int RetryIntervalInSeconds { get; set; }
 
         /// <summary>
-        /// Construct a new instance of a WebRequestSession object.
+        /// Initializes a new instance of the <see cref="WebRequestSession"/> class.
         /// </summary>
         public WebRequestSession()
         {

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -21,7 +21,7 @@ namespace Microsoft.PowerShell.Commands
     ///
     /// See Declarative Initial Session State (DISC)
     /// </summary>
-    [Cmdlet(VerbsCommon.New, "PSSessionConfigurationFile", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=217036")]
+    [Cmdlet(VerbsCommon.New, "PSSessionConfigurationFile", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096791")]
     public class NewPSSessionConfigurationFileCommand : PSCmdlet
     {
         #region Parameters
@@ -857,7 +857,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     if (Full)
                     {
-                        string exampleModulesToImport = "'MyCustomModule', @{ ModuleName = 'MyCustomModule'; ModuleVersion = '1.0.0.0'; GUID = '4d30d5f0-cb16-4898-812d-f20a6c596bdf' }";
+                        const string exampleModulesToImport = "'MyCustomModule', @{ ModuleName = 'MyCustomModule'; ModuleVersion = '1.0.0.0'; GUID = '4d30d5f0-cb16-4898-812d-f20a6c596bdf' }";
                         result.Append(SessionConfigurationUtils.ConfigFragment(ConfigFileConstants.ModulesToImport, RemotingErrorIdStrings.DISCModulesToImportComment, exampleModulesToImport, streamWriter, true));
                     }
                 }
@@ -967,7 +967,7 @@ namespace Microsoft.PowerShell.Commands
                                 ThrowTerminatingError(e.ErrorRecord);
                             }
 
-                            if ((hashtable[ConfigFileConstants.FunctionValueToken] as ScriptBlock) == null)
+                            if (hashtable[ConfigFileConstants.FunctionValueToken] is not ScriptBlock)
                             {
                                 PSArgumentException e = new PSArgumentException(StringUtil.Format(RemotingErrorIdStrings.DISCKeyMustBeScriptBlock,
                                     ConfigFileConstants.FunctionValueToken, ConfigFileConstants.FunctionDefinitions, _path));
@@ -1105,7 +1105,7 @@ namespace Microsoft.PowerShell.Commands
                         SessionConfigurationUtils.CombineStringArray(_assembliesToLoad), streamWriter, isExample));
                 }
 
-                result.Append("}");
+                result.Append('}');
 
                 streamWriter.Write(result.ToString());
             }
@@ -1621,7 +1621,7 @@ namespace Microsoft.PowerShell.Commands
                 // Modules to import
                 if (_modulesToImport == null)
                 {
-                    string exampleModulesToImport = "'MyCustomModule', @{ ModuleName = 'MyCustomModule'; ModuleVersion = '1.0.0.0'; GUID = '4d30d5f0-cb16-4898-812d-f20a6c596bdf' }";
+                    const string exampleModulesToImport = "'MyCustomModule', @{ ModuleName = 'MyCustomModule'; ModuleVersion = '1.0.0.0'; GUID = '4d30d5f0-cb16-4898-812d-f20a6c596bdf' }";
                     result.Append(SessionConfigurationUtils.ConfigFragment(ConfigFileConstants.ModulesToImport, RemotingErrorIdStrings.DISCModulesToImportComment, exampleModulesToImport, streamWriter, true));
                 }
                 else
@@ -1714,7 +1714,7 @@ namespace Microsoft.PowerShell.Commands
                                 ThrowTerminatingError(e.ErrorRecord);
                             }
 
-                            if ((hashtable[ConfigFileConstants.FunctionValueToken] as ScriptBlock) == null)
+                            if (hashtable[ConfigFileConstants.FunctionValueToken] is not ScriptBlock)
                             {
                                 PSArgumentException e = new PSArgumentException(StringUtil.Format(RemotingErrorIdStrings.DISCKeyMustBeScriptBlock,
                                     ConfigFileConstants.FunctionValueToken, ConfigFileConstants.FunctionDefinitions, _path));
@@ -1837,7 +1837,7 @@ namespace Microsoft.PowerShell.Commands
                 result.Append(SessionConfigurationUtils.ConfigFragment(ConfigFileConstants.AssembliesToLoad, RemotingErrorIdStrings.DISCAssembliesToLoadComment,
                     SessionConfigurationUtils.CombineStringArray(_assembliesToLoad), streamWriter, isExample));
 
-                result.Append("}");
+                result.Append('}');
 
                 streamWriter.Write(result.ToString());
             }
@@ -1951,7 +1951,7 @@ namespace Microsoft.PowerShell.Commands
                 sb.AppendFormat("{0," + (4 * (indent + 1)) + "}", string.Empty);
                 sb.Append(QuoteName(key));
                 sb.Append(" = ");
-                if ((table[key] as ScriptBlock) != null)
+                if (table[key] is ScriptBlock)
                 {
                     sb.Append(WrapScriptBlock(table[key].ToString()));
                     continue;

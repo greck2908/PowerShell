@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -159,7 +159,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException("name");
+                throw PSTraceSource.NewArgumentException(nameof(name));
             }
 
             Name = name;
@@ -387,7 +387,7 @@ namespace System.Management.Automation
         /// </remarks>
         public Collection<Attribute> Attributes
         {
-            get { return _attributes ?? (_attributes = new PSVariableAttributeCollection(this)); }
+            get { return _attributes ??= new PSVariableAttributeCollection(this); }
         }
 
         private PSVariableAttributeCollection _attributes;
@@ -688,6 +688,7 @@ namespace System.Management.Automation
 
         private readonly CallSite<Func<CallSite, object, object>> _copyMutableValueSite =
             CallSite<Func<CallSite, object, object>>.Create(PSVariableAssignmentBinder.Get());
+
         internal object CopyMutableValues(object o)
         {
             // The variable assignment binder copies mutable values and returns other values as is.
@@ -839,7 +840,7 @@ namespace System.Management.Automation
         /// </summary>
         public override string Description
         {
-            get { return _description ?? (_description = SessionStateStrings.DollarNullDescription); }
+            get { return _description ??= SessionStateStrings.DollarNullDescription; }
 
             set { /* Do nothing */ }
         }
@@ -897,4 +898,3 @@ namespace System.Management.Automation
         Unspecified = 0x10
     }
 }
-

@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+
 #if UNIX
 
 using System;
@@ -79,12 +80,12 @@ namespace System.Management.Automation.Tracing
     internal class SysLogProvider
     {
         // Ensure the string pointer is not garbage collected.
-        static IntPtr _nativeSyslogIdent = IntPtr.Zero;
-        static NativeMethods.SysLogPriority _facility = NativeMethods.SysLogPriority.Local0;
+        private static IntPtr _nativeSyslogIdent = IntPtr.Zero;
+        private static readonly NativeMethods.SysLogPriority _facility = NativeMethods.SysLogPriority.Local0;
 
-        byte _channelFilter;
-        ulong _keywordFilter;
-        byte _levelFilter;
+        private readonly byte _channelFilter;
+        private readonly ulong _keywordFilter;
+        private readonly byte _levelFilter;
 
         /// <summary>
         /// Initializes a new instance of this class.
@@ -123,19 +124,19 @@ namespace System.Management.Automation.Tracing
         /// property to ensure correct thread initialization; otherwise, a null reference can occur.
         /// </remarks>
         [ThreadStatic]
-        private static StringBuilder _messageBuilder;
+        private static StringBuilder t_messageBuilder;
 
         private static StringBuilder MessageBuilder
         {
             get
             {
-                if (_messageBuilder == null)
+                if (t_messageBuilder == null)
                 {
                     // NOTE: Thread static fields must be explicitly initialized for each thread.
-                    _messageBuilder = new StringBuilder(200);
+                    t_messageBuilder = new StringBuilder(200);
                 }
 
-                return _messageBuilder;
+                return t_messageBuilder;
             }
         }
 
@@ -147,24 +148,24 @@ namespace System.Management.Automation.Tracing
         /// to ensure correct thread initialization.
         /// </remarks>
         [ThreadStatic]
-        static Guid? _activity;
+        private static Guid? t_activity;
 
         private static Guid Activity
         {
             get
             {
-                if (_activity.HasValue == false)
+                if (!t_activity.HasValue)
                 {
                     // NOTE: Thread static fields must be explicitly initialized for each thread.
-                    _activity = Guid.NewGuid();
+                    t_activity = Guid.NewGuid();
                 }
 
-                return _activity.Value;
+                return t_activity.Value;
             }
 
             set
             {
-                _activity = value;
+                t_activity = value;
             }
         }
 
@@ -200,7 +201,7 @@ namespace System.Management.Automation.Tracing
         {
             get
             {
-                if (object.ReferenceEquals(_resourceManager, null))
+                if (_resourceManager is null)
                 {
                     _resourceManager = new global::System.Resources.ResourceManager("System.Management.Automation.resources.EventResource", typeof(EventResource).Assembly);
                 }
@@ -275,7 +276,7 @@ namespace System.Management.Automation.Tracing
 #region logging
 
         // maps a LogLevel to an associated SysLogPriority.
-        static NativeMethods.SysLogPriority[] _levels =
+        private static readonly NativeMethods.SysLogPriority[] _levels =
         {
             NativeMethods.SysLogPriority.Info,
             NativeMethods.SysLogPriority.Critical,
@@ -292,7 +293,7 @@ namespace System.Management.Automation.Tracing
         public void LogTransfer(Guid parentActivityId)
         {
             // NOTE: always log
-            int threadId = Thread.CurrentThread.ManagedThreadId;
+            int threadId = Environment.CurrentManagedThreadId;
             string message = string.Format(CultureInfo.InvariantCulture,
                                            "({0}:{1:X}:{2:X}) [Transfer]:{3} {4}",
                                            PSVersionInfo.GitCommitId, threadId, PSChannel.Operational,
@@ -308,7 +309,7 @@ namespace System.Management.Automation.Tracing
         /// <param name="activity">The Guid activity identifier.</param>
         public void SetActivity(Guid activity)
         {
-            int threadId = Thread.CurrentThread.ManagedThreadId;
+            int threadId = Environment.CurrentManagedThreadId;
             Activity = activity;
 
             // NOTE: always log
@@ -332,7 +333,7 @@ namespace System.Management.Automation.Tracing
         {
             if (ShouldLog(level, keyword, channel))
             {
-                int threadId = Thread.CurrentThread.ManagedThreadId;
+                int threadId = Environment.CurrentManagedThreadId;
 
                 StringBuilder sb = MessageBuilder;
                 sb.Clear();
@@ -374,7 +375,7 @@ namespace System.Management.Automation.Tracing
 
     internal static class NativeMethods
     {
-        const string libpslnative = "libpsl-native";
+        private const string libpslnative = "libpsl-native";
         /// <summary>
         /// Write a message to the system logger, which in turn writes the message to the system console, log files, etc.
         /// See man 3 syslog for more info.

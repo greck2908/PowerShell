@@ -1,9 +1,10 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
+using System.Management.Automation.Internal;
 using System.Text;
 
 // interfaces for host interaction
@@ -29,7 +30,14 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
         internal virtual int Length(string str, int offset)
         {
-            return str.Length - offset;
+            int length = 0;
+
+            foreach (char c in str)
+            {
+                length += LengthInBufferCells(c);
+            }
+
+            return length - offset;
         }
 
         internal virtual int Length(char character) { return 1; }
@@ -57,6 +65,29 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         }
 
         #region Helpers
+
+        protected static int LengthInBufferCells(char c)
+        {
+            // The following is based on http://www.cl.cam.ac.uk/~mgk25/c/wcwidth.c
+            // which is derived from https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
+            bool isWide = c >= 0x1100 &&
+                (c <= 0x115f || /* Hangul Jamo init. consonants */
+                 c == 0x2329 || c == 0x232a ||
+                 ((uint)(c - 0x2e80) <= (0xa4cf - 0x2e80) &&
+                  c != 0x303f) || /* CJK ... Yi */
+                 ((uint)(c - 0xac00) <= (0xd7a3 - 0xac00)) || /* Hangul Syllables */
+                 ((uint)(c - 0xf900) <= (0xfaff - 0xf900)) || /* CJK Compatibility Ideographs */
+                 ((uint)(c - 0xfe10) <= (0xfe19 - 0xfe10)) || /* Vertical forms */
+                 ((uint)(c - 0xfe30) <= (0xfe6f - 0xfe30)) || /* CJK Compatibility Forms */
+                 ((uint)(c - 0xff00) <= (0xff60 - 0xff00)) || /* Fullwidth Forms */
+                 ((uint)(c - 0xffe0) <= (0xffe6 - 0xffe0)));
+
+            // We can ignore these ranges because .Net strings use surrogate pairs
+            // for this range and we do not handle surrogage pairs.
+            // (c >= 0x20000 && c <= 0x2fffd) ||
+            // (c >= 0x30000 && c <= 0x3fffd)
+            return 1 + (isWide ? 1 : 0);
+        }
 
         /// <summary>
         /// Given a string and a number of display cells, it computes how many
@@ -228,17 +259,17 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// Instance of the delegate previously defined
         /// for line that has EXACTLY this.ncols characters.
         /// </summary>
-        private WriteCallback _writeCall = null;
+        private readonly WriteCallback _writeCall = null;
 
         /// <summary>
         /// Instance of the delegate previously defined
         /// for generic line, less that this.ncols characters.
         /// </summary>
-        private WriteCallback _writeLineCall = null;
+        private readonly WriteCallback _writeLineCall = null;
 
         #endregion
 
-        private bool _lineWrap;
+        private readonly bool _lineWrap;
 
         /// <summary>
         /// Construct an instance, given the two callbacks
@@ -252,9 +283,9 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         internal WriteLineHelper(bool lineWrap, WriteCallback wlc, WriteCallback wc, DisplayCells displayCells)
         {
             if (wlc == null)
-                throw PSTraceSource.NewArgumentNullException("wlc");
+                throw PSTraceSource.NewArgumentNullException(nameof(wlc));
             if (displayCells == null)
-                throw PSTraceSource.NewArgumentNullException("displayCells");
+                throw PSTraceSource.NewArgumentNullException(nameof(displayCells));
 
             _displayCells = displayCells;
             _writeLineCall = wlc;
@@ -337,7 +368,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             }
         }
 
-        private DisplayCells _displayCells;
+        private readonly DisplayCells _displayCells;
     }
 
     /// <summary>
@@ -381,6 +412,9 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         internal override void WriteLine(string s)
         {
             CheckStopProcessing();
+
+            s = Utils.GetOutputString(s, isHost: false);
+
             if (_suppressNewline)
             {
                 _writer.Write(s);
@@ -417,11 +451,11 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             _suppressNewline = suppressNewline;
         }
 
-        private int _columns = 0;
+        private readonly int _columns = 0;
 
-        private TextWriter _writer = null;
+        private readonly TextWriter _writer = null;
 
-        private bool _suppressNewline = false;
+        private readonly bool _suppressNewline = false;
     }
 
     /// <summary>
@@ -432,7 +466,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         #region tracer
         [TraceSource("StreamingTextWriter", "StreamingTextWriter")]
-        private static PSTraceSource s_tracer = PSTraceSource.GetTracer("StreamingTextWriter", "StreamingTextWriter");
+        private static readonly PSTraceSource s_tracer = PSTraceSource.GetTracer("StreamingTextWriter", "StreamingTextWriter");
         #endregion tracer
 
         /// <summary>
@@ -444,7 +478,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             : base(culture)
         {
             if (writeCall == null)
-                throw PSTraceSource.NewArgumentNullException("writeCall");
+                throw PSTraceSource.NewArgumentNullException(nameof(writeCall));
 
             _writeCall = writeCall;
         }
@@ -469,6 +503,6 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Instance of the delegate previously defined.
         /// </summary>
-        private WriteLineCallback _writeCall = null;
+        private readonly WriteLineCallback _writeCall = null;
     }
 }

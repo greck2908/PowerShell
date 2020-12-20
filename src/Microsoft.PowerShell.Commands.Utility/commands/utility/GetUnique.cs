@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -11,7 +11,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "Unique", DefaultParameterSetName = "AsString",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113335", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097028", RemotingCapability = RemotingCapability.None)]
     public sealed class GetUniqueCommand : PSCmdlet
     {
         #region Parameters
@@ -19,7 +19,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <value></value>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { set; get; } = AutomationNull.Value;
+        public PSObject InputObject { get; set; } = AutomationNull.Value;
 
         /// <summary>
         /// This parameter specifies that objects should be converted to
@@ -77,7 +77,7 @@ namespace Microsoft.PowerShell.Commands
                     _lastObjectAsString = _lastObject.ToString();
                 }
 
-                if (0 == string.Compare(
+                if (string.Equals(
                     inputString,
                     _lastObjectAsString,
                     StringComparison.CurrentCulture))
@@ -99,7 +99,7 @@ namespace Microsoft.PowerShell.Commands
                         true); // case-sensitive
                 }
 
-                isUnique = (0 != _comparer.Compare(InputObject, _lastObject));
+                isUnique = (_comparer.Compare(InputObject, _lastObject) != 0);
             }
 
             if (isUnique)

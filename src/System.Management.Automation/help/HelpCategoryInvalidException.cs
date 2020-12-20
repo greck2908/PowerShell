@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -72,7 +72,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private string _helpCategory = System.Management.Automation.HelpCategory.None.ToString();
+        private readonly string _helpCategory = System.Management.Automation.HelpCategory.None.ToString();
 
         /// <summary>
         /// Gets name of the help category that is invalid.
@@ -123,12 +123,11 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="info">The <see cref="System.Runtime.Serialization.SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
-        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
-                throw PSTraceSource.NewArgumentNullException("info");
+                throw PSTraceSource.NewArgumentNullException(nameof(info));
             }
 
             base.GetObjectData(info, context);

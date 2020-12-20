@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -35,7 +35,7 @@ namespace System.Management.Automation
         {
             if (commandInfo == null)
             {
-                throw PSTraceSource.NewArgumentNullException("commandInfo");
+                throw PSTraceSource.NewArgumentNullException(nameof(commandInfo));
             }
 
             if (commandInfo is IScriptCommandInfo scriptCommand)
@@ -149,6 +149,7 @@ namespace System.Management.Automation
         {
             get { return null; }
         }
+
         // Full Qualified ID for the obsolete command warning
         private const string FQIDCommandObsolete = "CommandObsolete";
 
@@ -156,6 +157,7 @@ namespace System.Management.Automation
         /// The command runtime used for this instance of a command processor.
         /// </summary>
         protected MshCommandRuntime commandRuntime;
+
         internal MshCommandRuntime CommandRuntime
         {
             get { return commandRuntime; }
@@ -230,6 +232,7 @@ namespace System.Management.Automation
         /// The execution context used by the system.
         /// </summary>
         protected ExecutionContext _context;
+
         internal ExecutionContext Context
         {
             get { return _context; }
@@ -254,7 +257,7 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="helpTarget">Help target to request.</param>
         /// <param name="helpCategory">Help category to request.</param>
-        /// <returns><c>true</c> if user requested help; <c>false</c> otherwise.</returns>
+        /// <returns><see langword="true"/> if user requested help; <see langword="false"/> otherwise.</returns>
         internal virtual bool IsHelpRequested(out string helpTarget, out HelpCategory helpCategory)
         {
             // by default we don't handle "-?" parameter at all
@@ -278,12 +281,12 @@ namespace System.Management.Automation
         {
             if (context == null)
             {
-                throw PSTraceSource.NewArgumentNullException("context");
+                throw PSTraceSource.NewArgumentNullException(nameof(context));
             }
 
             if (string.IsNullOrEmpty(helpTarget))
             {
-                throw PSTraceSource.NewArgumentNullException("helpTarget");
+                throw PSTraceSource.NewArgumentNullException(nameof(helpTarget));
             }
 
             CommandProcessorBase helpCommandProcessor = context.CreateCommand("get-help", false);
@@ -515,7 +518,7 @@ namespace System.Management.Automation
                         {
                             SetCurrentScopeToExecutionScope();
 
-                            if (Context._debuggingMode > 0 && !(Command is PSScriptCmdlet))
+                            if (Context._debuggingMode > 0 && Command is not PSScriptCmdlet)
                             {
                                 Context.Debugger.CheckCommand(this.Command.MyInvocation);
                             }
@@ -894,7 +897,7 @@ namespace System.Management.Automation
 
                 // An explicit throw is written to $error as an ErrorRecord, so we
                 // skip adding what is more or less a duplicate.
-                if (!(e is PipelineStoppedException) && !e.WasThrownFromThrowStatement)
+                if (e is not PipelineStoppedException && !e.WasThrownFromThrowStatement)
                     commandRuntime.AppendErrorToVariables(e);
             }
             // Upstream cmdlets see only that execution stopped
@@ -952,14 +955,6 @@ namespace System.Management.Automation
             }
 
             _disposed = true;
-        }
-
-        /// <summary>
-        /// Finalizer for class CommandProcessorBase.
-        /// </summary>
-        ~CommandProcessorBase()
-        {
-            Dispose(false);
         }
 
         #endregion IDispose
