@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
@@ -8,36 +8,41 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This class implements Disable-PSBreakpoint.
     /// </summary>
-    [Cmdlet(VerbsLifecycle.Disable, "PSBreakpoint", SupportsShouldProcess = true, DefaultParameterSetName = BreakpointParameterSetName, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096498")]
+    [Cmdlet(VerbsLifecycle.Disable, "PSBreakpoint", SupportsShouldProcess = true, DefaultParameterSetName = "Breakpoint", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113294")]
     [OutputType(typeof(Breakpoint))]
-    public class DisablePSBreakpointCommand : PSBreakpointUpdaterCommandBase
+    public class DisablePSBreakpointCommand : PSBreakpointCommandBase
     {
-        #region parameters
-
         /// <summary>
         /// Gets or sets the parameter -passThru which states whether the
         /// command should place the breakpoints it processes in the pipeline.
         /// </summary>
         [Parameter]
-        public SwitchParameter PassThru { get; set; }
+        public SwitchParameter PassThru
+        {
+            get
+            {
+                return _passThru;
+            }
 
-        #endregion parameters
+            set
+            {
+                _passThru = value;
+            }
+        }
 
-        #region overrides
+        private bool _passThru;
 
         /// <summary>
         /// Disables the given breakpoint.
         /// </summary>
         protected override void ProcessBreakpoint(Breakpoint breakpoint)
         {
-            breakpoint = Runspace.Debugger.DisableBreakpoint(breakpoint);
+            this.Context.Debugger.DisableBreakpoint(breakpoint);
 
-            if (PassThru)
+            if (_passThru)
             {
-                base.ProcessBreakpoint(breakpoint);
+                WriteObject(breakpoint);
             }
         }
-
-        #endregion overrides
     }
 }

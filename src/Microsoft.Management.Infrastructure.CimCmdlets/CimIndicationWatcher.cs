@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -45,16 +45,26 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// Returns an exception
         /// </para>
         /// </summary>
-        public Exception Exception { get; }
+        public Exception Exception
+        {
+            get
+            {
+                return exception;
+            }
+        }
+
+        private Exception exception;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimIndicationEventExceptionEventArgs"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         /// <param name="result"></param>
         public CimIndicationEventExceptionEventArgs(Exception theException)
         {
             context = null;
-            this.Exception = theException;
+            this.exception = theException;
         }
     }
 
@@ -71,7 +81,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         {
             get
             {
-                return result?.Instance;
+                return (result == null) ? null : result.Instance;
             }
         }
 
@@ -82,7 +92,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         {
             get
             {
-                return result?.MachineId;
+                return (result == null) ? null : result.MachineId;
             }
         }
 
@@ -93,12 +103,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         {
             get
             {
-                return result?.Bookmark;
+                return (result == null) ? null : result.Bookmark;
             }
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimIndicationEventInstanceEventArgs"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         /// <param name="result"></param>
         public CimIndicationEventInstanceEventArgs(CimSubscriptionResult result)
@@ -112,7 +124,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// subscription result
         /// </para>
         /// </summary>
-        private readonly CimSubscriptionResult result;
+        private CimSubscriptionResult result;
     }
 
     /// <summary>
@@ -142,7 +154,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public event EventHandler<CimIndicationEventArgs> CimIndicationArrived;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimIndicationWatcher"/> class.
+        /// <para>
+        /// Constructor with given computerName, namespace, queryExpression and timeout
+        /// </para>
         /// </summary>
         /// <param name="computerName"></param>
         /// <param name="nameSpace"></param>
@@ -162,7 +176,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimIndicationWatcher"/> class.
+        /// <para>
+        /// Constructor with given cimsession, namespace, queryExpression and timeout
+        /// </para>
         /// </summary>
         /// <param name="cimSession"></param>
         /// <param name="nameSpace"></param>
@@ -272,7 +288,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         {
             DebugHelper.WriteLogEx();
 
-            lock (myLock)
+            lock(myLock)
             {
                 if (status == Status.Default)
                 {

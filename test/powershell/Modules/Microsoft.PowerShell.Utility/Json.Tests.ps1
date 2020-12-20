@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 # This is a Pester test suite which validate the Json cmdlets.
@@ -50,7 +50,7 @@ Describe "Json Tests" -Tags "Feature" {
 
             # Test follow-up for bug WinBlue: 11484 - ConvertTo-Json can't handle terms with double quotes.
 
-            $notcompressed = ConvertTo-Json @{ FirstName = 'Hello " World' }
+            $notcompressed = ConvertTo-JSON @{ FirstName = 'Hello " World' }
             $compressed = ConvertTo-Json @{ FirstName = 'Hello " World' } -Compress
             $valueFromNotCompressedResult = ConvertFrom-Json -InputObject $notcompressed
             $valueFromCompressedResult = ConvertFrom-Json -InputObject $compressed
@@ -62,11 +62,11 @@ Describe "Json Tests" -Tags "Feature" {
 
             # Test follow-up for bug Win8: 378368 Convertto-Json problems with Enum based on Int64.
             if ( $null -eq ("JsonEnumTest" -as "Type")) {
-                $enum1 = "TestEnum" + (Get-Random)
-                $enum2 = "TestEnum" + (Get-Random)
-                $enum3 = "TestEnum" + (Get-Random)
+                $enum1 = "TestEnum" + (get-random)
+                $enum2 = "TestEnum" + (get-random)
+                $enum3 = "TestEnum" + (get-random)
 
-                $jsontype = Add-Type -pass -TypeDef "
+                $jsontype = add-type -pass -TypeDef "
                 public enum $enum1 : ulong { One = 1, Two = 2 };
                 public enum $enum2 : long  { One = 1, Two = 2 };
                 public enum $enum3 : int   { One = 1, Two = 2 };
@@ -76,7 +76,7 @@ Describe "Json Tests" -Tags "Feature" {
                     public $enum3 TestEnum3 = ${enum3}.One;
                 }"
             }
-            $op = [JsonEnumTest]::New() | ConvertTo-Json | ConvertFrom-Json
+            $op = [JsonEnumTest]::New() | convertto-json | convertfrom-json
             $op.TestEnum1 | Should -BeExactly "One"
             $op.TestEnum2 | Should -BeExactly "Two"
             $op.TestEnum3 | Should -Be 1
@@ -101,7 +101,7 @@ Describe "Json Tests" -Tags "Feature" {
             $response.d.Name.First | Should -Match "Joel"
         }
 
-        It "Convert to Json using PSObject" -Pending:($IsCoreCLR) {
+        It "Convert to Json using PSObject" -pending:($IsCoreCLR) {
 
             $response = ConvertFrom-Json '{"d":{"__type":"SimpleJsonObject","Name":{"First":"Joel","Last":"Wood"},"Greeting":"Hello"}}'
 
@@ -140,7 +140,7 @@ Describe "Json Tests" -Tags "Feature" {
             $response2 = ConvertTo-Json -InputObject $response -Depth 1
             $response2 | Should -Match $result2
 
-            $arraylist = New-Object System.Collections.ArrayList
+            $arraylist = new-Object System.Collections.ArrayList
             [void]$arraylist.Add("one")
             [void]$arraylist.Add("two")
             [void]$arraylist.Add("three")
@@ -161,7 +161,7 @@ Describe "Json Tests" -Tags "Feature" {
             $response2 | Should -Be $result3
         }
 
-        It "Convert to Json using hashtable" -Pending:($IsCoreCLR) {
+        It "Convert to Json using hashtable" -pending:($IsCoreCLR) {
 
             $nameHash = @{First="Joe1";Last="Wood"}
             $dHash = @{Name=$nameHash; Greeting="Hello"}
@@ -268,7 +268,7 @@ Describe "Json Tests" -Tags "Feature" {
             $json = "[1,2,3,4,5,6]"
             $result = ConvertFrom-Json $json
             $result.Count | Should -Be 6
-            ,$result | Should -BeOfType System.Array
+            ,$result | Should -BeOfType "System.Array"
         }
 
         It "ConvertFrom-Json with a float value" {
@@ -1237,7 +1237,7 @@ Describe "Validate Json serialization" -Tags "CI" {
             param ($testCase)
 
             if ( $TestCase.TestInput -eq "[char]::MinValue" ) { $pending = $true } else { $pending = $false }
-            It "Validate '$($testCase.TestInput) | ConvertTo-Json' and '$($testCase.TestInput) | ConvertTo-Json | ConvertFrom-Json'" -Pending:$pending {
+            It "Validate '$($testCase.TestInput) | ConvertTo-Json' and '$($testCase.TestInput) | ConvertTo-Json | ConvertFrom-Json'" -pending:$pending {
 
                 # The test case input is executed via invoke-expression. Then, we use this value as an input to ConvertTo-Json,
                 # and the result is saved into in the $result.ToJson variable. Lastly, this value is deserialized back using
@@ -1292,7 +1292,7 @@ Describe "Validate Json serialization" -Tags "CI" {
             }
         }
 
-        It "Validate that CimClass Properties for win32_bios can be serialized using ConvertTo-Json and ConvertFrom-Json" -Skip {
+        It "Validate that CimClass Properties for win32_bios can be serialized using ConvertTo-Json and ConvertFrom-Json" -skip {
 
             $class = Get-CimClass win32_bios
 
@@ -1462,12 +1462,5 @@ Describe "Json Bug fixes"  -Tags "Feature" {
 
         $result = "[1,","2,","3]" | ConvertFrom-Json
         $result.Count | Should -Be 3
-    }
-
-    It 'ConvertTo-Json will output warning if depth is exceeded.' {
-        $a = @{ a = @{ b = @{ c = @{ d = 1 } } } }
-        $json = $a | ConvertTo-Json -Depth 2 -WarningVariable warningMessage -WarningAction SilentlyContinue
-        $json | Should -Not -BeNullOrEmpty
-        $warningMessage | Should -Not -BeNullOrEmpty
     }
 }

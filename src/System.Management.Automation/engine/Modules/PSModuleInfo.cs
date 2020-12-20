@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -28,7 +28,7 @@ namespace System.Management.Automation
             new ReadOnlyDictionary<string, TypeDefinitionAst>(new Dictionary<string, TypeDefinitionAst>(StringComparer.OrdinalIgnoreCase));
 
         // This dictionary doesn't include ExportedTypes from nested modules.
-        private ReadOnlyDictionary<string, TypeDefinitionAst> _exportedTypeDefinitionsNoNested { get; set; }
+        private ReadOnlyDictionary<string, TypeDefinitionAst> _exportedTypeDefinitionsNoNested { set; get; }
 
         private static readonly HashSet<string> s_scriptModuleExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -130,7 +130,7 @@ namespace System.Management.Automation
         {
             if (scriptBlock == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(scriptBlock));
+                throw PSTraceSource.NewArgumentException("scriptBlock");
             }
 
             // Get the ExecutionContext from the thread.
@@ -282,8 +282,6 @@ namespace System.Management.Automation
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
         public string HelpInfoUri { get; private set; }
 
-        internal bool IsWindowsPowerShellCompatModule { get; set; }
-
         internal void SetHelpInfoUri(string uri)
         {
             HelpInfoUri = uri;
@@ -299,7 +297,8 @@ namespace System.Management.Automation
         {
             get
             {
-                return _moduleBase ??= !string.IsNullOrEmpty(Path) ? IO.Path.GetDirectoryName(Path) : string.Empty;
+                return _moduleBase ??
+                       (_moduleBase = !string.IsNullOrEmpty(Path) ? IO.Path.GetDirectoryName(Path) : string.Empty);
             }
         }
 
@@ -581,7 +580,7 @@ namespace System.Management.Automation
             }
         }
 
-        private static bool IsScriptModuleFile(string path)
+        private bool IsScriptModuleFile(string path)
         {
             var ext = System.IO.Path.GetExtension(path);
             return ext != null && s_scriptModuleExtensions.Contains(ext);
@@ -875,7 +874,7 @@ namespace System.Management.Automation
             get { return _compatiblePSEditions; }
         }
 
-        private readonly List<string> _compatiblePSEditions = new List<string>();
+        private List<string> _compatiblePSEditions = new List<string>();
 
         internal void AddToCompatiblePSEditions(string psEdition)
         {
@@ -921,7 +920,8 @@ namespace System.Management.Automation
         {
             get
             {
-                return _readonlyNestedModules ??= new ReadOnlyCollection<PSModuleInfo>(_nestedModules);
+                return _readonlyNestedModules ??
+                       (_readonlyNestedModules = new ReadOnlyCollection<PSModuleInfo>(_nestedModules));
             }
         }
 
@@ -1012,7 +1012,8 @@ namespace System.Management.Automation
         {
             get
             {
-                return _readonlyRequiredModules ??= new ReadOnlyCollection<PSModuleInfo>(_requiredModules);
+                return _readonlyRequiredModules ??
+                       (_readonlyRequiredModules = new ReadOnlyCollection<PSModuleInfo>(_requiredModules));
             }
         }
 
@@ -1037,7 +1038,8 @@ namespace System.Management.Automation
         {
             get
             {
-                return _readonlyRequiredModulesSpecification ??= new ReadOnlyCollection<ModuleSpecification>(_requiredModulesSpecification);
+                return _readonlyRequiredModulesSpecification ??
+                       (_readonlyRequiredModulesSpecification = new ReadOnlyCollection<ModuleSpecification>(_requiredModulesSpecification));
             }
         }
 
@@ -1089,7 +1091,7 @@ namespace System.Management.Automation
             moduleList.Add(module);
         }
 
-        internal static readonly string[] _builtinVariables = new string[] { "_", "this", "input", "args", "true", "false", "null",
+        internal static string[] _builtinVariables = new string[] { "_", "this", "input", "args", "true", "false", "null",
             "PSDefaultParameterValues", "Error", "PSScriptRoot", "PSCommandPath", "MyInvocation", "ExecutionContext", "StackTrace" };
 
         /// <summary>
@@ -1301,7 +1303,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(variableName))
             {
-                throw new ArgumentNullException(nameof(variableName));
+                throw new ArgumentNullException("variableName");
             }
 
             var context = LocalPipeline.GetExecutionContextFromTLS();
@@ -1356,7 +1358,7 @@ namespace System.Management.Automation
                 try
                 {
                     // Only copy simple mutable variables...
-                    if (v.Options == ScopedItemOptions.None && v is not NullVariable)
+                    if (v.Options == ScopedItemOptions.None && !(v is NullVariable))
                     {
                         PSVariable newVar = new PSVariable(v.Name, v.Value, v.Options, v.Description);
                         // The variable is already defined/set in the scope, and that means the attributes
@@ -1599,10 +1601,10 @@ namespace System.Management.Automation
         public bool Equals(PSModuleInfo x, PSModuleInfo y)
         {
             // Check whether the compared objects reference the same data.
-            if (object.ReferenceEquals(x, y)) return true;
+            if (Object.ReferenceEquals(x, y)) return true;
 
             // Check whether any of the compared objects is null.
-            if (x is null || y is null)
+            if (Object.ReferenceEquals(x, null) || Object.ReferenceEquals(y, null))
                 return false;
 
             bool result = string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase) &&

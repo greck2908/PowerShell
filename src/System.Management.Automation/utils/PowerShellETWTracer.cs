@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 #if !UNIX
 
 using System.Globalization;
@@ -866,7 +865,7 @@ namespace System.Management.Automation.Tracing
                 }
             }
 
-            return _provider.WriteEvent(in ed, args);
+            return _provider.WriteEvent(ref ed, args);
         }
 
         /// <summary>
@@ -988,7 +987,7 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         public PowerShellTraceTask Task { get; set; } = PowerShellTraceTask.None;
 
-        private static bool IsEtwSupported
+        private bool IsEtwSupported
         {
             get
             {

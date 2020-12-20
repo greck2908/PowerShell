@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -238,7 +238,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             // Use the scope enumerator to find an existing function
@@ -289,7 +289,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             // Use the scope enumerator to find an existing function
@@ -324,3 +324,4 @@ namespace System.Management.Automation
         #endregion cmdlets
     }
 }
+

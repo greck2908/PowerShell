@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -52,12 +52,12 @@ namespace System.Management.Automation
             Name = string.Empty;
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (parameterMetadata == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterMetadata));
+                throw PSTraceSource.NewArgumentNullException("parameterMetadata");
             }
 
             this.Name = name;
@@ -72,12 +72,12 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the name of the parameter set.
         /// </summary>
-        public string Name { get; }
+        public string Name { get; private set; }
 
         /// <summary>
         /// Gets whether the parameter set is the default parameter set.
         /// </summary>
-        public bool IsDefault { get; }
+        public bool IsDefault { get; private set; }
 
         /// <summary>
         /// Gets the parameter information for the parameters in this parameter set.
@@ -92,18 +92,18 @@ namespace System.Management.Automation
             Text.StringBuilder result = new Text.StringBuilder();
 
             GenerateParametersInDisplayOrder(
-                parameter => AppendFormatCommandParameterInfo(parameter, result),
-                (string str) =>
-                {
-                    if (result.Length > 0)
-                    {
-                        result.Append(' ');
-                    }
+                                 parameter => AppendFormatCommandParameterInfo(parameter, result),
+                                 delegate (string str)
+                                     {
+                                         if (result.Length > 0)
+                                         {
+                                             result.Append(" ");
+                                         }
 
-                    result.Append('[');
-                    result.Append(str);
-                    result.Append(']');
-                });
+                                         result.Append("[");
+                                         result.Append(str);
+                                         result.Append("]");
+                                     });
 
             return result.ToString();
         }
@@ -233,7 +233,7 @@ namespace System.Management.Automation
             if (result.Length > 0)
             {
                 // Add a space between parameters
-                result.Append(' ');
+                result.Append(" ");
             }
 
             if (parameter.ParameterType == typeof(SwitchParameter))
@@ -292,7 +292,7 @@ namespace System.Management.Automation
                 }
 
                 // If the type is really an array, but the typename didn't include [], then add it.
-                if (type.IsArray && !parameterTypeString.Contains("[]", StringComparison.Ordinal))
+                if (type.IsArray && (parameterTypeString.IndexOf("[]", StringComparison.Ordinal) == -1))
                 {
                     var t = type;
                     while (t.IsArray)
@@ -339,3 +339,4 @@ namespace System.Management.Automation
         #endregion private members
     }
 }
+

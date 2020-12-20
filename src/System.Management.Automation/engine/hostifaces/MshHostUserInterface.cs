@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -23,6 +23,7 @@ namespace System.Management.Automation.Host
     /// </summary>
     /// <seealso cref="System.Management.Automation.Host.PSHost"/>
     /// <seealso cref="System.Management.Automation.Host.PSHostRawUserInterface"/>
+
     public abstract class PSHostUserInterface
     {
         /// <summary>
@@ -58,7 +59,6 @@ namespace System.Management.Automation.Host
         /// <seealso cref="System.Management.Automation.Host.PSHostUserInterface.PromptForChoice"/>
         /// <seealso cref="System.Management.Automation.Host.PSHostUserInterface.Prompt"/>
         public abstract string ReadLine();
-
         /// <summary>
         /// Same as ReadLine, except that the result is a SecureString, and that the input is not echoed to the user while it is
         /// collected (or is echoed in some obfuscated way, such as showing a dot for each character).
@@ -391,16 +391,12 @@ namespace System.Management.Automation.Host
         /// make it to the actual host.
         /// </summary>
         internal bool TranscribeOnly => Interlocked.CompareExchange(ref _transcribeOnlyCount, 0, 0) != 0;
-
         private int _transcribeOnlyCount = 0;
-
         internal IDisposable SetTranscribeOnly() => new TranscribeOnlyCookie(this);
-
         private sealed class TranscribeOnlyCookie : IDisposable
         {
-            private readonly PSHostUserInterface _ui;
+            private PSHostUserInterface _ui;
             private bool _disposed = false;
-
             public TranscribeOnlyCookie(PSHostUserInterface ui)
             {
                 _ui = ui;
@@ -511,7 +507,7 @@ namespace System.Management.Automation.Host
                         Environment.MachineName,
                         Environment.OSVersion.VersionString,
                         string.Join(" ", Environment.GetCommandLineArgs()),
-                        Environment.ProcessId,
+                        System.Diagnostics.Process.GetCurrentProcess().Id,
                         versionInfoFooter.ToString().TrimEnd());
             }
 
@@ -619,16 +615,6 @@ namespace System.Management.Automation.Host
                     }
 
                     resultText = resultText.TrimEnd();
-
-                    if (ExperimentalFeature.IsEnabled("PSAnsiRendering"))
-                    {
-                        var text = new ValueStringDecorated(resultText);
-                        if (text.IsDecorated)
-                        {
-                            resultText = text.ToString(OutputRendering.PlainText);
-                        }
-                    }
-
                     foreach (TranscriptionOption transcript in TranscriptionData.Transcripts.Prepend<TranscriptionOption>(TranscriptionData.SystemTranscript))
                     {
                         if (transcript != null)
@@ -963,9 +949,8 @@ namespace System.Management.Automation.Host
         }
 
         internal static TranscriptionOption systemTranscript = null;
-        private static readonly object s_systemTranscriptLock = new object();
-
-        private static readonly Lazy<Transcription> s_transcriptionSettingCache = new Lazy<Transcription>(
+        private static object s_systemTranscriptLock = new Object();
+        private static Lazy<Transcription> s_transcriptionSettingCache = new Lazy<Transcription>(
             () => Utils.GetPolicySetting<Transcription>(Utils.SystemWideThenCurrentUserConfig),
             isThreadSafe: true);
 
@@ -1058,14 +1043,15 @@ namespace System.Management.Automation.Host
             PromptText = "PS>";
         }
 
-        internal List<TranscriptionOption> Transcripts { get; }
+        internal List<TranscriptionOption> Transcripts
+        {
+            get;
+            private set;
+        }
 
         internal TranscriptionOption SystemTranscript { get; set; }
-
         internal string CommandBeingIgnored { get; set; }
-
         internal bool IsHelperCommand { get; set; }
-
         internal string PromptText { get; set; }
     }
 
@@ -1081,17 +1067,32 @@ namespace System.Management.Automation.Host
         /// <summary>
         /// The path that this transcript is being logged to.
         /// </summary>
-        internal string Path { get; set; }
+        internal string Path
+        {
+            get
+            {
+                return _path;
+            }
+
+            set
+            {
+                _path = value;
+                // Get the encoding from the file, or default (UTF8-NoBom)
+                Encoding = Utils.GetEncoding(value);
+            }
+        }
+
+        private string _path;
 
         /// <summary>
         /// Any output to log for this transcript.
         /// </summary>
-        internal List<string> OutputToLog { get; }
+        internal List<string> OutputToLog { get; private set; }
 
         /// <summary>
         /// Any output currently being logged for this transcript.
         /// </summary>
-        internal List<string> OutputBeingLogged { get; }
+        internal List<string> OutputBeingLogged { get; private set; }
 
         /// <summary>
         /// Whether to include time stamp / command separators in
@@ -1100,19 +1101,18 @@ namespace System.Management.Automation.Host
         internal bool IncludeInvocationHeader { get; set; }
 
         /// <summary>
+        /// The encoding of this transcript, so that appending to it
+        /// can be done correctly.
+        /// </summary>
+        internal Encoding Encoding { get; private set; }
+
+        /// <summary>
         /// Logs buffered content to disk. We use this instead of File.AppendAllLines
         /// so that we don't need to pay seek penalties all the time, and so that we
         /// don't need append permission to our own files.
         /// </summary>
         internal void FlushContentToDisk()
         {
-            static Encoding GetPathEncoding(string path)
-            {
-                using StreamReader reader = new StreamReader(path, Utils.utf8NoBom, detectEncodingFromByteOrderMarks: true);
-                _ = reader.Read();
-                return reader.CurrentEncoding;
-            }
-
             lock (OutputBeingLogged)
             {
                 if (!_disposed)
@@ -1121,13 +1121,11 @@ namespace System.Management.Automation.Host
                     {
                         try
                         {
-                            var currentEncoding = GetPathEncoding(this.Path);
-
                             // Try to first open the file with permissions that will allow us to read from it
                             // later.
                             _contentWriter = new StreamWriter(
                                 new FileStream(this.Path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read),
-                                currentEncoding);
+                                this.Encoding);
                             _contentWriter.BaseStream.Seek(0, SeekOrigin.End);
                         }
                         catch (IOException)
@@ -1136,7 +1134,7 @@ namespace System.Management.Automation.Host
                             // file permissions.
                             _contentWriter = new StreamWriter(
                                 new FileStream(this.Path, FileMode.Append, FileAccess.Write, FileShare.Read),
-                                Utils.utf8NoBom);
+                                this.Encoding);
                         }
 
                         _contentWriter.AutoFlush = true;
@@ -1174,20 +1172,8 @@ namespace System.Management.Automation.Host
 
             if (_contentWriter != null)
             {
-                try
-                {
-                    _contentWriter.Flush();
-                    _contentWriter.Dispose();
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Do nothing
-                }
-                catch (IOException)
-                {
-                    // Do nothing
-                }
-
+                _contentWriter.Flush();
+                _contentWriter.Dispose();
                 _contentWriter = null;
             }
 
@@ -1261,7 +1247,7 @@ namespace System.Management.Automation.Host
                     if (andPos + 1 < choices[i].Label.Length)
                     {
                         splitLabel.Append(choices[i].Label.Substring(andPos + 1));
-                        hotkeysAndPlainLabels[0, i] = CultureInfo.CurrentCulture.TextInfo.ToUpper(choices[i].Label.AsSpan(andPos + 1, 1).Trim().ToString());
+                        hotkeysAndPlainLabels[0, i] = CultureInfo.CurrentCulture.TextInfo.ToUpper(choices[i].Label.Substring(andPos + 1, 1).Trim());
                     }
 
                     hotkeysAndPlainLabels[1, i] = splitLabel.ToString().Trim();
@@ -1273,7 +1259,7 @@ namespace System.Management.Automation.Host
                 #endregion SplitLabel
 
                 // ? is not localizable
-                if (string.Equals(hotkeysAndPlainLabels[0, i], "?", StringComparison.Ordinal))
+                if (string.Compare(hotkeysAndPlainLabels[0, i], "?", StringComparison.Ordinal) == 0)
                 {
                     Exception e = PSTraceSource.NewArgumentException(
                         string.Format(Globalization.CultureInfo.InvariantCulture, "choices[{0}].Label", i),
@@ -1305,7 +1291,7 @@ namespace System.Management.Automation.Host
             for (int i = 0; i < choices.Count; ++i)
             {
                 // pick the one that matches either the hot key or the full label
-                if (string.Equals(response, hotkeysAndPlainLabels[1, i], StringComparison.CurrentCultureIgnoreCase))
+                if (string.Compare(response, hotkeysAndPlainLabels[1, i], StringComparison.CurrentCultureIgnoreCase) == 0)
                 {
                     result = i;
                     break;
@@ -1320,7 +1306,7 @@ namespace System.Management.Automation.Host
                     // Ignore labels with empty hotkeys
                     if (hotkeysAndPlainLabels[0, i].Length > 0)
                     {
-                        if (string.Equals(response, hotkeysAndPlainLabels[0, i], StringComparison.CurrentCultureIgnoreCase))
+                        if (string.Compare(response, hotkeysAndPlainLabels[0, i], StringComparison.CurrentCultureIgnoreCase) == 0)
                         {
                             result = i;
                             break;
@@ -1333,3 +1319,4 @@ namespace System.Management.Automation.Host
         }
     }
 }
+

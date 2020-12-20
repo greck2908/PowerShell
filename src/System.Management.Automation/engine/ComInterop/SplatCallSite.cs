@@ -1,21 +1,26 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
+#if !CLR2
+#else
+using Microsoft.Scripting.Ast;
+#endif
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+//using Microsoft.Scripting.Utils;
 
+#if !SILVERLIGHT
 namespace System.Management.Automation.ComInterop
 {
     internal sealed class SplatCallSite
     {
-        // Stored callable IDynamicMetaObjectProvider.
+        // Stored callable Delegate or IDynamicMetaObjectProvider.
         internal readonly object _callable;
 
         // Can the number of arguments to a given event change each call?
         // If not, we don't need this level of indirection--we could cache a
         // delegate that does the splatting.
-        private CallSite<Func<CallSite, object, object[], object>> _site;
+        internal CallSite<Func<CallSite, object, object[], object>> _site;
 
         internal SplatCallSite(object callable)
         {
@@ -23,12 +28,18 @@ namespace System.Management.Automation.ComInterop
             _callable = callable;
         }
 
-        public delegate object InvokeDelegate(object[] args);
         internal object Invoke(object[] args)
         {
             Debug.Assert(args != null);
 
-            // Create a CallSite and invoke it.
+            // If it is a delegate, just let DynamicInvoke do the binding.
+            var d = _callable as Delegate;
+            if (d != null)
+            {
+                return d.DynamicInvoke(args);
+            }
+
+            // Otherwise, create a CallSite and invoke it.
             if (_site == null)
             {
                 _site = CallSite<Func<CallSite, object, object[], object>>.Create(SplatInvokeBinder.Instance);
@@ -38,3 +49,5 @@ namespace System.Management.Automation.ComInterop
         }
     }
 }
+#endif
+

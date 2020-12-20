@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Function Get-SystemDJournal {
@@ -11,7 +11,7 @@ Function Get-SystemDJournal {
         $Result = & $sudocmd $cmd $journalctlParameters -o json --no-pager
         Try
         {
-                  $JSONResult = $Result|ConvertFrom-Json
+                  $JSONResult = $Result|ConvertFrom-JSON
                   $JSONResult
         }
         Catch

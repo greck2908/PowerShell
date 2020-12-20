@@ -1,7 +1,5 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-
-Set-StrictMode -Version 3.0
 
 $ErrorActionPreference = 'continue'
 $repoRoot = Join-Path $PSScriptRoot '..'
@@ -17,12 +15,12 @@ if(Test-Path $dotNetPath)
 
 # import build into the global scope so it can be used by packaging
 Import-Module (Join-Path $repoRoot 'build.psm1') -Scope Global
-Import-Module (Join-Path $repoRoot 'tools\packaging') -Scope Global
+Import-Module (Join-Path $repoRoot 'tools\packaging') -scope Global
 
 # import the windows specific functcion only in Windows PowerShell or on Windows
-if($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows)
+if($PSVersionTable.PSEdition -eq 'Desktop' -or $isWindows)
 {
-    Import-Module (Join-Path $PSScriptRoot 'WindowsCI.psm1') -Scope Global
+    Import-Module (Join-Path $PSScriptRoot 'WindowsCI.psm1') -scope Global
 }
 
 # tests if we should run a daily build
@@ -104,7 +102,7 @@ function Invoke-CIBuild
 
     $options = (Get-PSOptions)
 
-    $path = Split-Path -Path $options.Output
+    $path = split-path -path $options.Output
 
     $psOptionsPath = (Join-Path -Path $PSScriptRoot -ChildPath '../psoptions.json')
     $buildZipPath = (Join-Path -Path $PSScriptRoot -ChildPath '../build.zip')
@@ -129,7 +127,7 @@ function Invoke-CIInstall
     {
         if ($env:BUILD_REASON -eq 'Schedule')
         {
-            Write-Host "##vso[build.updatebuildnumber]Daily-$env:BUILD_SOURCEBRANCHNAME-$env:BUILD_SOURCEVERSION-$((Get-Date).ToString("yyyyMMddhhss"))"
+            Write-Host "##vso[build.updatebuildnumber]Daily-$env:BUILD_SOURCEBRANCHNAME-$env:BUILD_SOURCEVERSION-$((get-date).ToString("yyyyMMddhhss"))"
         }
     }
 
@@ -145,7 +143,7 @@ function Invoke-CIInstall
 
         # Account
         $userName = 'ciRemote'
-        New-LocalUser -username $userName -Password $password
+        New-LocalUser -username $userName -password $password
         Add-UserToGroup -username $userName -groupSid $script:administratorsGroupSID
 
         # Provide credentials globally for remote tests.
@@ -192,7 +190,7 @@ function Invoke-CIxUnit
         throw "CoreCLR pwsh.exe was not built"
     }
 
-    $xUnitTestResultsFile = Join-Path -Path $PWD -ChildPath "xUnitTestResults.xml"
+    $xUnitTestResultsFile = Join-Path -Path $pwd -childpath "xUnitTestResults.xml"
 
     Start-PSxUnit -xUnitTestResultsFile $xUnitTestResultsFile
     Push-Artifact -Path $xUnitTestResultsFile -name xunit
@@ -241,8 +239,8 @@ function Invoke-CITest
 
     $env:CoreOutput = Split-Path -Parent (Get-PSOutput -Options (Get-PSOptions))
     Write-Host -Foreground Green 'Run CoreCLR tests'
-    $testResultsNonAdminFile = "$PWD\TestsResultsNonAdmin-$TagSet.xml"
-    $testResultsAdminFile = "$PWD\TestsResultsAdmin-$TagSet.xml"
+    $testResultsNonAdminFile = "$pwd\TestsResultsNonAdmin-$TagSet.xml"
+    $testResultsAdminFile = "$pwd\TestsResultsAdmin-$TagSet.xml"
     if(!(Test-Path "$env:CoreOutput\pwsh.exe"))
     {
         throw "CoreCLR pwsh.exe was not built"
@@ -271,7 +269,7 @@ function Invoke-CITest
             $featureName = $entry.Key
             $testFiles = $entry.Value
 
-            $expFeatureTestResultFile = "$PWD\TestsResultsNonAdmin.$featureName.xml"
+            $expFeatureTestResultFile = "$pwd\TestsResultsNonAdmin.$featureName.xml"
             $arguments['OutputFile'] = $expFeatureTestResultFile
             $arguments['ExperimentalFeatureName'] = $featureName
             if ($testFiles.Count -eq 0) {
@@ -310,7 +308,7 @@ function Invoke-CITest
             $featureName = $entry.Key
             $testFiles = $entry.Value
 
-            $expFeatureTestResultFile = "$PWD\TestsResultsAdmin.$featureName.xml"
+            $expFeatureTestResultFile = "$pwd\TestsResultsAdmin.$featureName.xml"
             $arguments['OutputFile'] = $expFeatureTestResultFile
             $arguments['ExperimentalFeatureName'] = $featureName
             if ($testFiles.Count -eq 0)
@@ -409,12 +407,12 @@ function Compress-CoverageArtifacts
 
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $resolvedPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath((Join-Path $PSScriptRoot '..\test\tools\OpenCover'))
-    $zipOpenCoverPath = Join-Path $PWD 'OpenCover.zip'
+    $zipOpenCoverPath = Join-Path $pwd 'OpenCover.zip'
     [System.IO.Compression.ZipFile]::CreateFromDirectory($resolvedPath, $zipOpenCoverPath)
     $null = $artifacts.Add($zipOpenCoverPath)
 
-    $zipCodeCoveragePath = Join-Path $PWD "CodeCoverage.zip"
-    Write-Verbose "Zipping ${CodeCoverageOutput} into $zipCodeCoveragePath" -Verbose
+    $zipCodeCoveragePath = Join-Path $pwd "CodeCoverage.zip"
+    Write-Verbose "Zipping ${CodeCoverageOutput} into $zipCodeCoveragePath" -verbose
     [System.IO.Compression.ZipFile]::CreateFromDirectory($CodeCoverageOutput, $zipCodeCoveragePath)
     $null = $artifacts.Add($zipCodeCoveragePath)
 
@@ -441,7 +439,7 @@ function Invoke-CIFinish
         [string] $NuGetKey
     )
 
-    if($PSEdition -eq 'Core' -and ($IsLinux -or $IsMacOS))
+    if($IsLinux -or $IsMacOS)
     {
         return New-LinuxPackage -NugetKey $NugetKey
     }
@@ -464,11 +462,11 @@ function Invoke-CIFinish
         Start-PSBuild -CrossGen -PSModuleRestore -Configuration 'Release' -ReleaseTag $preReleaseVersion -Clean
 
         # Build packages
-        $packages = Start-PSPackage -Type msi,nupkg,zip,zip-pdb -ReleaseTag $preReleaseVersion -SkipReleaseChecks
+        $packages = Start-PSPackage -Type msi,nupkg,zip -ReleaseTag $preReleaseVersion -SkipReleaseChecks
 
         $artifacts = New-Object System.Collections.ArrayList
         foreach ($package in $packages) {
-            if (Test-Path $package -ErrorAction Ignore)
+            if (Test-Path $package)
             {
                 Write-Log "Package found: $package"
             }
@@ -481,7 +479,7 @@ function Invoke-CIFinish
             {
                 $null = $artifacts.Add($package)
             }
-            elseif($package -is [pscustomobject] -and $package.psobject.Properties['msi'])
+            elseif($package -is [pscustomobject] -and $package.msi)
             {
                 $null = $artifacts.Add($package.msi)
                 $null = $artifacts.Add($package.wixpdb)
@@ -492,15 +490,14 @@ function Invoke-CIFinish
         $env:PSMsiX64Path = $artifacts | Where-Object { $_.EndsWith(".msi")}
 
         # Install the latest Pester and import it
-        $maximumPesterVersion = '4.99'
-        Install-Module Pester -Force -SkipPublisherCheck -MaximumVersion $maximumPesterVersion
-        Import-Module Pester -Force -MaximumVersion $maximumPesterVersion
+        Install-Module Pester -Force -SkipPublisherCheck
+        Import-Module Pester -Force
 
         # start the packaging tests and get the results
         $packagingTestResult = Invoke-Pester -Script (Join-Path $repoRoot '.\test\packaging\windows\') -PassThru
 
         # fail the CI job if the tests failed, or nothing passed
-        if(-not $packagingTestResult -is [pscustomobject] -or $packagingTestResult.FailedCount -ne 0 -or $packagingTestResult.PassedCount -eq 0)
+        if($packagingTestResult.FailedCount -ne 0 -or !$packagingTestResult.PassedCount)
         {
             throw "Packaging tests failed ($($packagingTestResult.FailedCount) failed/$($packagingTestResult.PassedCount) passed)"
         }
@@ -579,13 +576,9 @@ function Invoke-LinuxTestsCore
     )
 
     $output = Split-Path -Parent (Get-PSOutput -Options (Get-PSOptions))
-    $testResultsNoSudo = "$PWD/TestResultsNoSudo.xml"
-    $testResultsSudo = "$PWD/TestResultsSudo.xml"
+    $testResultsNoSudo = "$pwd/TestResultsNoSudo.xml"
+    $testResultsSudo = "$pwd/TestResultsSudo.xml"
     $testExcludeTag = $ExcludeTag + 'RequireSudoOnUnix'
-    $pesterPassThruNoSudoObject = $null
-    $pesterPassThruSudoObject = $null
-    $noSudoResultsWithExpFeatures = $null
-    $sudoResultsWithExpFeatures = $null
 
     $noSudoPesterParam = @{
         'BinDir'     = $output
@@ -610,7 +603,7 @@ function Invoke-LinuxTestsCore
             $featureName = $entry.Key
             $testFiles = $entry.Value
 
-            $expFeatureTestResultFile = "$PWD\TestResultsNoSudo.$featureName.xml"
+            $expFeatureTestResultFile = "$pwd\TestResultsNoSudo.$featureName.xml"
             $noSudoPesterParam['OutputFile'] = $expFeatureTestResultFile
             $noSudoPesterParam['ExperimentalFeatureName'] = $featureName
             if ($testFiles.Count -eq 0) {
@@ -645,7 +638,7 @@ function Invoke-LinuxTestsCore
             $featureName = $entry.Key
             $testFiles = $entry.Value
 
-            $expFeatureTestResultFile = "$PWD\TestResultsSudo.$featureName.xml"
+            $expFeatureTestResultFile = "$pwd\TestResultsSudo.$featureName.xml"
             $sudoPesterParam['OutputFile'] = $expFeatureTestResultFile
             $sudoPesterParam['ExperimentalFeatureName'] = $featureName
             if ($testFiles.Count -eq 0)

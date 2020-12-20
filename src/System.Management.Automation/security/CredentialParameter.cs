@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -37,7 +37,7 @@ namespace System.Management.Automation
                (engineIntrinsics.Host == null) ||
                (engineIntrinsics.Host.UI == null))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(engineIntrinsics));
+                throw PSTraceSource.NewArgumentNullException("engineIntrinsics");
             }
 
             if (inputData == null)

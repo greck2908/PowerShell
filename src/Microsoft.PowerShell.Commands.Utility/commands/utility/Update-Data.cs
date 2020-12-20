@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -24,18 +24,18 @@ namespace Microsoft.PowerShell.Commands
             ParameterSetName = FileParameterSet)]
         [Alias("PSPath", "Path")]
         [ValidateNotNull]
-        public string[] AppendPath { get; set; } = Array.Empty<string>();
+        public string[] AppendPath { set; get; } = Array.Empty<string>();
 
         /// <summary>
         /// Files to prepend to the existing set.
         /// </summary>
         [Parameter(ParameterSetName = FileParameterSet)]
         [ValidateNotNull]
-        public string[] PrependPath { get; set; } = Array.Empty<string>();
+        public string[] PrependPath { set; get; } = Array.Empty<string>();
 
         private static void ReportWrongExtension(string file, string errorId, PSCmdlet cmdlet)
         {
-            ErrorRecord errorRecord = new(
+            ErrorRecord errorRecord = new ErrorRecord(
                 PSTraceSource.NewInvalidOperationException(UpdateDataStrings.UpdateData_WrongExtension, file, "ps1xml"),
                 errorId,
                 ErrorCategory.InvalidArgument,
@@ -45,7 +45,7 @@ namespace Microsoft.PowerShell.Commands
 
         private static void ReportWrongProviderType(string providerId, string errorId, PSCmdlet cmdlet)
         {
-            ErrorRecord errorRecord = new(
+            ErrorRecord errorRecord = new ErrorRecord(
                 PSTraceSource.NewInvalidOperationException(UpdateDataStrings.UpdateData_WrongProviderError, providerId),
                 errorId,
                 ErrorCategory.InvalidArgument,
@@ -61,7 +61,7 @@ namespace Microsoft.PowerShell.Commands
         /// <returns></returns>
         internal static Collection<string> Glob(string[] files, string errorId, PSCmdlet cmdlet)
         {
-            Collection<string> retValue = new();
+            Collection<string> retValue = new Collection<string>();
             foreach (string file in files)
             {
                 Collection<string> providerPaths;

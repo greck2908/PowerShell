@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -23,7 +23,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This class implements get-help command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "Help", DefaultParameterSetName = "AllUsersView", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096483")]
+    [Cmdlet(VerbsCommon.Get, "Help", DefaultParameterSetName = "AllUsersView", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113316")]
     public sealed class GetHelpCommand : PSCmdlet
     {
         /// <summary>
@@ -68,7 +68,7 @@ namespace Microsoft.PowerShell.Commands
              IgnoreCase = true)]
         public string[] Category { get; set; }
 
-        private readonly string _provider = string.Empty;
+        private string _provider = string.Empty;
 
         /// <summary>
         /// Changes the view of HelpObject returned.
@@ -185,11 +185,6 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = "Online", Mandatory = true)]
         public SwitchParameter Online
         {
-            get
-            {
-                return _showOnlineHelp;
-            }
-
             set
             {
                 _showOnlineHelp = value;
@@ -198,35 +193,14 @@ namespace Microsoft.PowerShell.Commands
                     VerifyParameterForbiddenInRemoteRunspace(this, "Online");
                 }
             }
+
+            get
+            {
+                return _showOnlineHelp;
+            }
         }
 
         private bool _showOnlineHelp;
-
-#if !UNIX
-        private GraphicalHostReflectionWrapper graphicalHostReflectionWrapper;
-        private bool showWindow;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the help should be displayed in a separate window.
-        /// </summary>
-        [Parameter(ParameterSetName = "ShowWindow", Mandatory = true)]
-        public SwitchParameter ShowWindow
-        {
-            get
-            {
-                return showWindow;
-            }
-
-            set
-            {
-                showWindow = value;
-                if (showWindow)
-                {
-                    VerifyParameterForbiddenInRemoteRunspace(this, "ShowWindow");
-                }
-            }
-        }
-#endif
 
         // The following variable controls the view.
         private HelpView _viewTokenToAdd = HelpView.Default;
@@ -246,6 +220,19 @@ namespace Microsoft.PowerShell.Commands
         protected override void BeginProcessing()
         {
             _timer.Start();
+
+            if (!Online.IsPresent && UpdatableHelpSystem.ShouldPromptToUpdateHelp() && HostUtilities.IsProcessInteractive(MyInvocation) && HasInternetConnection())
+            {
+                if (ShouldContinue(HelpDisplayStrings.UpdateHelpPromptBody, HelpDisplayStrings.UpdateHelpPromptTitle))
+                {
+                    System.Management.Automation.PowerShell.Create(RunspaceMode.CurrentRunspace).AddCommand("Update-Help").Invoke();
+#if LEGACYTELEMETRY
+                    _updatedHelp = true;
+#endif
+                }
+
+                UpdatableHelpSystem.SetDisablePromptToUpdateHelp();
+            }
         }
 
         /// <summary>
@@ -256,13 +243,7 @@ namespace Microsoft.PowerShell.Commands
             HelpSystem helpSystem = this.Context.HelpSystem;
             try
             {
-#if !UNIX
-                if (this.ShowWindow)
-                {
-                    this.graphicalHostReflectionWrapper = GraphicalHostReflectionWrapper.GetGraphicalHostReflectionWrapper(this, "Microsoft.PowerShell.Commands.Internal.HelpWindowHelper");
-                }
-#endif
-                helpSystem.OnProgress += HelpSystem_OnProgress;
+                helpSystem.OnProgress += new HelpSystem.HelpProgressHandler(HelpSystem_OnProgress);
 
                 bool failed = false;
                 HelpCategory helpCategory = ToHelpCategory(Category, ref failed);
@@ -302,7 +283,7 @@ namespace Microsoft.PowerShell.Commands
                         return;
                     }
 
-                    if (countOfHelpInfos == 0)
+                    if (0 == countOfHelpInfos)
                     {
                         firstHelpInfoObject = helpInfo;
                     }
@@ -328,7 +309,7 @@ namespace Microsoft.PowerShell.Commands
                     Microsoft.PowerShell.Telemetry.Internal.TelemetryAPI.ReportGetHelpTelemetry(Name, countOfHelpInfos, _timer.ElapsedMilliseconds, _updatedHelp);
 #endif
                 // Write full help as there is only one help info object
-                if (countOfHelpInfos == 1)
+                if (1 == countOfHelpInfos)
                 {
                     WriteObjectsOrShowOnlineHelp(firstHelpInfoObject, true);
                 }
@@ -354,7 +335,7 @@ namespace Microsoft.PowerShell.Commands
             }
             finally
             {
-                helpSystem.OnProgress -= HelpSystem_OnProgress;
+                helpSystem.OnProgress -= new HelpSystem.HelpProgressHandler(HelpSystem_OnProgress);
                 HelpSystem_OnComplete();
 
                 // finally clear the ScriptBlockAst -> Token[] cache
@@ -516,9 +497,9 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // categories that support -Parameter, -Role, -Functionality, -Component parameters
-            const HelpCategory supportedCategories =
+            HelpCategory supportedCategories =
                 HelpCategory.Alias | HelpCategory.Cmdlet | HelpCategory.ExternalScript |
-                HelpCategory.Filter | HelpCategory.Function | HelpCategory.ScriptCommand;
+                HelpCategory.Filter | HelpCategory.Function | HelpCategory.ScriptCommand | HelpCategory.Workflow;
 
             if ((cat & supportedCategories) == 0)
             {
@@ -578,12 +559,6 @@ namespace Microsoft.PowerShell.Commands
                         throw PSTraceSource.NewInvalidOperationException(HelpErrors.NoURIFound);
                     }
                 }
-#if !UNIX
-                else if (showFullHelp && ShowWindow)
-                {
-                    graphicalHostReflectionWrapper.CallStaticMethod("ShowHelpWindow", helpInfo.FullHelp, this);
-                }
-#endif
                 else
                 {
                     // show inline help
@@ -683,7 +658,7 @@ namespace Microsoft.PowerShell.Commands
 
         #endregion
 
-        private void HelpSystem_OnProgress(object sender, HelpProgressEventArgs arg)
+        private void HelpSystem_OnProgress(object sender, HelpProgressInfo arg)
         {
             var record = new ProgressRecord(0, this.CommandInfo.Name, arg.Activity)
             {
@@ -701,6 +676,15 @@ namespace Microsoft.PowerShell.Commands
             };
 
             WriteProgress(record);
+        }
+
+        /// <summary>
+        /// Checks if we can connect to the internet.
+        /// </summary>
+        /// <returns></returns>
+        private bool HasInternetConnection()
+        {
+            return true; // TODO:CORECLR wininet.dll is not present on NanoServer
         }
 
         #region Helper methods for verification of parameters against NoLanguage mode
@@ -723,7 +707,7 @@ namespace Microsoft.PowerShell.Commands
         #region trace
 
         [TraceSourceAttribute("GetHelpCommand ", "GetHelpCommand ")]
-        private static readonly PSTraceSource s_tracer = PSTraceSource.GetTracer("GetHelpCommand ", "GetHelpCommand ");
+        private static PSTraceSource s_tracer = PSTraceSource.GetTracer("GetHelpCommand ", "GetHelpCommand ");
 
         #endregion
     }
@@ -734,38 +718,34 @@ namespace Microsoft.PowerShell.Commands
     public static class GetHelpCodeMethods
     {
         /// <summary>
-        /// Checks whether the default runspace associated with the current thread has the standard Get-Help cmdlet.
-        /// <summary>
-        /// <return>True if Get-Help is found, false otherwise.</return>
+        /// Verifies if the InitialSessionState of the current process.
+        /// </summary>
+        /// <returns></returns>
         private static bool DoesCurrentRunspaceIncludeCoreHelpCmdlet()
         {
-            InitialSessionState iss = Runspace.DefaultRunspace.InitialSessionState;
-            if (iss is null)
+            InitialSessionState iss =
+                System.Management.Automation.Runspaces.Runspace.DefaultRunspace.InitialSessionState;
+            if (iss != null)
             {
-                return false;
-            }
-
-            Collection<SessionStateCommandEntry> getHelpEntries = iss.Commands["Get-Help"];
-            SessionStateCommandEntry getHelpEntry = null;
-            for (int i = 0; i < getHelpEntries.Count; ++i)
-            {
-                if (getHelpEntries[i].Visibility is not SessionStateEntryVisibility.Public)
-                {
-                    continue;
-                }
-
-                // If we have multiple entries for Get-Help,
-                // our assumption is that the standard Get-Help is not available.
-                if (getHelpEntry is not null)
+                IEnumerable<SessionStateCommandEntry> publicGetHelpEntries = iss
+                    .Commands["Get-Help"]
+                    .Where(entry => entry.Visibility == SessionStateEntryVisibility.Public);
+                if (publicGetHelpEntries.Count() != 1)
                 {
                     return false;
                 }
 
-                getHelpEntry = getHelpEntries[i];
+                foreach (SessionStateCommandEntry getHelpEntry in publicGetHelpEntries)
+                {
+                    SessionStateCmdletEntry getHelpCmdlet = getHelpEntry as SessionStateCmdletEntry;
+                    if ((getHelpCmdlet != null) && (getHelpCmdlet.ImplementingType.Equals(typeof(GetHelpCommand))))
+                    {
+                        return true;
+                    }
+                }
             }
 
-            return getHelpEntry is SessionStateCmdletEntry getHelpCmdlet
-                && getHelpCmdlet.ImplementingType == typeof(GetHelpCommand);
+            return false;
         }
 
         /// <summary>
@@ -892,3 +872,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

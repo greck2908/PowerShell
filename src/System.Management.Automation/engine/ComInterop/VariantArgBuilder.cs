@@ -1,10 +1,14 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
+#if !SILVERLIGHT // ComObject
+#if !CLR2
 using System.Linq.Expressions;
-using System.Reflection;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace System.Management.Automation.ComInterop
 {
@@ -25,9 +29,9 @@ namespace System.Management.Automation.ComInterop
             {
                 parameter = Expression.Property(
                     Helpers.Convert(parameter, typeof(VariantWrapper)),
-                    typeof(VariantWrapper).GetProperty(nameof(VariantWrapper.WrappedObject))
+                    typeof(VariantWrapper).GetProperty("WrappedObject")
                 );
-            }
+            };
 
             return Helpers.Convert(parameter, typeof(object));
         }
@@ -38,7 +42,7 @@ namespace System.Management.Automation.ComInterop
 
             // parameter == UnsafeMethods.GetVariantForObject(parameter);
             return Expression.Call(
-                typeof(UnsafeMethods).GetMethod(nameof(UnsafeMethods.GetVariantForObject), BindingFlags.Static | BindingFlags.NonPublic),
+                typeof(UnsafeMethods).GetMethod("GetVariantForObject", BindingFlags.Static | System.Reflection.BindingFlags.NonPublic),
                 parameter
             );
         }
@@ -48,7 +52,7 @@ namespace System.Management.Automation.ComInterop
             // value == IntPtr.Zero ? null : Marshal.GetObjectForNativeVariant(value);
 
             Expression unmarshal = Expression.Call(
-                typeof(UnsafeMethods).GetMethod(nameof(UnsafeMethods.GetObjectForVariant)),
+                typeof(UnsafeMethods).GetMethod("GetObjectForVariant"),
                 value
             );
 
@@ -58,9 +62,12 @@ namespace System.Management.Automation.ComInterop
                     typeof(VariantWrapper).GetConstructor(new Type[] { typeof(object) }),
                     unmarshal
                 );
-            }
+            };
 
             return base.UnmarshalFromRef(unmarshal);
         }
     }
 }
+
+#endif
+

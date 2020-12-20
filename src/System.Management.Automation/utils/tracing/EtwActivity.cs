@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 #if !UNIX
 
 using System.Collections.Generic;
@@ -64,11 +63,19 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary> Gets whether the event is successfully written </summary>
-        public bool Success { get; }
+        public bool Success
+        {
+            get;
+            private set;
+        }
 
         /// <summary> Gets payload in the event </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public object[] Payload { get; }
+        public object[] Payload
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Creates a new instance of EtwEventArgs class.
@@ -96,9 +103,9 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         private class CorrelatedCallback
         {
-            private readonly CallbackNoParameter callbackNoParam;
-            private readonly CallbackWithState callbackWithState;
-            private readonly AsyncCallback asyncCallback;
+            private CallbackNoParameter callbackNoParam;
+            private CallbackWithState callbackWithState;
+            private AsyncCallback asyncCallback;
 
             /// <summary>
             /// ParentActivityId.
@@ -115,12 +122,12 @@ namespace System.Management.Automation.Tracing
             {
                 if (callback == null)
                 {
-                    throw new ArgumentNullException(nameof(callback));
+                    throw new ArgumentNullException("callback");
                 }
 
                 if (tracer == null)
                 {
-                    throw new ArgumentNullException(nameof(tracer));
+                    throw new ArgumentNullException("tracer");
                 }
 
                 this.tracer = tracer;
@@ -137,12 +144,12 @@ namespace System.Management.Automation.Tracing
             {
                 if (callback == null)
                 {
-                    throw new ArgumentNullException(nameof(callback));
+                    throw new ArgumentNullException("callback");
                 }
 
                 if (tracer == null)
                 {
-                    throw new ArgumentNullException(nameof(tracer));
+                    throw new ArgumentNullException("tracer");
                 }
 
                 this.tracer = tracer;
@@ -159,12 +166,12 @@ namespace System.Management.Automation.Tracing
             {
                 if (callback == null)
                 {
-                    throw new ArgumentNullException(nameof(callback));
+                    throw new ArgumentNullException("callback");
                 }
 
                 if (tracer == null)
                 {
-                    throw new ArgumentNullException(nameof(tracer));
+                    throw new ArgumentNullException("tracer");
                 }
 
                 this.tracer = tracer;
@@ -175,7 +182,7 @@ namespace System.Management.Automation.Tracing
             /// <summary>
             /// It is to be used in System.Timers.Timer scenarios.
             /// </summary>
-            private readonly CallbackWithStateAndArgs callbackWithStateAndArgs;
+            private CallbackWithStateAndArgs callbackWithStateAndArgs;
 
             /// <summary>
             /// EtwCorrelator Constructor.
@@ -186,12 +193,12 @@ namespace System.Management.Automation.Tracing
             {
                 if (callback == null)
                 {
-                    throw new ArgumentNullException(nameof(callback));
+                    throw new ArgumentNullException("callback");
                 }
 
                 if (tracer == null)
                 {
-                    throw new ArgumentNullException(nameof(tracer));
+                    throw new ArgumentNullException("tracer");
                 }
 
                 this.tracer = tracer;
@@ -252,10 +259,10 @@ namespace System.Management.Automation.Tracing
             }
         }
 
-        private static readonly Dictionary<Guid, EventProvider> providers = new Dictionary<Guid, EventProvider>();
-        private static readonly object syncLock = new object();
+        private static Dictionary<Guid, EventProvider> providers = new Dictionary<Guid, EventProvider>();
+        private static object syncLock = new object();
 
-        private static readonly EventDescriptor _WriteTransferEvent = new EventDescriptor(0x1f05, 0x1, 0x11, 0x5, 0x14, 0x0, (long)0x4000000000000000);
+        private static EventDescriptor _WriteTransferEvent = new EventDescriptor(0x1f05, 0x1, 0x11, 0x5, 0x14, 0x0, (long)0x4000000000000000);
 
         private EventProvider currentProvider;
 
@@ -328,7 +335,7 @@ namespace System.Management.Automation.Tracing
             if (parentActivityId != Guid.Empty)
             {
                 EventDescriptor transferEvent = TransferEvent;
-                provider.WriteTransferEvent(in transferEvent, parentActivityId, activityId, parentActivityId);
+                provider.WriteTransferEvent(ref transferEvent, parentActivityId, activityId, parentActivityId);
             }
         }
 
@@ -373,7 +380,7 @@ namespace System.Management.Automation.Tracing
         {
             if (callback == null)
             {
-                throw new ArgumentNullException(nameof(callback));
+                throw new ArgumentNullException("callback");
             }
 
             return new CorrelatedCallback(this, callback).Callback;
@@ -388,7 +395,7 @@ namespace System.Management.Automation.Tracing
         {
             if (callback == null)
             {
-                throw new ArgumentNullException(nameof(callback));
+                throw new ArgumentNullException("callback");
             }
 
             return new CorrelatedCallback(this, callback).Callback;
@@ -403,7 +410,7 @@ namespace System.Management.Automation.Tracing
         {
             if (callback == null)
             {
-                throw new ArgumentNullException(nameof(callback));
+                throw new ArgumentNullException("callback");
             }
 
             return new CorrelatedCallback(this, callback).Callback;
@@ -419,7 +426,7 @@ namespace System.Management.Automation.Tracing
         {
             if (callback == null)
             {
-                throw new ArgumentNullException(nameof(callback));
+                throw new ArgumentNullException("callback");
             }
 
             return new CorrelatedCallback(this, callback).Callback;
@@ -473,7 +480,7 @@ namespace System.Management.Automation.Tracing
                 }
             }
 
-            bool success = provider.WriteEvent(in ed, payload);
+            bool success = provider.WriteEvent(ref ed, payload);
             if (EventWritten != null)
             {
                 EventWritten.Invoke(this, new EtwEventArgs(ed, success, payload));

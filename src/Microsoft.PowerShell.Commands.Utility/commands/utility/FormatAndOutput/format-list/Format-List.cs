@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
@@ -10,12 +10,11 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implementation for the format-table command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Format, "List", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096928")]
+    [Cmdlet(VerbsCommon.Format, "List", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113302")]
     public class FormatListCommand : OuterFormatTableAndListBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="FormatListCommand"/> class
-        /// and sets the inner command.
+        /// Constructor to set the inner command.
         /// </summary>
         public FormatListCommand()
         {
@@ -23,3 +22,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

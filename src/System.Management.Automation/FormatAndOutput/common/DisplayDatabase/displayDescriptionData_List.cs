@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 // this file contains the data structures for the in memory database
@@ -173,7 +173,7 @@ namespace System.Management.Automation
             : this()
         {
             if (entries == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(entries));
+                throw PSTraceSource.NewArgumentNullException("entries");
             foreach (ListControlEntry entry in entries)
             {
                 this.Entries.Add(entry);
@@ -242,7 +242,7 @@ namespace System.Management.Automation
             : this()
         {
             if (listItems == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(listItems));
+                throw PSTraceSource.NewArgumentNullException("listItems");
             foreach (ListControlEntryItem item in listItems)
             {
                 this.Items.Add(item);
@@ -253,9 +253,9 @@ namespace System.Management.Automation
         public ListControlEntry(IEnumerable<ListControlEntryItem> listItems, IEnumerable<string> selectedBy)
         {
             if (listItems == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(listItems));
+                throw PSTraceSource.NewArgumentNullException("listItems");
             if (selectedBy == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(selectedBy));
+                throw PSTraceSource.NewArgumentNullException("selectedBy");
 
             EntrySelectedBy = new EntrySelectedBy { TypeNames = new List<string>(selectedBy) };
             foreach (ListControlEntryItem item in listItems)

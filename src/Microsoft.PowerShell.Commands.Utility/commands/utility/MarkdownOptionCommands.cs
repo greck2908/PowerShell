@@ -1,11 +1,15 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Runspaces;
+using System.Threading.Tasks;
 
 using Microsoft.PowerShell.MarkdownRender;
 
@@ -155,7 +159,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         var errorMessage = StringUtil.Format(ConvertMarkdownStrings.InvalidInputObjectType, baseObj.GetType());
 
-                        ErrorRecord errorRecord = new(
+                        ErrorRecord errorRecord = new ErrorRecord(
                             new ArgumentException(errorMessage),
                             "InvalidObject",
                             ErrorCategory.InvalidArgument,
@@ -267,8 +271,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     internal static class PSMarkdownOptionInfoCache
     {
-        private static readonly ConcurrentDictionary<Guid, PSMarkdownOptionInfo> markdownOptionInfoCache;
-
+        private static ConcurrentDictionary<Guid, PSMarkdownOptionInfo> markdownOptionInfoCache;
         private const string MarkdownOptionInfoVariableName = "PSMarkdownOptionInfo";
 
         static PSMarkdownOptionInfoCache()

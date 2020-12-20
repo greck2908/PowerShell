@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation.Internal
@@ -25,7 +25,7 @@ namespace System.Management.Automation.Internal
         {
             if (stream == null)
             {
-                throw new ArgumentNullException(nameof(stream));
+                throw new ArgumentNullException("stream");
             }
 
             _stream = stream;
@@ -164,7 +164,7 @@ namespace System.Management.Automation.Internal
         /// </exception>
         /// <remarks>
         /// If the enumeration contains elements equal to
-        /// AutomationNull.Value, they are ignored.
+        /// AutomationNull.Value, they are are ignored.
         /// This can cause the return value to be less than the size of
         /// the collection.
         /// </remarks>
@@ -199,7 +199,7 @@ namespace System.Management.Automation.Internal
         /// The underlying stream.
         /// </summary>
         /// <remarks>Can never be null</remarks>
-        private readonly ObjectStreamBase _stream;
+        private ObjectStreamBase _stream;
 
         #endregion Private Fields
     }
@@ -232,3 +232,4 @@ namespace System.Management.Automation.Internal
         #endregion
     }
 }
+

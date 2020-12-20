@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -18,7 +18,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         internal TerminatingErrorContext(PSCmdlet command)
         {
             if (command == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             _command = command;
         }
 
@@ -27,7 +27,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             _command.ThrowTerminatingError(errorRecord);
         }
 
-        private readonly PSCmdlet _command;
+        private PSCmdlet _command;
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
         private string _commandName = null;
         private Type _commandType;
-        private readonly List<CommandParameterInternal> _commandParameterList = new List<CommandParameterInternal>();
+        private List<CommandParameterInternal> _commandParameterList = new List<CommandParameterInternal>();
 
         private ExecutionContext _context = null;
     }
@@ -150,7 +150,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// This parameter specifies the current pipeline object.
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { get; set; } = AutomationNull.Value;
+        public PSObject InputObject { set; get; } = AutomationNull.Value;
 
         #endregion
 
@@ -404,3 +404,4 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
     }
 }
+

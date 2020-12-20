@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -33,7 +33,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Response async objects.
         /// </summary>
-        private readonly Dictionary<long, AsyncObject<T>> _responseAsyncObjects = new Dictionary<long, AsyncObject<T>>();
+        private Dictionary<long, AsyncObject<T>> _responseAsyncObjects = new Dictionary<long, AsyncObject<T>>();
 
         /// <summary>
         /// Next call id.

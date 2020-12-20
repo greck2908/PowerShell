@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -18,9 +18,7 @@ namespace System.Management.Automation.Remoting
     {
         /// <summary>
         /// </summary>
-#pragma warning disable CA2211 // Non-constant fields should not be visible
         public static bool IsServerManager;
-#pragma warning restore CA2211 // Non-constant fields should not be visible
 
         #region Public Properties
 
@@ -191,7 +189,7 @@ namespace System.Management.Automation.Remoting
                         AssertValueNotAssigned(ModulesToImportToken, _modulesToImport);
                         _modulesToImport = new List<string>();
                         _modulesToImportInternal = new List<object>();
-                        object[] modulesToImport = optionValue.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        object[] modulesToImport = optionValue.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var module in modulesToImport)
                         {
                             var s = module as string;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -17,14 +17,14 @@ namespace Microsoft.PowerShell.Cmdletization
 
         private static ModuleBuilder CreateModuleBuilder()
         {
-            AssemblyName aName = new(namespacePrefix);
+            AssemblyName aName = new AssemblyName(namespacePrefix);
             AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Run);
             ModuleBuilder mb = ab.DefineDynamicModule(aName.Name);
             return mb;
         }
 
-        private static Lazy<ModuleBuilder> s_moduleBuilder = new(CreateModuleBuilder, isThreadSafe: true);
-        private static object s_moduleBuilderUsageLock = new();
+        private static Lazy<ModuleBuilder> s_moduleBuilder = new Lazy<ModuleBuilder>(CreateModuleBuilder, isThreadSafe: true);
+        private static object s_moduleBuilderUsageLock = new object();
 
         internal static string GetEnumFullName(EnumMetadataEnum enumMetadata)
         {

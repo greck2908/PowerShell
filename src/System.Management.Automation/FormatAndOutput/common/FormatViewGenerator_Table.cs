@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -137,7 +137,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             // make sure we do not have too many properties
 
             // NOTE: this is an arbitrary number, chosen to be a sensitive default
-            const int nMax = 10;
+            int nMax = 10;
 
             if (activeAssociationList.Count > nMax)
             {
@@ -491,3 +491,4 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         }
     }
 }
+

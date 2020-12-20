@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -279,7 +279,7 @@ namespace System.Management.Automation
             return propertyTypeName ?? "System.Object";
         }
 
-        private readonly PSPropertyAdapter _externalAdapter;
+        private PSPropertyAdapter _externalAdapter;
     }
 
     /// <summary>
@@ -298,7 +298,7 @@ namespace System.Management.Automation
         {
             if (baseObject == null)
             {
-                throw new ArgumentNullException(nameof(baseObject));
+                throw new ArgumentNullException("baseObject");
             }
 
             Collection<string> types = new Collection<string>();
@@ -351,7 +351,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Returns a property if it's name matches the specified <see cref="MemberNamePredicate"/>, otherwise null.
         /// </summary>
-        /// <returns>An adapted property if the predicate matches, or <see langword="null"/>.</returns>
+        /// <returns>An adapted property if the predicate matches, or <c>null</c>.</returns>
         public virtual PSAdaptedProperty GetFirstPropertyOrDefault(object baseObject, MemberNamePredicate predicate)
         {
             foreach (var property in GetProperties(baseObject))

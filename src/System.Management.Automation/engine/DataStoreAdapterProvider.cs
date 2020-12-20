@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -34,10 +34,9 @@ namespace System.Management.Automation
         /// <summary>
         /// The instance of session state the provider belongs to.
         /// </summary>
-        private readonly SessionState _sessionState;
+        private SessionState _sessionState;
 
         private string _fullName;
-        private string _cachedModuleName;
 
         /// <summary>
         /// Gets the name of the provider.
@@ -45,13 +44,13 @@ namespace System.Management.Automation
         public string Name { get; }
 
         /// <summary>
-        /// Gets the full name of the provider including the module name if available.
+        /// Gets the full name of the provider including the pssnapin name if available.
         /// </summary>
         internal string FullName
         {
             get
             {
-                static string GetFullName(string name, string psSnapInName, string moduleName)
+                string GetFullName(string name, string psSnapInName, string moduleName)
                 {
                     string result = name;
                     if (!string.IsNullOrEmpty(psSnapInName))
@@ -78,13 +77,7 @@ namespace System.Management.Automation
                     return result;
                 }
 
-                if (_fullName != null && ModuleName.Equals(_cachedModuleName, StringComparison.Ordinal))
-                {
-                    return _fullName;
-                }
-
-                _cachedModuleName = ModuleName;
-                return _fullName = GetFullName(Name, PSSnapInName, ModuleName);
+                return _fullName ?? (_fullName = GetFullName(Name, PSSnapInName, ModuleName));
             }
         }
 
@@ -221,7 +214,7 @@ namespace System.Management.Automation
         /// A hidden drive for the provider that is used for setting
         /// the location to a provider-qualified path.
         /// </summary>
-        private readonly PSDriveInfo _hiddenDrive;
+        private PSDriveInfo _hiddenDrive;
 
         /// <summary>
         /// Gets the hidden drive for the provider that is used
@@ -297,7 +290,7 @@ namespace System.Management.Automation
         {
             if (providerInfo == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(providerInfo));
+                throw PSTraceSource.NewArgumentNullException("providerInfo");
             }
 
             Name = providerInfo.Name;
@@ -394,17 +387,17 @@ namespace System.Management.Automation
             // Verify parameters
             if (sessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sessionState));
+                throw PSTraceSource.NewArgumentNullException("sessionState");
             }
 
             if (implementingType == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(implementingType));
+                throw PSTraceSource.NewArgumentNullException("implementingType");
             }
 
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             _sessionState = sessionState;
@@ -673,7 +666,6 @@ namespace System.Management.Automation
         private Dictionary<string, List<PSTypeName>> _providerOutputType;
 
         private PSNoteProperty _noteProperty;
-
         internal PSNoteProperty GetNotePropertyForProviderCmdlets(string name)
         {
             if (_noteProperty == null)
@@ -686,3 +678,4 @@ namespace System.Management.Automation
         }
     }
 }
+

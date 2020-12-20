@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation
@@ -37,7 +37,8 @@ namespace System.Management.Automation
                     HelpCategory.Filter |
                     HelpCategory.Function |
                     HelpCategory.Configuration |
-                    HelpCategory.ScriptCommand;
+                    HelpCategory.ScriptCommand |
+                    HelpCategory.Workflow;
             }
         }
 

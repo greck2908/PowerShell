@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -13,8 +13,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
     public class ShowCommandParameterType
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShowCommandParameterType"/> class
-        /// with the specified <see cref="Type"/>.
+        /// Creates an instance of the ShowCommandParameterType class based on a Type object.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -23,7 +22,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException(nameof(other));
+                throw new ArgumentNullException("other");
             }
 
             this.FullName = other.FullName;
@@ -43,8 +42,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShowCommandParameterType"/> class
-        /// with the specified <see cref="Type"/>.
+        /// Creates an instance of the ShowCommandParameterType class based on a Type object.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -53,7 +51,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException(nameof(other));
+                throw new ArgumentNullException("other");
             }
 
             this.IsEnum = (bool)(other.Members["IsEnum"].Value);
@@ -76,32 +74,32 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         /// <summary>
         /// The full name of the outermost type.
         /// </summary>
-        public string FullName { get; }
+        public string FullName { get; private set; }
 
         /// <summary>
         /// Whether or not this type is an enum.
         /// </summary>
-        public bool IsEnum { get; }
+        public bool IsEnum { get; private set; }
 
         /// <summary>
         /// Whether or not this type is an dictionary.
         /// </summary>
-        public bool ImplementsDictionary { get; }
+        public bool ImplementsDictionary { get; private set; }
 
         /// <summary>
         /// Whether or not this enum has a flag attribute.
         /// </summary>
-        public bool HasFlagAttribute { get; }
+        public bool HasFlagAttribute { get; private set; }
 
         /// <summary>
         /// Whether or not this type is an array type.
         /// </summary>
-        public bool IsArray { get; }
+        public bool IsArray { get; private set; }
 
         /// <summary>
         /// Gets the inner type, if this corresponds to an array type.
         /// </summary>
-        public ShowCommandParameterType ElementType { get; }
+        public ShowCommandParameterType ElementType { get; private set; }
 
         /// <summary>
         /// Whether or not this type is a string.
@@ -150,6 +148,6 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         /// <summary>
         /// If this is an enum value, return the list of potential values.
         /// </summary>
-        public ArrayList EnumValues { get; }
+        public ArrayList EnumValues { get; private set; }
     }
 }

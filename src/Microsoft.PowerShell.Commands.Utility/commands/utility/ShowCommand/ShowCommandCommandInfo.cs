@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -14,8 +14,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
     public class ShowCommandCommandInfo
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShowCommandCommandInfo"/> class
-        /// with the specified <see cref="CommandInfo"/>.
+        /// Creates an instance of the ShowCommandCommandInfo class based on a CommandInfo object.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -24,7 +23,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException(nameof(other));
+                throw new ArgumentNullException("other");
             }
 
             this.Name = other.Name;
@@ -63,8 +62,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShowCommandCommandInfo"/> class
-        /// with the specified <see cref="PSObject"/>.
+        /// Creates an instance of the ShowCommandCommandInfo class based on a PSObject object.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -73,7 +71,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException(nameof(other));
+                throw new ArgumentNullException("other");
             }
 
             this.Name = other.Members["Name"].Value as string;
@@ -94,7 +92,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
                 var parameterSets = (other.Members["ParameterSets"].Value as PSObject).BaseObject as System.Collections.ArrayList;
                 this.ParameterSets = GetObjectEnumerable(parameterSets).Cast<PSObject>().Select(x => new ShowCommandParameterSetInfo(x)).ToList().AsReadOnly();
 
-                if (other.Members["Module"]?.Value is PSObject)
+                if (other.Members["Module"] != null && other.Members["Module"].Value as PSObject != null)
                 {
                     this.Module = new ShowCommandModuleInfo(other.Members["Module"].Value as PSObject);
                 }
@@ -118,31 +116,31 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         /// <summary>
         /// A string representing the definition of the command.
         /// </summary>
-        public string Name { get; }
+        public string Name { get; private set; }
 
         /// <summary>
         /// A string representing module the command belongs to.
         /// </summary>
-        public string ModuleName { get; }
+        public string ModuleName { get; private set; }
 
         /// <summary>
         /// A reference to the module the command came from.
         /// </summary>
-        public ShowCommandModuleInfo Module { get; }
+        public ShowCommandModuleInfo Module { get; private set; }
 
         /// <summary>
         /// An enumeration of the command types this command belongs to.
         /// </summary>
-        public CommandTypes CommandType { get; }
+        public CommandTypes CommandType { get; private set; }
 
         /// <summary>
         /// A string representing the definition of the command.
         /// </summary>
-        public string Definition { get; }
+        public string Definition { get; private set; }
 
         /// <summary>
         /// A string representing the definition of the command.
         /// </summary>
-        public ICollection<ShowCommandParameterSetInfo> ParameterSets { get; }
+        public ICollection<ShowCommandParameterSetInfo> ParameterSets { get; private set; }
     }
 }

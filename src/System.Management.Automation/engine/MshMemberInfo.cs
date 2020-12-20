@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Management.Automation.Internal;
@@ -162,7 +161,7 @@ namespace System.Management.Automation
         IncludeHidden = 1,
 
         /// <summary>
-        /// Only include members with <see cref="PSMemberInfo.ShouldSerialize"/> property set to <see langword="true"/>
+        /// Only include members with <see cref="PSMemberInfo.ShouldSerialize"/> property set to <c>true</c>
         /// </summary>
         OnlySerializable = 2
     }
@@ -174,7 +173,6 @@ namespace System.Management.Automation
     {
         internal object instance;
         internal string name;
-
         internal bool ShouldSerialize { get; set; }
 
         internal virtual void ReplicateInstance(object particularInstance)
@@ -184,7 +182,7 @@ namespace System.Management.Automation
 
         internal void SetValueNoConversion(object setValue)
         {
-            if (this is not PSProperty thisAsProperty)
+            if (!(this is PSProperty thisAsProperty))
             {
                 this.Value = setValue;
                 return;
@@ -230,7 +228,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -284,12 +282,12 @@ namespace System.Management.Automation
 
         internal bool MatchesOptions(MshMemberMatchOptions options)
         {
-            if (this.IsHidden && ((options & MshMemberMatchOptions.IncludeHidden) == 0))
+            if (this.IsHidden && (0 == (options & MshMemberMatchOptions.IncludeHidden)))
             {
                 return false;
             }
 
-            if (!this.ShouldSerialize && ((options & MshMemberMatchOptions.OnlySerializable) != 0))
+            if (!this.ShouldSerialize && (0 != (options & MshMemberMatchOptions.OnlySerializable)))
             {
                 return false;
             }
@@ -357,9 +355,9 @@ namespace System.Management.Automation
             returnValue.Append(" = ");
             if (ConversionType != null)
             {
-                returnValue.Append('(');
+                returnValue.Append("(");
                 returnValue.Append(ConversionType);
-                returnValue.Append(')');
+                returnValue.Append(")");
             }
 
             returnValue.Append(ReferencedMemberName);
@@ -377,13 +375,13 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
             if (string.IsNullOrEmpty(referencedMemberName))
             {
-                throw PSTraceSource.NewArgumentException(nameof(referencedMemberName));
+                throw PSTraceSource.NewArgumentException("referencedMemberName");
             }
 
             ReferencedMemberName = referencedMemberName;
@@ -402,13 +400,13 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
             if (string.IsNullOrEmpty(referencedMemberName))
             {
-                throw PSTraceSource.NewArgumentException(nameof(referencedMemberName));
+                throw PSTraceSource.NewArgumentException("referencedMemberName");
             }
 
             ReferencedMemberName = referencedMemberName;
@@ -427,7 +425,7 @@ namespace System.Management.Automation
         internal PSMemberInfo ReferencedMember => this.LookupMember(ReferencedMemberName);
 
         /// <summary>
-        /// Gets the type to convert the referenced member's value. It might be
+        /// Gets the the type to convert the referenced member's value. It might be
         /// null when no conversion is done.
         /// </summary>
         public Type ConversionType { get; private set; }
@@ -553,7 +551,7 @@ namespace System.Management.Automation
                     name);
             }
 
-            if (member is not PSAliasProperty aliasMember)
+            if (!(member is PSAliasProperty aliasMember))
             {
                 hasCycle = false;
                 returnedMember = member;
@@ -617,24 +615,24 @@ namespace System.Management.Automation
         {
             StringBuilder returnValue = new StringBuilder();
             returnValue.Append(this.TypeNameOfValue);
-            returnValue.Append(' ');
+            returnValue.Append(" ");
             returnValue.Append(this.Name);
-            returnValue.Append('{');
+            returnValue.Append("{");
             if (this.IsGettable)
             {
                 returnValue.Append("get=");
                 returnValue.Append(GetterCodeReference.Name);
-                returnValue.Append(';');
+                returnValue.Append(";");
             }
 
             if (this.IsSettable)
             {
                 returnValue.Append("set=");
                 returnValue.Append(SetterCodeReference.Name);
-                returnValue.Append(';');
+                returnValue.Append(";");
             }
 
-            returnValue.Append('}');
+            returnValue.Append("}");
             return returnValue.ToString();
         }
 
@@ -774,7 +772,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -791,13 +789,13 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
             if (getterCodeReference == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(getterCodeReference));
+                throw PSTraceSource.NewArgumentNullException("getterCodeReference");
             }
 
             SetGetter(getterCodeReference);
@@ -820,7 +818,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -876,7 +874,6 @@ namespace System.Management.Automation
         /// </summary>
         /// <exception cref="GetValueException">When getting and there is no getter or when the getter throws an exception.</exception>
         /// <exception cref="SetValueException">When setting and there is no setter or when the setter throws an exception.</exception>
-        [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "<Pending>")]
         public override object Value
         {
             get
@@ -966,7 +963,6 @@ namespace System.Management.Automation
         /// Gets the type of the value for this member.
         /// </summary>
         /// <exception cref="GetValueException">If there is no property getter.</exception>
-        [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "<Pending>")]
         public override string TypeNameOfValue
         {
             get
@@ -1079,7 +1075,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -1277,9 +1273,9 @@ namespace System.Management.Automation
             StringBuilder returnValue = new StringBuilder();
 
             returnValue.Append(GetDisplayTypeNameOfValue(this.Value));
-            returnValue.Append(' ');
+            returnValue.Append(" ");
             returnValue.Append(this.Name);
-            returnValue.Append('=');
+            returnValue.Append("=");
             returnValue.Append(this.noteValue == null ? "null" : this.noteValue.ToString());
             return returnValue.ToString();
         }
@@ -1296,7 +1292,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -1424,9 +1420,9 @@ namespace System.Management.Automation
         {
             StringBuilder returnValue = new StringBuilder();
             returnValue.Append(GetDisplayTypeNameOfValue(_variable.Value));
-            returnValue.Append(' ');
+            returnValue.Append(" ");
             returnValue.Append(_variable.Name);
-            returnValue.Append('=');
+            returnValue.Append("=");
             returnValue.Append(_variable.Value ?? "null");
             return returnValue.ToString();
         }
@@ -1442,7 +1438,7 @@ namespace System.Management.Automation
         public PSVariableProperty(PSVariable variable)
             : base(variable?.Name, null)
         {
-            _variable = variable ?? throw PSTraceSource.NewArgumentException(nameof(variable));
+            _variable = variable ?? throw PSTraceSource.NewArgumentException("variable");
         }
 
         #region virtual implementation
@@ -1544,24 +1540,24 @@ namespace System.Management.Automation
         {
             StringBuilder returnValue = new StringBuilder();
             returnValue.Append(this.TypeNameOfValue);
-            returnValue.Append(' ');
+            returnValue.Append(" ");
             returnValue.Append(this.Name);
             returnValue.Append(" {");
             if (this.IsGettable)
             {
                 returnValue.Append("get=");
                 returnValue.Append(this.GetterScript.ToString());
-                returnValue.Append(';');
+                returnValue.Append(";");
             }
 
             if (this.IsSettable)
             {
                 returnValue.Append("set=");
                 returnValue.Append(this.SetterScript.ToString());
-                returnValue.Append(';');
+                returnValue.Append(";");
             }
 
-            returnValue.Append('}');
+            returnValue.Append("}");
             return returnValue.ToString();
         }
 
@@ -1669,12 +1665,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
 
-            _getterScript = getterScript ?? throw PSTraceSource.NewArgumentNullException(nameof(getterScript));
+            _getterScript = getterScript ?? throw PSTraceSource.NewArgumentNullException("getterScript");
         }
 
         /// <summary>
@@ -1689,7 +1685,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -1726,7 +1722,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -1789,7 +1785,6 @@ namespace System.Management.Automation
         /// </exception>
         /// <exception cref="SetValueException">When setting and there is no setter,
         /// when the setter throws an exception or when there is no Runspace to run the script.</exception>
-        [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "<Pending>")]
         public override object Value
         {
             get
@@ -1915,12 +1910,12 @@ namespace System.Management.Automation
         }
 
         /// <remarks>
-        /// If <see langword="null"/> then there are no constraints
+        /// If <c>null</c> then there are no constraints
         /// </remarks>
         public Type MethodTargetType { get; }
 
         /// <remarks>
-        /// If <see langword="null"/> then there are no constraints
+        /// If <c>null</c> then there are no constraints
         /// </remarks>
         public IEnumerable<Type> ParameterTypes => _parameterTypes;
 
@@ -1950,7 +1945,7 @@ namespace System.Management.Automation
 
         public bool Equals(PSMethodInvocationConstraints other)
         {
-            if (other is null)
+            if (ReferenceEquals(null, other))
             {
                 return false;
             }
@@ -1975,7 +1970,7 @@ namespace System.Management.Automation
 
         public override bool Equals(object obj)
         {
-            if (obj is null)
+            if (ReferenceEquals(null, obj))
             {
                 return false;
             }
@@ -2161,7 +2156,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -2178,12 +2173,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (codeReference == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(codeReference));
+                throw PSTraceSource.NewArgumentNullException("codeReference");
             }
 
             if (!CheckMethodInfo(codeReference))
@@ -2234,7 +2229,7 @@ namespace System.Management.Automation
         {
             if (arguments == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arguments));
+                throw PSTraceSource.NewArgumentNullException("arguments");
             }
 
             object[] newArguments = new object[arguments.Length + 1];
@@ -2287,7 +2282,7 @@ namespace System.Management.Automation
         {
             StringBuilder returnValue = new StringBuilder();
             returnValue.Append(this.TypeNameOfValue);
-            returnValue.Append(' ');
+            returnValue.Append(" ");
             returnValue.Append(this.Name);
             returnValue.Append("();");
             return returnValue.ToString();
@@ -2331,12 +2326,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
 
-            _script = script ?? throw PSTraceSource.NewArgumentNullException(nameof(script));
+            _script = script ?? throw PSTraceSource.NewArgumentNullException("script");
         }
 
         /// <summary>
@@ -2369,7 +2364,7 @@ namespace System.Management.Automation
         {
             if (arguments == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arguments));
+                throw PSTraceSource.NewArgumentNullException("arguments");
             }
 
             return InvokeScript(Name, _script, this.instance, arguments);
@@ -2494,7 +2489,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -2564,7 +2559,7 @@ namespace System.Management.Automation
         {
             if (arguments == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arguments));
+                throw PSTraceSource.NewArgumentNullException("arguments");
             }
 
             return _adapter.BaseMethodInvoke(this, invocationConstraints, arguments);
@@ -2808,7 +2803,7 @@ namespace System.Management.Automation
             return MoveNext(_t, _currentIndex);
         }
 
-        private bool MoveNext(Type type, int index)
+        bool MoveNext(Type type, int index)
         {
             var genericTypeArguments = type.GenericTypeArguments;
             var length = genericTypeArguments.Length;
@@ -2913,7 +2908,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -2926,7 +2921,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -2955,7 +2950,7 @@ namespace System.Management.Automation
         {
             if (arguments == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arguments));
+                throw PSTraceSource.NewArgumentNullException("arguments");
             }
 
             return this.adapter.BaseParameterizedPropertyGet(this, arguments);
@@ -2972,7 +2967,7 @@ namespace System.Management.Automation
         {
             if (arguments == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arguments));
+                throw PSTraceSource.NewArgumentNullException("arguments");
             }
 
             this.adapter.BaseParameterizedPropertySet(this, valueToSet, arguments);
@@ -3042,7 +3037,7 @@ namespace System.Management.Automation
             }
 
             returnValue.Insert(0, this.Name);
-            returnValue.Append('}');
+            returnValue.Append("}");
             return returnValue.ToString();
         }
 
@@ -3065,7 +3060,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
@@ -3085,13 +3080,13 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
             if (members == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(members));
+                throw PSTraceSource.NewArgumentNullException("members");
             }
 
             this.internalMembers = new PSMemberInfoInternalCollection<PSMemberInfo>();
@@ -3099,31 +3094,11 @@ namespace System.Management.Automation
             {
                 if (member == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(members));
+                    throw PSTraceSource.NewArgumentNullException("members");
                 }
 
                 this.internalMembers.Add(member.Copy());
             }
-
-            _members = new PSMemberInfoIntegratingCollection<PSMemberInfo>(this, s_emptyMemberCollection);
-            _properties = new PSMemberInfoIntegratingCollection<PSPropertyInfo>(this, s_emptyPropertyCollection);
-            _methods = new PSMemberInfoIntegratingCollection<PSMethodInfo>(this, s_emptyMethodCollection);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of PSMemberSet with all the initial members in <paramref name="members"/>.
-        /// This constructor is supposed to be used in TypeTable to reuse the passed-in member collection.
-        /// Null-argument check is skipped here, so callers need to check arguments before passing in.
-        /// </summary>
-        /// <param name="name">Name for the member set.</param>
-        /// <param name="members">Members in the member set.</param>
-        internal PSMemberSet(string name, PSMemberInfoInternalCollection<PSMemberInfo> members)
-        {
-            Diagnostics.Assert(!string.IsNullOrEmpty(name), "Caller needs to guarantee not null or empty.");
-            Diagnostics.Assert(members != null, "Caller needs to guarantee not null.");
-
-            this.name = name;
-            this.internalMembers = members;
 
             _members = new PSMemberInfoIntegratingCollection<PSMemberInfo>(this, s_emptyMemberCollection);
             _properties = new PSMemberInfoIntegratingCollection<PSPropertyInfo>(this, s_emptyPropertyCollection);
@@ -3177,13 +3152,13 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
             if (mshObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(mshObject));
+                throw PSTraceSource.NewArgumentNullException("mshObject");
             }
 
             _constructorPSObject = mshObject;
@@ -3282,7 +3257,7 @@ namespace System.Management.Automation
     /// </remarks>
     internal class PSInternalMemberSet : PSMemberSet
     {
-        private readonly object _syncObject = new object();
+        private readonly object _syncObject = new Object();
         private readonly PSObject _psObject;
 
         #region Constructor
@@ -3445,7 +3420,7 @@ namespace System.Management.Automation
                 returnValue.Remove(returnValue.Length - 2, 2);
             }
 
-            returnValue.Append('}');
+            returnValue.Append("}");
             return returnValue.ToString();
         }
 
@@ -3459,13 +3434,13 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             this.name = name;
             if (referencedPropertyNames == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(referencedPropertyNames));
+                throw PSTraceSource.NewArgumentNullException("referencedPropertyNames");
             }
 
             ReferencedPropertyNames = new Collection<string>();
@@ -3473,29 +3448,11 @@ namespace System.Management.Automation
             {
                 if (string.IsNullOrEmpty(referencedPropertyName))
                 {
-                    throw PSTraceSource.NewArgumentException(nameof(referencedPropertyNames));
+                    throw PSTraceSource.NewArgumentException("referencedPropertyNames");
                 }
 
                 ReferencedPropertyNames.Add(referencedPropertyName);
             }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of PSPropertySet with a name and list of property names.
-        /// This constructor is supposed to be used in TypeTable to reuse the passed-in property name list.
-        /// Null-argument check is skipped here, so callers need to check arguments before passing in.
-        /// </summary>
-        /// <param name="name">Name of the set.</param>
-        /// <param name="referencedPropertyNameList">Name of the properties in the set.</param>
-        internal PSPropertySet(string name, List<string> referencedPropertyNameList)
-        {
-            Diagnostics.Assert(!string.IsNullOrEmpty(name), "Caller needs to guarantee not null or empty.");
-            Diagnostics.Assert(referencedPropertyNameList != null, "Caller needs to guarantee not null.");
-
-            // We use the constructor 'public Collection(IList<T> list)' to create the collection,
-            // so that the passed-in list is directly used as the backing store of the collection.
-            this.name = name;
-            ReferencedPropertyNames = new Collection<string>(referencedPropertyNameList);
         }
 
         /// <summary>
@@ -3558,7 +3515,7 @@ namespace System.Management.Automation
             StringBuilder eventDefinition = new StringBuilder();
             eventDefinition.Append(this.baseEvent.ToString());
 
-            eventDefinition.Append('(');
+            eventDefinition.Append("(");
 
             int loopCounter = 0;
             foreach (ParameterInfo parameter in baseEvent.EventHandlerType.GetMethod("Invoke").GetParameters())
@@ -3571,7 +3528,7 @@ namespace System.Management.Automation
                 loopCounter++;
             }
 
-            eventDefinition.Append(')');
+            eventDefinition.Append(")");
 
             return eventDefinition.ToString();
         }
@@ -3697,12 +3654,12 @@ namespace System.Management.Automation
             PSMemberInfoInternalCollection<T> returnValue = new PSMemberInfoInternalCollection<T>();
             if (memberList == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(memberList));
+                throw PSTraceSource.NewArgumentNullException("memberList");
             }
 
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (nameMatch == null)
@@ -3732,7 +3689,7 @@ namespace System.Management.Automation
     /// A Predicate that determine if a member name matches a criterion.
     /// </summary>
     /// <param name="memberName"></param>
-    /// <returns><see langword="true"/> if the <paramref name="memberName"/> matches the predicate, otherwise <see langword="false"/>.</returns>
+    /// <returns><c>true</c> if the <paramref name="memberName"/> matches the predicate, otherwise <c>false</c>.</returns>
     public delegate bool MemberNamePredicate(string memberName);
 
     /// <summary>
@@ -3889,7 +3846,7 @@ namespace System.Management.Automation
         {
             if (members == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(members));
+                throw PSTraceSource.NewArgumentNullException("members");
             }
 
             _members = members;
@@ -3907,7 +3864,7 @@ namespace System.Management.Automation
             {
                 if (string.IsNullOrEmpty(name))
                 {
-                    throw PSTraceSource.NewArgumentException(nameof(name));
+                    throw PSTraceSource.NewArgumentException("name");
                 }
 
                 return _members[name];
@@ -3924,7 +3881,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             return _members.Match(name);
@@ -3941,7 +3898,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             return _members.Match(name, memberTypes);
@@ -4074,7 +4031,7 @@ namespace System.Management.Automation
         {
             if (member == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(member));
+                throw PSTraceSource.NewArgumentNullException("member");
             }
 
             // Save to a local variable to reduce property access.
@@ -4106,7 +4063,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (IsReservedName(name))
@@ -4148,7 +4105,7 @@ namespace System.Management.Automation
             {
                 if (string.IsNullOrEmpty(name))
                 {
-                    throw PSTraceSource.NewArgumentException(nameof(name));
+                    throw PSTraceSource.NewArgumentException("name");
                 }
 
                 if (_members == null)
@@ -4173,7 +4130,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             return Match(name, PSMemberTypes.All, MshMemberMatchOptions.None);
@@ -4190,7 +4147,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             return Match(name, memberTypes, MshMemberMatchOptions.None);
@@ -4208,7 +4165,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             PSMemberInfoInternalCollection<T> internalMembers = GetInternalMembers(matchOptions);
@@ -4505,19 +4462,19 @@ namespace System.Management.Automation
         {
             if (owner == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(owner));
+                throw PSTraceSource.NewArgumentNullException("owner");
             }
 
             _mshOwner = owner as PSObject;
             _memberSetOwner = owner as PSMemberSet;
             if (_mshOwner == null && _memberSetOwner == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(owner));
+                throw PSTraceSource.NewArgumentException("owner");
             }
 
             if (collections == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(collections));
+                throw PSTraceSource.NewArgumentNullException("collections");
             }
 
             Collections = collections;
@@ -4567,7 +4524,7 @@ namespace System.Management.Automation
         {
             if (member == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(member));
+                throw PSTraceSource.NewArgumentNullException("member");
             }
 
             if (!preValidated)
@@ -4632,7 +4589,7 @@ namespace System.Management.Automation
         {
             if (member == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(member));
+                throw PSTraceSource.NewArgumentNullException("member");
             }
 
             if (!preValidated)
@@ -4697,7 +4654,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (_mshOwner != null)
@@ -4779,7 +4736,7 @@ namespace System.Management.Automation
                 {
                     if (string.IsNullOrEmpty(name))
                     {
-                        throw PSTraceSource.NewArgumentException(nameof(name));
+                        throw PSTraceSource.NewArgumentException("name");
                     }
 
                     PSMemberInfo member;
@@ -4913,7 +4870,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             return Match(name, PSMemberTypes.All, MshMemberMatchOptions.None);
@@ -4930,7 +4887,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             return Match(name, memberTypes, MshMemberMatchOptions.None);
@@ -4950,7 +4907,7 @@ namespace System.Management.Automation
             {
                 if (string.IsNullOrEmpty(name))
                 {
-                    throw PSTraceSource.NewArgumentException(nameof(name));
+                    throw PSTraceSource.NewArgumentException("name");
                 }
 
                 if (_mshOwner != null)

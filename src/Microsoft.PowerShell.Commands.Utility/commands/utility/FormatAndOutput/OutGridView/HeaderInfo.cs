@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -9,7 +9,7 @@ namespace Microsoft.PowerShell.Commands
 {
     internal class HeaderInfo
     {
-        private readonly List<ColumnInfo> _columns = new();
+        private List<ColumnInfo> _columns = new List<ColumnInfo>();
 
         internal void AddColumn(ColumnInfo col)
         {
@@ -18,7 +18,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal PSObject AddColumnsToWindow(OutWindowProxy windowProxy, PSObject liveObject)
         {
-            PSObject staleObject = new();
+            PSObject staleObject = new PSObject();
 
             // Initiate arrays to be of the same size.
             int count = _columns.Count;
@@ -47,7 +47,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal PSObject CreateStalePSObject(PSObject liveObject)
         {
-            PSObject staleObject = new();
+            PSObject staleObject = new PSObject();
             foreach (ColumnInfo column in _columns)
             {
                 // Add a property to the stale PSObject.

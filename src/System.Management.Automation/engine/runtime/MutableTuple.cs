@@ -30,7 +30,6 @@ namespace System.Management.Automation
     internal abstract class MutableTuple
     {
         private const int MaxSize = 128;
-
         private static readonly Dictionary<Type, int> s_sizeDict = new Dictionary<Type, int>();
 
         private int _size;
@@ -149,7 +148,6 @@ namespace System.Management.Automation
         }
 
         protected abstract object GetValueImpl(int index);
-
         protected abstract void SetValueImpl(int index, object value);
 
         /// <summary>
@@ -309,7 +307,6 @@ namespace System.Management.Automation
 
         private static readonly ConcurrentDictionary<Type, Func<MutableTuple>> s_tupleCreators =
             new ConcurrentDictionary<Type, Func<MutableTuple>>(concurrencyLevel: 3, capacity: 100);
-
         public static Func<MutableTuple> TupleCreator(Type type)
         {
             return s_tupleCreators.GetOrAdd(type,
@@ -512,7 +509,7 @@ namespace System.Management.Automation
             int res = 1;
             while (value > res)
             {
-                res <<= 1;
+                res = res << 1;
             }
 
             return res;

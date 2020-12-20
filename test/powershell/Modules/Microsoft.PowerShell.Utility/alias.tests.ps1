@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Alias tests" -Tags "CI" {
 
@@ -12,11 +12,11 @@ Describe "Alias tests" -Tags "CI" {
             [string] $testFile
             [string] $expectedError
 
-            TestData($name, $file, $errorId)
+            TestData($name, $file, $error)
             {
                 $this.testName = $name
                 $this.testFile = $file
-                $this.expectedError = $errorId
+                $this.expectedError = $error
             }
         }
     }

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -112,7 +112,7 @@ namespace System.Management.Automation
                     (timeStampServerUrl.IndexOf("http://", StringComparison.OrdinalIgnoreCase) != 0))
                 {
                     throw PSTraceSource.NewArgumentException(
-                        nameof(certificate),
+                        "certificate",
                         Authenticode.TimeStampUrlRequired);
                 }
             }
@@ -131,7 +131,7 @@ namespace System.Management.Automation
                 if (oidPtr == IntPtr.Zero)
                 {
                     throw PSTraceSource.NewArgumentException(
-                        nameof(certificate),
+                        "certificate",
                         Authenticode.InvalidHashAlgorithm);
                 }
                 else
@@ -146,7 +146,7 @@ namespace System.Management.Automation
             if (!SecuritySupport.CertIsGoodForSigning(certificate))
             {
                 throw PSTraceSource.NewArgumentException(
-                        nameof(certificate),
+                        "certificate",
                         Authenticode.CertNotGoodForSigning);
             }
 
@@ -192,7 +192,7 @@ namespace System.Management.Automation
                     IntPtr.Zero);
 #pragma warning restore 56523
 
-                if (si.pSignExtInfo != IntPtr.Zero)
+                if (si.pSignExtInfo != null)
                 {
                     Marshal.DestroyStructure<NativeMethods.CRYPTUI_WIZ_DIGITAL_SIGN_EXTENDED_INFO>(si.pSignExtInfo);
                     Marshal.FreeCoTaskMem(si.pSignExtInfo);
@@ -226,7 +226,7 @@ namespace System.Management.Automation
                         if (error == Win32Errors.NTE_BAD_ALGID)
                         {
                             throw PSTraceSource.NewArgumentException(
-                                nameof(certificate),
+                                "certificate",
                                 Authenticode.InvalidHashAlgorithm);
                         }
 

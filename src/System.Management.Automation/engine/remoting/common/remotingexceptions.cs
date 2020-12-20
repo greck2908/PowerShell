@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Internal;
@@ -209,6 +209,7 @@ namespace System.Management.Automation.Remoting
         RemoteRunspaceHasMultipleMatchesForSpecifiedName = 955,
         RemoteRunspaceDoesNotSupportPushRunspace = 956,
         HostInNestedPrompt = 957,
+        RemoteHostDoesNotSupportPushRunspace = 958,
         InvalidVMId = 959,
         InvalidVMNameNoVM = 960,
         InvalidVMNameMultipleVM = 961,
@@ -475,7 +476,7 @@ namespace System.Management.Automation.Remoting
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             _errorCode = info.GetInt32("ErrorCode");
@@ -489,11 +490,12 @@ namespace System.Management.Automation.Remoting
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Streaming context.</param>
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             base.GetObjectData(info, context);
@@ -617,7 +619,7 @@ namespace System.Management.Automation.Remoting
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             RedirectLocation = info.GetString("RedirectLocation");
@@ -653,11 +655,12 @@ namespace System.Management.Automation.Remoting
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Streaming context.</param>
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             base.GetObjectData(info, context);

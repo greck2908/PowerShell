@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation.Runspaces
@@ -97,7 +97,7 @@ namespace System.Management.Automation.Runspaces
             // to add cmd to CommandCollection again (Initialize does this).. because of this
             // I am handling history here..
             Initialize(runspace, null, false, isNested);
-            if (addToHistory)
+            if (true == addToHistory)
             {
                 // get command text for history..
                 string cmdText = command.GetCommandStringForHistory();
@@ -128,7 +128,7 @@ namespace System.Management.Automation.Runspaces
             // NTRAID#Windows Out Of Band Releases-915851-2005/09/13
             if (pipeline == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(pipeline));
+                throw PSTraceSource.NewArgumentNullException("pipeline");
             }
 
             if (pipeline._disposed)
@@ -491,9 +491,7 @@ namespace System.Management.Automation.Runspaces
                     throw e;
                 }
 
-                if (syncCall
-                    && InputStream is not PSDataCollectionStream<PSObject>
-                    && InputStream is not PSDataCollectionStream<object>)
+                if (syncCall && !(InputStream is PSDataCollectionStream<PSObject> || InputStream is PSDataCollectionStream<object>))
                 {
                     // Method is called from synchronous invoke.
                     if (input != null)
@@ -618,7 +616,7 @@ namespace System.Management.Automation.Runspaces
         {
             PipelineBase currentPipeline = (PipelineBase)RunspaceBase.GetCurrentlyRunningPipeline();
 
-            if (!IsNested)
+            if (IsNested == false)
             {
                 if (currentPipeline == null)
                 {
@@ -665,7 +663,7 @@ namespace System.Management.Automation.Runspaces
             {
                 if (_performNestedCheck)
                 {
-                    if (!syncCall)
+                    if (syncCall == false)
                     {
                         throw PSTraceSource.NewInvalidOperationException(
                                 RunspaceStrings.NestedPipelineInvokeAsync);
@@ -690,7 +688,7 @@ namespace System.Management.Automation.Runspaces
                     Dbg.Assert(currentPipeline.NestedPipelineExecutionThread != null, "Current pipeline should always have NestedPipelineExecutionThread set");
                     Thread th = Thread.CurrentThread;
 
-                    if (!currentPipeline.NestedPipelineExecutionThread.Equals(th))
+                    if (currentPipeline.NestedPipelineExecutionThread.Equals(th) == false)
                     {
                         throw PSTraceSource.NewInvalidOperationException(
                                 RunspaceStrings.NestedPipelineNoParentPipeline);
@@ -923,7 +921,7 @@ namespace System.Management.Automation.Runspaces
             {
                 Dbg.Assert(value != null, "ErrorStream cannot be null");
                 _errorStream = value;
-                _errorStream.DataReady += OnErrorStreamDataReady;
+                _errorStream.DataReady += new EventHandler(OnErrorStreamDataReady);
             }
         }
 
@@ -935,7 +933,7 @@ namespace System.Management.Automation.Runspaces
                 // unsubscribe from further event notifications as
                 // this notification is suffice to say there is an
                 // error.
-                _errorStream.DataReady -= OnErrorStreamDataReady;
+                _errorStream.DataReady -= new EventHandler(OnErrorStreamDataReady);
                 SetHadErrors(true);
             }
         }
@@ -999,7 +997,7 @@ namespace System.Management.Automation.Runspaces
 
             if (addToHistory && command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             if (command != null)
@@ -1046,7 +1044,7 @@ namespace System.Management.Automation.Runspaces
         {
             try
             {
-                if (!_disposed)
+                if (_disposed == false)
                 {
                     _disposed = true;
                     if (disposing)
@@ -1054,7 +1052,7 @@ namespace System.Management.Automation.Runspaces
                         InputStream.Close();
                         OutputStream.Close();
 
-                        _errorStream.DataReady -= OnErrorStreamDataReady;
+                        _errorStream.DataReady -= new EventHandler(OnErrorStreamDataReady);
                         _errorStream.Close();
 
                         _executionEventQueue.Clear();

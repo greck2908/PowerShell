@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.IO;
@@ -213,7 +213,7 @@ namespace System.Management.Automation.Remoting
             return;
         }
 
-        private static void SerializeUInt(uint data, Stream streamToWriteTo)
+        private void SerializeUInt(uint data, Stream streamToWriteTo)
         {
             Dbg.Assert(streamToWriteTo != null, "stream to write to cannot be null");
 
@@ -241,7 +241,7 @@ namespace System.Management.Automation.Remoting
             return result;
         }
 
-        private static void SerializeGuid(Guid guid, Stream streamToWriteTo)
+        private void SerializeGuid(Guid guid, Stream streamToWriteTo)
         {
             Dbg.Assert(streamToWriteTo != null, "stream to write to cannot be null");
 

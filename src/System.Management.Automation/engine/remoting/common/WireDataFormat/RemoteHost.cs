@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -42,12 +42,12 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Method info.
         /// </summary>
-        private readonly RemoteHostMethodInfo _methodInfo;
+        private RemoteHostMethodInfo _methodInfo;
 
         /// <summary>
         /// Call id.
         /// </summary>
-        private readonly long _callId;
+        private long _callId;
 
         /// <summary>
         /// Call id.
@@ -198,7 +198,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Get remote runspace to close.
         /// </summary>
-        private static RemoteRunspace GetRemoteRunspaceToClose(PSHost clientHost)
+        private RemoteRunspace GetRemoteRunspaceToClose(PSHost clientHost)
         {
             // Figure out if we need to close the remote runspace. Return null if we don't.
 
@@ -440,7 +440,7 @@ namespace System.Management.Automation.Remoting
         /// </summary>
         /// <param name="caption">Caption to modify.</param>
         /// <returns>New modified caption.</returns>
-        private static string ModifyCaption(string caption)
+        private string ModifyCaption(string caption)
         {
             string pscaption = CredUI.PromptForCredential_DefaultCaption;
 
@@ -465,7 +465,7 @@ namespace System.Management.Automation.Remoting
         /// <param name="computerName">computername to include in the
         /// message</param>
         /// <returns>Message which contains a warning as well.</returns>
-        private static string ModifyMessage(string message, string computerName)
+        private string ModifyMessage(string message, string computerName)
         {
             string modifiedMessage = PSRemotingErrorInvariants.FormatResourceString(
                     RemotingErrorIdStrings.RemoteHostPromptForCredentialModifiedMessage,
@@ -485,7 +485,7 @@ namespace System.Management.Automation.Remoting
         /// <param name="resourceString">Resource string to use.</param>
         /// <returns>A constructed remote host call message
         /// which will display the warning.</returns>
-        private static RemoteHostCall ConstructWarningMessageForSecureString(string computerName,
+        private RemoteHostCall ConstructWarningMessageForSecureString(string computerName,
             string resourceString)
         {
             string warning = PSRemotingErrorInvariants.FormatResourceString(
@@ -506,7 +506,7 @@ namespace System.Management.Automation.Remoting
         /// in warning</param>
         /// <returns>A constructed remote host call message
         /// which will display the warning.</returns>
-        private static RemoteHostCall ConstructWarningMessageForGetBufferContents(string computerName)
+        private RemoteHostCall ConstructWarningMessageForGetBufferContents(string computerName)
         {
             string warning = PSRemotingErrorInvariants.FormatResourceString(
                 RemotingErrorIdStrings.RemoteHostGetBufferContents,
@@ -530,7 +530,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Call id.
         /// </summary>
-        private readonly long _callId;
+        private long _callId;
 
         /// <summary>
         /// Call id.
@@ -546,17 +546,17 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Method id.
         /// </summary>
-        private readonly RemoteHostMethodId _methodId;
+        private RemoteHostMethodId _methodId;
 
         /// <summary>
         /// Return value.
         /// </summary>
-        private readonly object _returnValue;
+        private object _returnValue;
 
         /// <summary>
         /// Exception.
         /// </summary>
-        private readonly Exception _exception;
+        private Exception _exception;
 
         /// <summary>
         /// Constructor for RemoteHostResponse.

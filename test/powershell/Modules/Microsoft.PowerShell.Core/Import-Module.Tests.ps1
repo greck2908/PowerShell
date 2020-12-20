@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Import-Module" -Tags "CI" {
     $moduleName = "Microsoft.PowerShell.Security"
@@ -32,7 +32,7 @@ Describe "Import-Module" -Tags "CI" {
     }
 
     It "should be able to load a module with a trailing directory separator: <modulePath>" -TestCases @(
-        @{ modulePath = (Get-Module -ListAvailable $moduleName)[0].ModuleBase + [System.IO.Path]::DirectorySeparatorChar; expectedName = $moduleName },
+        @{ modulePath = (Get-Module -ListAvailable $moduleName).ModuleBase + [System.IO.Path]::DirectorySeparatorChar; expectedName = $moduleName },
         @{ modulePath = Join-Path -Path $TestDrive -ChildPath "\Modules\TestModule\"; expectedName = "TestModule" }
     ) {
         param( $modulePath, $expectedName )
@@ -41,7 +41,7 @@ Describe "Import-Module" -Tags "CI" {
     }
 
     It "should be able to add a module with using ModuleInfo switch" {
-        $a = (Get-Module -ListAvailable $moduleName)[0]
+        $a = Get-Module -ListAvailable $moduleName
         { Import-Module -ModuleInfo $a } | Should -Not -Throw
         (Get-Module -Name $moduleName).Name | Should -BeExactly $moduleName
     }
@@ -81,7 +81,7 @@ Describe "Import-Module with ScriptsToProcess" -Tags "CI" {
 
     AfterEach {
         $m = @('module1','module2','script1','script2')
-        Remove-Module $m -Force -ErrorAction SilentlyContinue
+        remove-module $m -Force -ErrorAction SilentlyContinue
         Remove-Item out.txt -Force -ErrorAction SilentlyContinue
     }
 
@@ -163,7 +163,7 @@ Describe "Import-Module for Binary Modules" -Tags 'CI' {
         try {
             $TestModulePath = Join-Path $TESTDRIVE "System.$extension"
             $job = Start-Job -ScriptBlock {
-                $module = Import-Module $using:TestModulePath -PassThru;
+                $module = Import-Module $using:TestModulePath -Passthru;
                 $module.ImplementingAssembly.Location;
                 Test-BinaryModuleCmdlet1
             }
@@ -257,18 +257,18 @@ Describe "Import-Module for Binary Modules" -Tags 'CI' {
         Copy-Item $gacAssemblyPath -Destination $destPath -Force
 
         # Use a different pwsh so that we do not have the PSScheduledJob module already loaded.
-        $loadedAssemblyLocation = & "$PSHOME/pwsh" -noprofile -c "Import-Module $destPath -Force; [Microsoft.PowerShell.ScheduledJob.AddJobTriggerCommand].Assembly.Location"
+        $loadedAssemblyLocation = pwsh -noprofile -c "Import-Module $destPath -Force; [Microsoft.PowerShell.ScheduledJob.AddJobTriggerCommand].Assembly.Location"
         $loadedAssemblyLocation | Should -BeLike "$TestDrive*\Microsoft.PowerShell.ScheduledJob.dll"
     }
 }
 
 Describe "Import-Module should be case insensitive" -Tags 'CI' {
     BeforeAll {
-        $defaultPSModuleAutoloadingPreference = $PSModuleAutoLoadingPreference
+        $defaultPSModuleAutoloadingPreference = $PSModuleAutoloadingPreference
         $originalPSModulePath = $env:PSModulePath.Clone()
         $modulesPath = "$TestDrive\Modules"
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $modulesPath
-        $PSModuleAutoLoadingPreference = "none"
+        $PSModuleAutoloadingPreference = "none"
     }
 
     AfterAll {
@@ -293,7 +293,7 @@ Describe "Import-Module should be case insensitive" -Tags 'CI' {
         Set-Content -Path "$modulesPath/$modulePath/TESTMODULE.psm1" -Value "function mytest { 'hello' }"
         Import-Module testMODULE
         $m = Get-Module TESTmodule
-        $m | Should -BeOfType System.Management.Automation.PSModuleInfo
+        $m | Should -BeOfType "System.Management.Automation.PSModuleInfo"
         $m.Name | Should -BeIn "TESTMODULE"
         mytest | Should -BeExactly "hello"
         Remove-Module TestModule
@@ -359,38 +359,5 @@ Describe "Import-Module -Force behaviour" -Tag "CI" {
 
         Test-One | Should -Be 101
         { Test-Two } | Should -Throw -ErrorId 'CommandNotFoundException'
-    }
-}
-
-Describe "Module with FileList" -Tag "CI" {
-    BeforeAll {
-        $src = @"
-            using System;
-            namespace ModuleCmdlets
-            {
-                public class FileListLoad
-                {
-                }
-            }
-"@
-
-        $originalPSModulePath = $env:PSModulePath
-        New-Item -ItemType Directory -Path "$testdrive\Modules\FileListLoadTest\" -Force > $null
-
-        $asmPath = "$TESTDRIVE\Modules\FileListLoadTest\FileListLoadTest.dll"
-        Add-Type -TypeDefinition $src -OutputAssembly $asmPath
-
-        $env:PSModulePath += [System.IO.Path]::PathSeparator + "$testdrive\Modules"
-        New-ModuleManifest -Path "$testdrive\Modules\FileListLoadTest\FileListLoadTest.psd1" -FileList @("FileListLoadTest.dll")
-    }
-
-    AfterAll {
-        $env:PSModulePath = $originalPSModulePath
-    }
-
-    It "Assemblies in FileList are not loaded" {
-        Import-Module FileListLoadTest
-        $asms = [System.AppDomain]::CurrentDomain.GetAssemblies().Location
-        $asmPath | Should -Not -BeIn $asms
     }
 }

@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 /********************************************************************++
 
     Project:     PowerShell
@@ -69,7 +68,7 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly string _content;
+        private string _content;
 
         #region Token Type
 
@@ -300,9 +299,7 @@ namespace System.Management.Automation
             /*                 Type */ PSTokenType.Keyword,
             /*             Assembly */ PSTokenType.Keyword,
             /*              Command */ PSTokenType.Keyword,
-            /*               Hidden */ PSTokenType.Keyword,
-            /*                 Base */ PSTokenType.Keyword,
-            /*              Default */ PSTokenType.Keyword,
+            /*                  Def */ PSTokenType.Keyword,
 
             #endregion Flags for keywords
 

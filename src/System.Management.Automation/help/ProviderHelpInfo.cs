@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -136,7 +136,7 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly PSObject _fullHelpObject;
+        private PSObject _fullHelpObject;
 
         /// <summary>
         /// Full help object for this provider help info.

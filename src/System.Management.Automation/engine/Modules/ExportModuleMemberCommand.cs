@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -17,7 +17,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements a cmdlet that loads a module.
     /// </summary>
-    [Cmdlet(VerbsData.Export, "ModuleMember", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096578")]
+    [Cmdlet(VerbsData.Export, "ModuleMember", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=141551")]
     public sealed class ExportModuleMemberCommand : PSCmdlet
     {
         /// <summary>
@@ -28,8 +28,6 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public string[] Function
         {
-            get { return _functionList; }
-
             set
             {
                 _functionList = value;
@@ -44,6 +42,8 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
+
+            get { return _functionList; }
         }
 
         private string[] _functionList;
@@ -57,8 +57,6 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public string[] Cmdlet
         {
-            get { return _cmdletList; }
-
             set
             {
                 _cmdletList = value;
@@ -73,6 +71,8 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
+
+            get { return _cmdletList; }
         }
 
         private string[] _cmdletList;
@@ -86,8 +86,6 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public string[] Variable
         {
-            get { return _variableExportList; }
-
             set
             {
                 _variableExportList = value;
@@ -102,6 +100,8 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
+
+            get { return _variableExportList; }
         }
 
         private string[] _variableExportList;
@@ -115,8 +115,6 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public string[] Alias
         {
-            get { return _aliasExportList; }
-
             set
             {
                 _aliasExportList = value;
@@ -131,6 +129,8 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
+
+            get { return _aliasExportList; }
         }
 
         private string[] _aliasExportList;

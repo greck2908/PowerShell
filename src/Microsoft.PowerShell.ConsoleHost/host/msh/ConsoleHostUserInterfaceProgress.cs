@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -16,6 +16,7 @@ namespace Microsoft.PowerShell
         /// Called at the end of a prompt loop to take down any progress display that might have appeared and purge any
         /// outstanding progress activity state.
         /// </summary>
+
         internal
         void
         ResetProgress()
@@ -54,6 +55,7 @@ namespace Microsoft.PowerShell
         /// Invoked by ConsoleHostUserInterface.WriteProgress to update the set of outstanding activities for which
         /// ProgressRecords have been received.
         /// </summary>
+
         private
         void
         HandleIncomingProgressRecord(Int64 sourceId, ProgressRecord record)
@@ -99,6 +101,7 @@ namespace Microsoft.PowerShell
         /// <summary>
         /// TimerCallback for '_progPaneUpdateTimer' to update 'progPaneUpdateFlag'
         /// </summary>
+
         private
         void
         ProgressPaneUpdateTimerElapsed(object sender)
@@ -189,9 +192,8 @@ namespace Microsoft.PowerShell
         private PendingProgress _pendingProgress = null;
         // The timer set up 'progPaneUpdateFlag' every 'UpdateTimerThreshold' milliseconds to update 'ProgressPane'
         private Timer _progPaneUpdateTimer = null;
-
         private const int UpdateTimerThreshold = 200;
-
         private int progPaneUpdateFlag = 0;
     }
 }   // namespace
+

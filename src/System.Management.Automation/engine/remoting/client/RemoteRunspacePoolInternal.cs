@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -10,7 +10,6 @@ using System.Management.Automation.Remoting;
 using System.Management.Automation.Remoting.Client;
 using System.Management.Automation.Tracing;
 using System.Threading;
-using Microsoft.PowerShell.Telemetry;
 
 using Dbg = System.Management.Automation.Diagnostics;
 #if LEGACYTELEMETRY
@@ -111,9 +110,9 @@ namespace System.Management.Automation.Runspaces.Internal
             ConnectCommandInfo[] connectCommands, RunspaceConnectionInfo connectionInfo, PSHost host, TypeTable typeTable)
             : base(1, 1)
         {
-            if (instanceId == Guid.Empty)
+            if (instanceId == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(instanceId));
+                throw PSTraceSource.NewArgumentNullException("RunspacePool Guid");
             }
 
             if (connectCommands == null)
@@ -172,19 +171,32 @@ namespace System.Management.Automation.Runspaces.Internal
             DataStructureHandler = new ClientRunspacePoolDataStructureHandler(this, typeTable);
 
             // register for events from the data structure handler
-            DataStructureHandler.RemoteHostCallReceived += HandleRemoteHostCalls;
-            DataStructureHandler.StateInfoReceived += HandleStateInfoReceived;
-            DataStructureHandler.RSPoolInitInfoReceived += HandleInitInfoReceived;
-            DataStructureHandler.ApplicationPrivateDataReceived += HandleApplicationPrivateDataReceived;
-            DataStructureHandler.SessionClosing += HandleSessionClosing;
-            DataStructureHandler.SessionClosed += HandleSessionClosed;
-            DataStructureHandler.SetMaxMinRunspacesResponseReceived += HandleResponseReceived;
-            DataStructureHandler.URIRedirectionReported += HandleURIDirectionReported;
-            DataStructureHandler.PSEventArgsReceived += HandlePSEventArgsReceived;
-            DataStructureHandler.SessionDisconnected += HandleSessionDisconnected;
-            DataStructureHandler.SessionReconnected += HandleSessionReconnected;
-            DataStructureHandler.SessionRCDisconnecting += HandleSessionRCDisconnecting;
-            DataStructureHandler.SessionCreateCompleted += HandleSessionCreateCompleted;
+            DataStructureHandler.RemoteHostCallReceived +=
+                new EventHandler<RemoteDataEventArgs<RemoteHostCall>>(HandleRemoteHostCalls);
+            DataStructureHandler.StateInfoReceived +=
+                new EventHandler<RemoteDataEventArgs<RunspacePoolStateInfo>>(HandleStateInfoReceived);
+            DataStructureHandler.RSPoolInitInfoReceived +=
+                new EventHandler<RemoteDataEventArgs<RunspacePoolInitInfo>>(HandleInitInfoReceived);
+            DataStructureHandler.ApplicationPrivateDataReceived +=
+                new EventHandler<RemoteDataEventArgs<PSPrimitiveDictionary>>(HandleApplicationPrivateDataReceived);
+            DataStructureHandler.SessionClosing +=
+                new EventHandler<RemoteDataEventArgs<Exception>>(HandleSessionClosing);
+            DataStructureHandler.SessionClosed +=
+                new EventHandler<RemoteDataEventArgs<Exception>>(HandleSessionClosed);
+            DataStructureHandler.SetMaxMinRunspacesResponseReceived +=
+                new EventHandler<RemoteDataEventArgs<PSObject>>(HandleResponseReceived);
+            DataStructureHandler.URIRedirectionReported +=
+                new EventHandler<RemoteDataEventArgs<Uri>>(HandleURIDirectionReported);
+            DataStructureHandler.PSEventArgsReceived +=
+                new EventHandler<RemoteDataEventArgs<PSEventArgs>>(HandlePSEventArgsReceived);
+            DataStructureHandler.SessionDisconnected +=
+                new EventHandler<RemoteDataEventArgs<Exception>>(HandleSessionDisconnected);
+            DataStructureHandler.SessionReconnected +=
+                new EventHandler<RemoteDataEventArgs<Exception>>(HandleSessionReconnected);
+            DataStructureHandler.SessionRCDisconnecting +=
+                new EventHandler<RemoteDataEventArgs<Exception>>(HandleSessionRCDisconnecting);
+            DataStructureHandler.SessionCreateCompleted +=
+                new EventHandler<CreateCompleteEventArgs>(HandleSessionCreateCompleted);
         }
 
         #endregion Constructors
@@ -271,8 +283,8 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </summary>
         internal bool IsRemoteDebugStop
         {
-            get;
             set;
+            get;
         }
 
         #endregion
@@ -679,7 +691,7 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         private PSPrimitiveDictionary _applicationPrivateData;
-        private readonly ManualResetEvent _applicationPrivateDataReceived = new ManualResetEvent(false);
+        private ManualResetEvent _applicationPrivateDataReceived = new ManualResetEvent(false);
 
         /// <summary>
         /// This event is raised, when a host call is for a remote runspace
@@ -842,8 +854,6 @@ namespace System.Management.Automation.Runspaces.Internal
             PSEtwLog.LogOperationalVerbose(PSEventId.RunspacePoolOpen, PSOpcode.Open,
                             PSTask.CreateRunspace, PSKeyword.UseAlwaysOperational);
 
-            // Telemetry here - remote session
-            ApplicationInsightsTelemetry.SendTelemetryMetric(TelemetryType.RemoteSessionOpen, isAsync.ToString());
 #if LEGACYTELEMETRY
             TelemetryAPI.ReportRemoteSessionCreated(_connectionInfo);
 #endif
@@ -1061,7 +1071,7 @@ namespace System.Management.Automation.Runspaces.Internal
         {
             if (asyncResult == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(asyncResult));
+                throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
@@ -1070,7 +1080,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
-                throw PSTraceSource.NewArgumentException(nameof(asyncResult),
+                throw PSTraceSource.NewArgumentException("asyncResult",
                                                          RunspacePoolStrings.AsyncResultNotOwned,
                                                          "IAsyncResult",
                                                          "BeginOpen");
@@ -1171,7 +1181,7 @@ namespace System.Management.Automation.Runspaces.Internal
         {
             if (asyncResult == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(asyncResult));
+                throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
@@ -1180,7 +1190,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
-                throw PSTraceSource.NewArgumentException(nameof(asyncResult),
+                throw PSTraceSource.NewArgumentException("asyncResult",
                                                          RunspacePoolStrings.AsyncResultNotOwned,
                                                          "IAsyncResult",
                                                          "BeginOpen");
@@ -1237,9 +1247,11 @@ namespace System.Management.Automation.Runspaces.Internal
 
         internal static RunspacePool[] GetRemoteRunspacePools(RunspaceConnectionInfo connectionInfo, PSHost host, TypeTable typeTable)
         {
-            if (!(connectionInfo is WSManConnectionInfo wsmanConnectionInfoParam))
+            WSManConnectionInfo wsmanConnectionInfoParam = connectionInfo as WSManConnectionInfo;
+
+            // Disconnect-Connect currently only supported by WSMan.
+            if (wsmanConnectionInfoParam == null)
             {
-                // Disconnect-Connect currently only supported by WSMan.
                 throw new NotSupportedException();
             }
 
@@ -1268,7 +1280,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 Guid shellId = Guid.Parse(pspShellId.Value.ToString());
 
                 // Filter returned items for PowerShell sessions.
-                if (!strShellUri.StartsWith(WSManNativeApi.ResourceURIPrefix, StringComparison.OrdinalIgnoreCase))
+                if (strShellUri.StartsWith(WSManNativeApi.ResourceURIPrefix, StringComparison.OrdinalIgnoreCase) == false)
                 {
                     continue;
                 }
@@ -1426,7 +1438,8 @@ namespace System.Management.Automation.Runspaces.Internal
                 string compressionModeString = pspCompressionMode.Value as string;
                 if (compressionModeString != null)
                 {
-                    wsmanConnectionInfo.UseCompression = !compressionModeString.Equals("NoCompression", StringComparison.OrdinalIgnoreCase);
+                    wsmanConnectionInfo.UseCompression = compressionModeString.Equals("NoCompression", StringComparison.OrdinalIgnoreCase)
+                        ? false : true;
                 }
             }
 
@@ -1435,7 +1448,8 @@ namespace System.Management.Automation.Runspaces.Internal
                 string encodingString = pspEncoding.Value as string;
                 if (encodingString != null)
                 {
-                    wsmanConnectionInfo.UseUTF16 = encodingString.Equals("UTF16", StringComparison.OrdinalIgnoreCase);
+                    wsmanConnectionInfo.UseUTF16 = encodingString.Equals("UTF16", StringComparison.OrdinalIgnoreCase)
+                        ? true : false;
                 }
             }
 
@@ -1444,7 +1458,8 @@ namespace System.Management.Automation.Runspaces.Internal
                 string machineProfileLoadedString = pspProfile.Value as string;
                 if (machineProfileLoadedString != null)
                 {
-                    wsmanConnectionInfo.NoMachineProfile = !machineProfileLoadedString.Equals("Yes", StringComparison.OrdinalIgnoreCase);
+                    wsmanConnectionInfo.NoMachineProfile = machineProfileLoadedString.Equals("Yes", StringComparison.OrdinalIgnoreCase)
+                        ? false : true;
                 }
             }
 
@@ -1876,10 +1891,10 @@ namespace System.Management.Automation.Runspaces.Internal
 
         #region Private Members
 
-        private readonly RunspaceConnectionInfo _connectionInfo;     // connection info with which this
+        private RunspaceConnectionInfo _connectionInfo;     // connection info with which this
         // runspace is created
         // data structure handler handling
-        private RunspacePoolAsyncResult _openAsyncResult; // async result object generated on
+        private RunspacePoolAsyncResult _openAsyncResult;// async result object generated on
         // CoreOpen
         private RunspacePoolAsyncResult _closeAsyncResult; // async result object generated by
         // BeginClose
@@ -1888,12 +1903,12 @@ namespace System.Management.Automation.Runspaces.Internal
         private RunspacePoolAsyncResult _reconnectAsyncResult;  // async result object generated on CoreReconnect
         private bool _isDisposed;
 
-        private DispatchTable<object> DispatchTable { get; }
+        private DispatchTable<Object> DispatchTable { get; }
 
         private bool _canReconnect;
         private string _friendlyName = string.Empty;
 
-        private readonly System.Collections.Concurrent.ConcurrentStack<PowerShell> _runningPowerShells;
+        private System.Collections.Concurrent.ConcurrentStack<PowerShell> _runningPowerShells;
 
         #endregion Private Members
 
@@ -2133,7 +2148,7 @@ namespace System.Management.Automation.Runspaces.Internal
         private static bool CheckForSSL(WSManConnectionInfo wsmanConnectionInfo)
         {
             return (!string.IsNullOrEmpty(wsmanConnectionInfo.Scheme) &&
-                    wsmanConnectionInfo.Scheme.Contains(WSManConnectionInfo.HttpsScheme, StringComparison.OrdinalIgnoreCase));
+                    wsmanConnectionInfo.Scheme.IndexOf(WSManConnectionInfo.HttpsScheme, StringComparison.OrdinalIgnoreCase) != -1);
         }
 
         private static int ConvertPSAuthToWSManAuth(AuthenticationMechanism psAuth)

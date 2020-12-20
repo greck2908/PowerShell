@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -70,7 +70,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         #region tracer
         [TraceSource("FormatViewBinding", "Format view binding")]
-        private static readonly PSTraceSource s_formatViewBindingTracer = PSTraceSource.GetTracer("FormatViewBinding", "Format view binding", false);
+        private static PSTraceSource s_formatViewBindingTracer = PSTraceSource.GetTracer("FormatViewBinding", "Format view binding", false);
         #endregion tracer
 
         private static string PSObjectTypeName(PSObject so)
@@ -234,7 +234,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             string msg = null;
             bool foundValidViews = false;
             string formatTypeName = null;
-            const string separator = ", ";
+            string separator = ", ";
             StringBuilder validViewFormats = new StringBuilder();
 
             if (so != null && so.BaseObject != null &&
@@ -336,7 +336,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 {
                     // unKnowViewFormatStringBuilder.Append(StringUtil.Format(FormatAndOut_format_xxx.UnknownViewNameError, viewName));
                     unKnowViewFormatStringBuilder.Append(StringUtil.Format(FormatAndOut_format_xxx.UnknownViewNameErrorSuffix, viewName, formatTypeName));
-                    unKnowViewFormatStringBuilder.Append(validViewFormats);
+                    unKnowViewFormatStringBuilder.Append(validViewFormats.ToString());
                 }
                 else
                 {
@@ -344,7 +344,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                     unKnowViewFormatStringBuilder.Append(StringUtil.Format(FormatAndOut_format_xxx.NonExistingViewNameError, formatTypeName, so.BaseObject.GetType()));
                 }
 
-                msg = unKnowViewFormatStringBuilder.ToString();
+                msg = unKnowViewFormatStringBuilder.ToString(); ;
             }
 
             ErrorRecord errorRecord = new ErrorRecord(
@@ -470,13 +470,14 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             var isRemotingPropertyName = name.Equals(RemotingConstants.ComputerNameNoteProperty, StringComparison.OrdinalIgnoreCase)
                    || name.Equals(RemotingConstants.ShowComputerNameNoteProperty, StringComparison.OrdinalIgnoreCase)
                    || name.Equals(RemotingConstants.RunspaceIdNoteProperty, StringComparison.OrdinalIgnoreCase)
-                   || name.Equals(RemotingConstants.SourceJobInstanceId, StringComparison.OrdinalIgnoreCase);
+                   || name.Equals(RemotingConstants.SourceJobInstanceId, StringComparison.OrdinalIgnoreCase)
+                   || name.Equals(RemotingConstants.SourceLength, StringComparison.OrdinalIgnoreCase);
             return !isRemotingPropertyName;
         }
 
         private static readonly MemberNamePredicate NameIsNotRemotingProperty = IsNotRemotingProperty;
 
-        internal static bool HasNonRemotingProperties(PSObject so) => so.GetFirstPropertyOrDefault(NameIsNotRemotingProperty) != null;
+        private static bool HasNonRemotingProperties(PSObject so) => so.GetFirstPropertyOrDefault(NameIsNotRemotingProperty) != null;
 
         internal static FormatEntryData GenerateOutOfBandData(TerminatingErrorContext errorContext, PSPropertyExpressionFactory expressionFactory,
                     TypeInfoDataBase db, PSObject so, int enumerationLimit, bool useToStringFallback, out List<ErrorRecord> errors)
@@ -516,7 +517,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 }
 
                 // we must check we have enough properties for a list view
-                if (new PSPropertyExpression("*").ResolveNames(so).Count == 0)
+                if (new PSPropertyExpression("*").ResolveNames(so).Count <= 0)
                 {
                     return null;
                 }
@@ -677,11 +678,12 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             return errorRecord;
         }
 
-        private readonly FormatErrorPolicy _formatErrorPolicy;
+        private FormatErrorPolicy _formatErrorPolicy;
 
         /// <summary>
         /// Current list of failed PSPropertyExpression evaluations.
         /// </summary>
-        private readonly List<FormattingError> _formattingErrorList = new List<FormattingError>();
+        private List<FormattingError> _formattingErrorList = new List<FormattingError>();
     }
 }
+

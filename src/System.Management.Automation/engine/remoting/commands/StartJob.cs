@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -17,7 +17,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This cmdlet start invocation of jobs in background.
     /// </summary>
-    [Cmdlet(VerbsLifecycle.Start, "Job", DefaultParameterSetName = StartJobCommand.ComputerNameParameterSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096796")]
+    [Cmdlet(VerbsLifecycle.Start, "Job", DefaultParameterSetName = StartJobCommand.ComputerNameParameterSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113405")]
     [OutputType(typeof(PSRemotingJob))]
     public class StartJobCommand : PSExecutionCmdlet, IDisposable
     {
@@ -481,13 +481,6 @@ namespace Microsoft.PowerShell.Commands
         private ScriptBlock _initScript;
 
         /// <summary>
-        /// Gets or sets an initial working directory for the powershell background job.
-        /// </summary>
-        [Parameter]
-        [ValidateNotNullOrEmpty]
-        public string WorkingDirectory { get; set; }
-
-        /// <summary>
         /// Launches the background job as a 32-bit process. This can be used on
         /// 64-bit systems to launch a 32-bit wow process for the background job.
         /// </summary>
@@ -596,29 +589,6 @@ namespace Microsoft.PowerShell.Commands
                 ThrowTerminatingError(errorRecord);
             }
 
-            if (WorkingDirectory != null && !Directory.Exists(WorkingDirectory))
-            {
-                string message = StringUtil.Format(RemotingErrorIdStrings.StartJobWorkingDirectoryNotFound, WorkingDirectory);
-                var errorRecord = new ErrorRecord(
-                    new DirectoryNotFoundException(message),
-                    "DirectoryNotFoundException",
-                    ErrorCategory.InvalidOperation,
-                    targetObject: null);
-
-                ThrowTerminatingError(errorRecord);
-            }
-
-            if (WorkingDirectory == null)
-            {
-                try
-                {
-                    WorkingDirectory = SessionState.Internal.CurrentLocation.Path;
-                }
-                catch (PSInvalidOperationException)
-                {
-                }
-            }
-
             CommandDiscovery.AutoloadModulesWithJobSourceAdapters(this.Context, this.CommandOrigin);
 
             if (ParameterSetName == DefinitionNameParameterSet)
@@ -658,7 +628,6 @@ namespace Microsoft.PowerShell.Commands
             connectionInfo.InitializationScript = _initScript;
             connectionInfo.AuthenticationMechanism = this.Authentication;
             connectionInfo.PSVersion = this.PSVersion;
-            connectionInfo.WorkingDirectory = this.WorkingDirectory;
 
             RemoteRunspace remoteRunspace = (RemoteRunspace)RunspaceFactory.CreateRunspace(connectionInfo, this.Host,
                         Utils.GetTypeTableFromExecutionContextTLS());

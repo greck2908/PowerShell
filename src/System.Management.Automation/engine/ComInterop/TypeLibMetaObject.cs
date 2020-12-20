@@ -1,9 +1,16 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+#if !SILVERLIGHT
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
+//using AstUtils = Microsoft.Scripting.Ast.Utils;
 using AstUtils = System.Management.Automation.Interpreter.Utils;
 
 namespace System.Management.Automation.ComInterop
@@ -32,15 +39,15 @@ namespace System.Management.Automation.ComInterop
                                     AstUtils.Convert(
                                         Expression, typeof(ComTypeLibDesc)
                                     ),
-                                    typeof(ComTypeLibDesc).GetProperty(nameof(ComTypeLibDesc.Guid))
+                                    typeof(ComTypeLibDesc).GetProperty("Guid")
                                 ),
-                                Expression.Constant(_lib.Guid)
+                                AstUtils.Constant(_lib.Guid)
                             )
                         )
                     );
 
                 return new DynamicMetaObject(
-                    Expression.Constant(
+                    AstUtils.Constant(
                         ((ComTypeLibDesc)Value).GetTypeLibObjectDesc(name)
                     ),
                     restrictions
@@ -57,7 +64,7 @@ namespace System.Management.Automation.ComInterop
 
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
         {
-            DynamicMetaObject result = TryBindGetMember(binder.Name);
+            var result = TryBindGetMember(binder.Name);
             if (result != null)
             {
                 return binder.FallbackInvoke(result, args, null);
@@ -72,3 +79,6 @@ namespace System.Management.Automation.ComInterop
         }
     }
 }
+
+#endif
+

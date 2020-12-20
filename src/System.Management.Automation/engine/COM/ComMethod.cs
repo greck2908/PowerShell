@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -30,8 +30,8 @@ namespace System.Management.Automation
     /// </summary>
     internal class ComMethod
     {
-        private readonly Collection<int> _methods = new Collection<int>();
-        private readonly COM.ITypeInfo _typeInfo;
+        private Collection<int> _methods = new Collection<int>();
+        private COM.ITypeInfo _typeInfo;
 
         /// <summary>
         /// Initializes new instance of ComMethod class.
@@ -133,3 +133,4 @@ namespace System.Management.Automation
         }
     }
 }
+

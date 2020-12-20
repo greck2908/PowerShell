@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -15,7 +15,7 @@ namespace Microsoft.PowerShell.Commands
     /// The ConvertTo-Json command.
     /// This command converts an object to a Json string representation.
     /// </summary>
-    [Cmdlet(VerbsData.ConvertTo, "Json", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096925", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.ConvertTo, "Json", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=217032", RemotingCapability = RemotingCapability.None)]
     public class ConvertToJsonCommand : PSCmdlet
     {
         /// <summary>
@@ -26,10 +26,8 @@ namespace Microsoft.PowerShell.Commands
         public object InputObject { get; set; }
 
         private int _depth = 2;
-
         private const int maxDepthAllowed = 100;
-
-        private readonly CancellationTokenSource _cancellationSource = new();
+        private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
 
         /// <summary>
         /// Gets or sets the Depth property.
@@ -72,7 +70,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Specifies how strings are escaped when writing JSON text.
         /// If the EscapeHandling property is set to EscapeHtml, the result JSON string will
-        /// be returned with HTML (&lt;, &gt;, &amp;, ', ") and control characters (e.g. newline) are escaped.
+        /// be returned with HTML (<, >, &, ', ") and control characters (e.g. newline) are escaped.
         /// </summary>
         [Parameter]
         public StringEscapeHandling EscapeHandling { get; set; } = StringEscapeHandling.Default;
@@ -93,14 +91,17 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private readonly List<object> _inputObjects = new();
+        private List<object> _inputObjects = new List<object>();
 
         /// <summary>
         /// Caching the input objects for the command.
         /// </summary>
         protected override void ProcessRecord()
         {
-            _inputObjects.Add(InputObject);
+            if (InputObject != null)
+            {
+                _inputObjects.Add(InputObject);
+            }
         }
 
         /// <summary>
@@ -116,9 +117,9 @@ namespace Microsoft.PowerShell.Commands
                     Depth,
                     EnumsAsStrings.IsPresent,
                     Compress.IsPresent,
+                    _cancellationSource.Token,
                     EscapeHandling,
-                    targetCmdlet: this,
-                    _cancellationSource.Token);
+                    targetCmdlet: this);
 
                 // null is returned only if the pipeline is stopping (e.g. ctrl+c is signaled).
                 // in that case, we shouldn't write the null to the output pipe.

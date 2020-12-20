@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -21,10 +21,10 @@ namespace System.Management.Automation.Remoting
     {
         #region DO NOT REMOVE OR RENAME THESE FIELDS - it will break remoting compatibility with Windows PowerShell
 
-        private readonly Version _psversion;
-        private readonly Version _serversion;
+        private Version _psversion;
+        private Version _serversion;
         private Version _protocolVersion;
-        private readonly RemotingDestination _remotingDestination;
+        private RemotingDestination _remotingDestination;
         private static byte[] _timeZoneInByteFormat;
         private TimeZoneInfo _timeZone;
 
@@ -107,9 +107,7 @@ namespace System.Management.Automation.Remoting
                     BinaryFormatter formatter = new BinaryFormatter();
                     using (MemoryStream stream = new MemoryStream())
                     {
-#pragma warning disable SYSLIB0011
                         formatter.Serialize(stream, TimeZoneInfo.Local);
-#pragma warning restore SYSLIB0011
                         stream.Seek(0, SeekOrigin.Begin);
                         byte[] result = new byte[stream.Length];
                         stream.Read(result, 0, (int)stream.Length);
@@ -176,9 +174,10 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Data.
         /// </summary>
+
         #region DO NOT REMOVE OR RENAME THESE FIELDS - it will break remoting compatibility with Windows PowerShell
 
-        private readonly Dictionary<HostDefaultDataId, object> data;
+        private Dictionary<HostDefaultDataId, object> data;
 
         #endregion
 
@@ -359,7 +358,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Is host ui null.
         /// </summary>
-        private readonly bool _isHostUINull;
+        private bool _isHostUINull;
 
         /// <summary>
         /// Is host ui null.
@@ -375,7 +374,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Is host raw ui null.
         /// </summary>
-        private readonly bool _isHostRawUINull;
+        private bool _isHostRawUINull;
 
         private readonly bool _isHostNull;
 

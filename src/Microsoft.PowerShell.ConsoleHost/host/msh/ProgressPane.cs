@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -13,6 +13,7 @@ namespace Microsoft.PowerShell
     /// progress updates are shown.
     ///
     ///</summary>
+
     internal
     class ProgressPane
     {
@@ -22,10 +23,11 @@ namespace Microsoft.PowerShell
         /// <param name="ui">
         /// An implementation of the PSHostRawUserInterface with which the pane will be shown and hidden.
         /// </param>
+
         internal
         ProgressPane(ConsoleHostUserInterface ui)
         {
-            if (ui == null) throw new ArgumentNullException(nameof(ui));
+            if (ui == null) throw new ArgumentNullException("ui");
             _ui = ui;
             _rawui = ui.RawUI;
         }
@@ -37,6 +39,7 @@ namespace Microsoft.PowerShell
         /// true if the pane is visible, false if not.
         ///
         ///</value>
+
         internal
         bool
         IsShowing
@@ -51,6 +54,7 @@ namespace Microsoft.PowerShell
         /// Shows the pane in the screen buffer.  Saves off the content of the region of the buffer that will be overwritten so
         /// that it can be restored again.
         /// </summary>
+
         internal
         void
         Show()
@@ -102,9 +106,9 @@ namespace Microsoft.PowerShell
 
                 // create cleared region to clear progress bar later
                 _savedRegion = tempProgressRegion;
-                for (int row = 0; row < rows; row++)
+                for(int row = 0; row < rows; row++)
                 {
-                    for (int col = 0; col < cols; col++)
+                    for(int col = 0; col < cols; col++)
                     {
                         _savedRegion[row, col].Character = ' ';
                     }
@@ -136,6 +140,7 @@ namespace Microsoft.PowerShell
         /// Hides the pane by restoring the saved contents of the region of the buffer that the pane occupies.  If the pane is
         /// not showing, then does nothing.
         /// </summary>
+
         internal
         void
         Hide()
@@ -159,6 +164,7 @@ namespace Microsoft.PowerShell
         /// <param name="pendingProgress">
         /// A PendingProgress instance that represents the outstanding activities that should be shown.
         /// </param>
+
         internal
         void
         Show(PendingProgress pendingProgress)
@@ -208,7 +214,8 @@ namespace Microsoft.PowerShell
 
                 bool sizeChanged =
                         (newRegion.GetLength(0) != _progressRegion.GetLength(0))
-                    || (newRegion.GetLength(1) != _progressRegion.GetLength(1));
+                    || (newRegion.GetLength(1) != _progressRegion.GetLength(1))
+                    ? true : false;
 
                 _progressRegion = newRegion;
 
@@ -233,7 +240,8 @@ namespace Microsoft.PowerShell
         private Size _bufSize;
         private BufferCell[,] _savedRegion;
         private BufferCell[,] _progressRegion;
-        private readonly PSHostRawUserInterface _rawui;
-        private readonly ConsoleHostUserInterface _ui;
+        private PSHostRawUserInterface _rawui;
+        private ConsoleHostUserInterface _ui;
     }
 }   // namespace
+

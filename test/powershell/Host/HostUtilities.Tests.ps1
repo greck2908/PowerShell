@@ -1,10 +1,10 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "InvokeOnRunspace method argument error handling" -tags "Feature" {
 
     BeforeAll {
         $command = [System.Management.Automation.PSCommand]::new()
-        $localRunspace = $Host.Runspace
+        $localRunspace = $host.Runspace
     }
 
     It "Null argument exception should be thrown for null PSCommand argument" {
@@ -24,7 +24,7 @@ Describe "InvokeOnRunspace method as nested command" -tags "Feature" {
 
         $command = [System.Management.Automation.PSCommand]::new()
         $command.AddScript('"Hello!"')
-        $currentRunspace = $Host.Runspace
+        $currentRunspace = $host.Runspace
 
         $results = [System.Management.Automation.HostUtilities]::InvokeOnRunspace($command, $currentRunspace)
 

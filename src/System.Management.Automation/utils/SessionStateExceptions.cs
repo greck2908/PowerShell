@@ -1,9 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Management.Automation.Internal;
 using System.Runtime.Serialization;
+using System.Security.Permissions;
 
 namespace System.Management.Automation
 {
@@ -97,7 +98,7 @@ namespace System.Management.Automation
         {
             if (errorRecord == null)
             {
-                throw new ArgumentNullException(nameof(errorRecord));
+                throw new ArgumentNullException("errorRecord");
             }
 
             _message = base.Message;
@@ -322,7 +323,7 @@ namespace System.Management.Automation
         }
 
         [NonSerialized]
-        private readonly string _message /* = null */;
+        private string _message /* = null */;
 
         #endregion Private/Internal
     }
@@ -476,11 +477,12 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Streaming context.</param>
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             base.GetObjectData(info, context);
@@ -520,7 +522,7 @@ namespace System.Management.Automation
             get { return _itemName; }
         }
 
-        private readonly string _itemName = string.Empty;
+        private string _itemName = string.Empty;
 
         /// <summary>
         /// Gets the category of session state object the error occurred on.
@@ -530,12 +532,12 @@ namespace System.Management.Automation
             get { return _sessionStateCategory; }
         }
 
-        private readonly SessionStateCategory _sessionStateCategory = SessionStateCategory.Variable;
+        private SessionStateCategory _sessionStateCategory = SessionStateCategory.Variable;
         #endregion Properties
 
         #region Private
-        private readonly string _errorId = "SessionStateException";
-        private readonly ErrorCategory _errorCategory = ErrorCategory.InvalidArgument;
+        private string _errorId = "SessionStateException";
+        private ErrorCategory _errorCategory = ErrorCategory.InvalidArgument;
 
         private static string BuildMessage(
             string itemName,
@@ -543,7 +545,7 @@ namespace System.Management.Automation
             params object[] messageArgs)
         {
             object[] a;
-            if (messageArgs != null && messageArgs.Length > 0)
+            if (messageArgs != null && 0 < messageArgs.Length)
             {
                 a = new object[messageArgs.Length + 1];
                 a[0] = itemName;
@@ -853,7 +855,7 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly ReadOnlyCollection<ProviderInfo> _possibleMatches;
+        private ReadOnlyCollection<ProviderInfo> _possibleMatches;
 
         #endregion public properties
     }
@@ -1024,3 +1026,4 @@ namespace System.Management.Automation
         #endregion Serialization
     }
 }
+

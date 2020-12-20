@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -42,7 +42,7 @@ namespace System.Management.Automation
     {
         #region Internal Access
 
-        private static readonly string s_checkForCommandInCurrentDirectoryScript = @"
+        private static string s_checkForCommandInCurrentDirectoryScript = @"
             [System.Diagnostics.DebuggerHidden()]
             param()
 
@@ -58,25 +58,25 @@ namespace System.Management.Automation
             $foundSuggestion
         ";
 
-        private static readonly string s_createCommandExistsInCurrentDirectoryScript = @"
+        private static string s_createCommandExistsInCurrentDirectoryScript = @"
             [System.Diagnostics.DebuggerHidden()]
             param([string] $formatString)
 
             $formatString -f $lastError.TargetObject,"".\$($lastError.TargetObject)""
         ";
 
-        private static readonly string s_getFuzzyMatchedCommands = @"
+        private static string s_getFuzzyMatchedCommands = @"
             [System.Diagnostics.DebuggerHidden()]
             param([string] $formatString)
 
             $formatString -f [string]::Join(', ', (Get-Command $lastError.TargetObject -UseFuzzyMatch | Select-Object -First 10 -Unique -ExpandProperty Name))
         ";
 
-        private static readonly List<Hashtable> s_suggestions = InitializeSuggestions();
+        private static ArrayList s_suggestions = InitializeSuggestions();
 
-        private static List<Hashtable> InitializeSuggestions()
+        private static ArrayList InitializeSuggestions()
         {
-            var suggestions = new List<Hashtable>(
+            ArrayList suggestions = new ArrayList(
                 new Hashtable[]
                 {
                     NewSuggestion(
@@ -228,7 +228,7 @@ namespace System.Management.Automation
 
             if (forCurrentUser)
             {
-                basePath = Platform.ConfigDirectory;
+                basePath = Utils.GetUserConfigurationDirectory();
             }
             else
             {
@@ -307,9 +307,10 @@ namespace System.Management.Automation
             return returnValue.ToString();
         }
 
-        internal static List<string> GetSuggestion(Runspace runspace)
+        internal static ArrayList GetSuggestion(Runspace runspace)
         {
-            if (!(runspace is LocalRunspace localRunspace)) { return new List<string>(); }
+            LocalRunspace localRunspace = runspace as LocalRunspace;
+            if (localRunspace == null) { return new ArrayList(); }
 
             // Get the last value of $?
             bool questionMarkVariableValue = localRunspace.ExecutionContext.QuestionMarkVariableValue;
@@ -319,7 +320,7 @@ namespace System.Management.Automation
             HistoryInfo[] entries = history.GetEntries(-1, 1, true);
 
             if (entries.Length == 0)
-                return new List<string>();
+                return new ArrayList();
 
             HistoryInfo lastHistory = entries[0];
 
@@ -362,7 +363,7 @@ namespace System.Management.Automation
                 Runspace.DefaultRunspace = runspace;
             }
 
-            List<string> suggestions = null;
+            ArrayList suggestions = null;
 
             try
             {
@@ -382,9 +383,9 @@ namespace System.Management.Automation
         }
 
         [SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly")]
-        internal static List<string> GetSuggestion(HistoryInfo lastHistory, object lastError, ArrayList errorList)
+        internal static ArrayList GetSuggestion(HistoryInfo lastHistory, object lastError, ArrayList errorList)
         {
-            var returnSuggestions = new List<string>();
+            ArrayList returnSuggestions = new ArrayList();
 
             PSModuleInfo invocationModule = new PSModuleInfo(true);
             invocationModule.SessionState.PSVariable.Set("lastHistory", lastHistory);
@@ -643,7 +644,7 @@ namespace System.Management.Automation
         /// Get suggestion text from suggestion scriptblock.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Need to keep this for legacy reflection based use")]
-        private static string GetSuggestionText(object suggestion, PSModuleInfo invocationModule)
+        private static string GetSuggestionText(Object suggestion, PSModuleInfo invocationModule)
         {
             return GetSuggestionText(suggestion, null, invocationModule);
         }
@@ -651,7 +652,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Get suggestion text from suggestion scriptblock with arguments.
         /// </summary>
-        private static string GetSuggestionText(object suggestion, object[] suggestionArgs, PSModuleInfo invocationModule)
+        private static string GetSuggestionText(Object suggestion, object[] suggestionArgs, PSModuleInfo invocationModule)
         {
             if (suggestion is ScriptBlock)
             {
@@ -799,12 +800,12 @@ namespace System.Management.Automation
         {
             if (command == null)
             {
-                throw new PSArgumentNullException(nameof(command));
+                throw new PSArgumentNullException("command");
             }
 
             if (runspace == null)
             {
-                throw new PSArgumentNullException(nameof(runspace));
+                throw new PSArgumentNullException("runspace");
             }
 
             if ((runspace.Debugger != null) && runspace.Debugger.InBreakpoint)

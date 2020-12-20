@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Host;
@@ -17,12 +17,12 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Remote host user interface.
         /// </summary>
-        private readonly ServerRemoteHostUserInterface _remoteHostUserInterface;
+        private ServerRemoteHostUserInterface _remoteHostUserInterface;
 
         /// <summary>
         /// Server method executor.
         /// </summary>
-        private readonly ServerMethodExecutor _serverMethodExecutor;
+        private ServerMethodExecutor _serverMethodExecutor;
 
         /// <summary>
         /// Host default data.
@@ -345,7 +345,7 @@ namespace System.Management.Automation.Remoting
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                throw new ArgumentNullException("source");
             }
 
             return source.Length;
@@ -356,7 +356,7 @@ namespace System.Management.Automation.Remoting
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                throw new ArgumentNullException("source");
             }
 
             Dbg.Assert(offset >= 0, "offset >= 0");

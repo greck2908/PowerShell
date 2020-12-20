@@ -1,11 +1,13 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Management.Automation;
+using System.Management.Automation.Language;
 using System.Management.Automation.Runspaces;
 
 using Dbg = System.Management.Automation.Diagnostics;
@@ -22,6 +24,7 @@ namespace Microsoft.PowerShell
     /// The class' instance methods manage a single pipeline.  The class' static methods track the outstanding instances to
     /// ensure that only one instance is 'active' (and therefore cancellable) at a time.
     /// </summary>
+
     internal class Executor
     {
         [Flags]
@@ -128,7 +131,7 @@ namespace Microsoft.PowerShell
         {
             internal PipelineFinishedWaitHandle(Pipeline p)
             {
-                p.StateChanged += PipelineStateChangedHandler;
+                p.StateChanged += new EventHandler<PipelineStateEventArgs>(PipelineStateChangedHandler);
             }
 
             internal void Wait()
@@ -147,7 +150,7 @@ namespace Microsoft.PowerShell
                 }
             }
 
-            private readonly System.Threading.ManualResetEvent _eventHandle = new System.Threading.ManualResetEvent(false);
+            private System.Threading.ManualResetEvent _eventHandle = new System.Threading.ManualResetEvent(false);
         }
 
         internal void ExecuteCommandAsync(string command, out Exception exceptionThrown, ExecutionOptions options)
@@ -202,8 +205,8 @@ namespace Microsoft.PowerShell
                     tempPipeline.Commands.Add(outDefault);
                 }
 
-                tempPipeline.Output.DataReady += OutputObjectStreamHandler;
-                tempPipeline.Error.DataReady += ErrorObjectStreamHandler;
+                tempPipeline.Output.DataReady += new EventHandler(OutputObjectStreamHandler);
+                tempPipeline.Error.DataReady += new EventHandler(ErrorObjectStreamHandler);
                 PipelineFinishedWaitHandle pipelineWaiter = new PipelineFinishedWaitHandle(tempPipeline);
 
                 // close the input pipeline so the command will do something
@@ -238,7 +241,7 @@ namespace Microsoft.PowerShell
                             // hence the Input pipe.
                             break;
                         }
-                    }
+                    };
                     des.End();
                 }
 
@@ -342,7 +345,7 @@ namespace Microsoft.PowerShell
             return ExecuteCommandHelper(tempPipeline, out exceptionThrown, options);
         }
 
-        private static Command GetOutDefaultCommand(bool endOfStatement)
+        private Command GetOutDefaultCommand(bool endOfStatement)
         {
             return new Command(command: "Out-Default",
                                isScript: false,
@@ -524,6 +527,7 @@ namespace Microsoft.PowerShell
         /// The Nullable`bool representation of the first result object returned, or null if an exception was thrown or no
         /// objects were returned by the command.
         /// </returns>
+
         internal bool? ExecuteCommandAndGetResultAsBool(string command)
         {
             Exception unused = null;
@@ -727,13 +731,14 @@ namespace Microsoft.PowerShell
         // to currentExecutor is guarded by staticStateLock, and static initializers are run by the CLR at program init time.
 
         private static Executor s_currentExecutor;
-        private static readonly object s_staticStateLock = new object();
+        private static object s_staticStateLock = new object();
 
-        private readonly ConsoleHost _parent;
+        private ConsoleHost _parent;
         private Pipeline _pipeline;
         private bool _cancelled;
         internal bool useNestedPipelines;
-        private readonly object _instanceStateLock = new object();
-        private readonly bool _isPromptFunctionExecutor;
+        private object _instanceStateLock = new object();
+        private bool _isPromptFunctionExecutor;
     }
 }   // namespace
+

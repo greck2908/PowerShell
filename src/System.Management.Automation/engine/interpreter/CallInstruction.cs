@@ -104,7 +104,7 @@ namespace System.Management.Automation.Interpreter
             }
             catch (TargetInvocationException tie)
             {
-                if (tie.InnerException is not NotSupportedException)
+                if (!(tie.InnerException is NotSupportedException))
                 {
                     throw;
                 }
@@ -178,7 +178,7 @@ namespace System.Management.Automation.Interpreter
 
         private static bool ShouldCache(MethodInfo info)
         {
-            return info is not DynamicMethod;
+            return !(info is DynamicMethod);
         }
 
         /// <summary>

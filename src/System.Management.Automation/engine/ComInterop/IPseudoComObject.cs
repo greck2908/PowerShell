@@ -1,8 +1,12 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System.Dynamic;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+using System.Dynamic;
 
 namespace System.Management.Automation.ComInterop
 {
@@ -11,3 +15,4 @@ namespace System.Management.Automation.ComInterop
         DynamicMetaObject GetMetaObject(Expression expression);
     }
 }
+

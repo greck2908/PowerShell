@@ -1,24 +1,24 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Remove-Event" -Tags "CI" {
 
     BeforeEach {
-	New-Event -SourceIdentifier PesterTimer  -Sender Windows.timer -MessageData "PesterTestMessage"
+	New-Event -sourceidentifier PesterTimer  -sender Windows.timer -messagedata "PesterTestMessage"
     }
 
     AfterEach {
-	Remove-Event -SourceIdentifier PesterTimer -ErrorAction SilentlyContinue
+	Remove-Event -sourceidentifier PesterTimer -ErrorAction SilentlyContinue
     }
 
     Context "Check Remove-Event can validly remove events" {
 
 	It "Should remove an event given a sourceidentifier" {
-	    { Remove-Event -SourceIdentifier PesterTimer }
+	    { Remove-Event -sourceidentifier PesterTimer }
 	    { Get-Event -ErrorAction SilentlyContinue | Should -Not FileMatchContent PesterTimer }
 	}
 
 	It "Should remove an event given an event identifier" {
-	    { $events = Get-Event -SourceIdentifier PesterTimer }
+	    { $events = Get-Event -sourceidentifier PesterTimer }
 	    { $events = $events.EventIdentifier }
 	    { Remove-Event -EventIdentifier $events }
 	    { $events = Get-Event -ErrorAction SilentlyContinue}
@@ -26,13 +26,13 @@ Describe "Remove-Event" -Tags "CI" {
 	}
 
 	It "Should be able to remove an event given a pipe from Get-Event" {
-	    { Get-Event -SourceIdentifier PesterTimer | Remove-Event }
+	    { Get-Event -sourceidentifier PesterTimer | Remove-Event }
 	    { Get-Event -ErrorAction SilentlyContinue | Should -Not FileMatchContent "PesterTimer" }
 
 	}
 
 	It "Should NOT remove an event given the whatif flag" {
-	    { Remove-Event -SourceIdentifier PesterTimer -WhatIf }
+	    { Remove-Event -sourceidentifier PesterTimer -whatif }
 	    { $events = Get-Event }
 	    { $events.SourceIdentifier  | Should -FileContentMatch "PesterTimer" }
 	}

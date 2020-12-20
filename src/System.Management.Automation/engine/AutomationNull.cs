@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation.Internal
@@ -31,3 +31,4 @@ namespace System.Management.Automation.Internal
         #endregion public_property
     }
 }
+

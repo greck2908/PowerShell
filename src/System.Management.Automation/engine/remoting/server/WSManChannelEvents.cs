@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation.Remoting.WSMan
@@ -30,7 +30,11 @@ namespace System.Management.Automation.Remoting.WSMan
         /// </summary>
         internal static void RaiseShuttingDownEvent()
         {
-            ShuttingDown?.Invoke(null, EventArgs.Empty);
+            EventHandler handler = ShuttingDown;
+            if (handler != null)
+            {
+                handler(null, EventArgs.Empty);
+            }
         }
 
         /// <summary>
@@ -38,7 +42,11 @@ namespace System.Management.Automation.Remoting.WSMan
         /// </summary>
         internal static void RaiseActiveSessionsChangedEvent(ActiveSessionsChangedEventArgs eventArgs)
         {
-            ActiveSessionsChanged?.Invoke(null, eventArgs);
+            EventHandler<ActiveSessionsChangedEventArgs> handler = ActiveSessionsChanged;
+            if (handler != null)
+            {
+                handler(null, eventArgs);
+            }
         }
 
         #endregion internal members

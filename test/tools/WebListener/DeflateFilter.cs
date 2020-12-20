@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -23,7 +22,7 @@ namespace mvc.Controllers
 
                 using (var compressedStream = new DeflateStream(responseStream, CompressionLevel.Fastest))
                 {
-                    httpContext.Response.Headers.Add("Content-Encoding", new[] { "deflate" });
+                    httpContext.Response.Headers.Add("Content-Encoding", new [] { "deflate" });
                     memoryStream.Seek(0, SeekOrigin.Begin);
                     await memoryStream.CopyToAsync(compressedStream);
                 }

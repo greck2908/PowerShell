@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -58,10 +58,10 @@ namespace System.Management.Automation
     {
         #region tracer
         [TraceSource("ParameterBinderBase", "A abstract helper class for the CommandProcessor that binds parameters to the specified object.")]
-        private static readonly PSTraceSource s_tracer = PSTraceSource.GetTracer("ParameterBinderBase", "A abstract helper class for the CommandProcessor that binds parameters to the specified object.");
+        private static PSTraceSource s_tracer = PSTraceSource.GetTracer("ParameterBinderBase", "A abstract helper class for the CommandProcessor that binds parameters to the specified object.");
 
         [TraceSource("ParameterBinding", "Traces the process of binding the arguments to the parameters of cmdlets, scripts, and applications.")]
-        internal static readonly PSTraceSource bindingTracer =
+        internal static PSTraceSource bindingTracer =
             PSTraceSource.GetTracer(
                 "ParameterBinding",
                 "Traces the process of binding the arguments to the parameters of cmdlets, scripts, and applications.",
@@ -172,10 +172,10 @@ namespace System.Management.Automation
         /// </summary>
         internal CommandLineParameters CommandLineParameters
         {
-            get { return _commandLineParameters ??= new CommandLineParameters(); }
-
             // Setter is needed to pass into RuntimeParameterBinder instances
             set { _commandLineParameters = value; }
+
+            get { return _commandLineParameters ?? (_commandLineParameters = new CommandLineParameters()); }
         }
 
         private CommandLineParameters _commandLineParameters;
@@ -243,7 +243,7 @@ namespace System.Management.Automation
             if (!psTypeNamesOfArgumentValue.Contains(psTypeNameRequestedByParameter, StringComparer.OrdinalIgnoreCase))
             {
                 // win8: 228176..The callers know when to ignore and when not to ignore invalid cast exceptions.
-                PSInvalidCastException e = new PSInvalidCastException(nameof(ErrorCategory.InvalidArgument),
+                PSInvalidCastException e = new PSInvalidCastException(ErrorCategory.InvalidArgument.ToString(),
                         null,
                         ParameterBinderStrings.MismatchedPSTypeName,
                         (_invocationInfo != null) && (_invocationInfo.MyCommand != null) ? _invocationInfo.MyCommand.Name : string.Empty,
@@ -337,12 +337,12 @@ namespace System.Management.Automation
 
             if (parameter == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(parameter));
+                throw PSTraceSource.NewArgumentNullException("parameter");
             }
 
             if (parameterMetadata == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterMetadata));
+                throw PSTraceSource.NewArgumentNullException("parameterMetadata");
             }
 
             using (bindingTracer.TraceScope(
@@ -439,7 +439,7 @@ namespace System.Management.Automation
                                             GetErrorExtent(parameter),
                                             parameterMetadata.Name,
                                             parameterMetadata.Type,
-                                            parameterValue?.GetType(),
+                                            (parameterValue == null) ? null : parameterValue.GetType(),
                                             ParameterBinderStrings.ParameterArgumentTransformationError,
                                             "ParameterArgumentTransformationError",
                                             e.Message);
@@ -522,7 +522,7 @@ namespace System.Management.Automation
                                             GetErrorExtent(parameter),
                                             parameterMetadata.Name,
                                             parameterMetadata.Type,
-                                            parameterValue?.GetType(),
+                                            (parameterValue == null) ? null : parameterValue.GetType(),
                                             ParameterBinderStrings.ParameterArgumentValidationError,
                                             "ParameterArgumentValidationError",
                                             e.Message);
@@ -586,7 +586,7 @@ namespace System.Management.Automation
 
                     if (bindError != null)
                     {
-                        Type specifiedType = parameterValue?.GetType();
+                        Type specifiedType = (parameterValue == null) ? null : parameterValue.GetType();
                         ParameterBindingException bindingException =
                             new ParameterBindingException(
                                 bindError,
@@ -736,7 +736,7 @@ namespace System.Management.Automation
                             GetErrorExtent(parameter),
                             parameterMetadata.Name,
                             parameterMetadata.Type,
-                            parameterValue?.GetType(),
+                            (parameterValue == null) ? null : parameterValue.GetType(),
                             ParameterBinderStrings.ParameterArgumentValidationErrorEmptyStringNotAllowed,
                             "ParameterArgumentValidationErrorEmptyStringNotAllowed");
                     throw bindingException;
@@ -813,7 +813,7 @@ namespace System.Management.Automation
                         GetErrorExtent(parameter),
                         parameterMetadata.Name,
                         parameterMetadata.Type,
-                        parameterValue?.GetType(),
+                        (parameterValue == null) ? null : parameterValue.GetType(),
                         resourceString,
                         errorId);
                 throw bindingException;
@@ -903,8 +903,7 @@ namespace System.Management.Automation
         /// <summary>
         /// The invocation information for the code that is being bound.
         /// </summary>
-        private readonly InvocationInfo _invocationInfo;
-
+        private InvocationInfo _invocationInfo;
         internal InvocationInfo InvocationInfo
         {
             get
@@ -916,8 +915,7 @@ namespace System.Management.Automation
         /// <summary>
         /// The context of the currently running engine.
         /// </summary>
-        private readonly ExecutionContext _context;
-
+        private ExecutionContext _context;
         internal ExecutionContext Context
         {
             get
@@ -929,8 +927,7 @@ namespace System.Management.Automation
         /// <summary>
         /// An instance of InternalCommand that the binder is binding to.
         /// </summary>
-        private readonly InternalCommand _command;
-
+        private InternalCommand _command;
         internal InternalCommand Command
         {
             get
@@ -942,9 +939,9 @@ namespace System.Management.Automation
         /// <summary>
         /// The engine APIs that need to be passed the attributes when evaluated.
         /// </summary>
-        private readonly EngineIntrinsics _engine;
+        private EngineIntrinsics _engine;
 
-        private readonly bool _isTranscribing;
+        private bool _isTranscribing;
 
         #endregion internal members
 
@@ -989,12 +986,12 @@ namespace System.Management.Automation
         {
             if (argument == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(argument));
+                throw PSTraceSource.NewArgumentNullException("argument");
             }
 
             if (toType == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(toType));
+                throw PSTraceSource.NewArgumentNullException("toType");
             }
 
             // Construct the collection type information if it wasn't passed in.
@@ -1133,8 +1130,8 @@ namespace System.Management.Automation
                             }
                             else if (LanguagePrimitives.IsNumeric(boType.GetTypeCode()))
                             {
-                                double currentValueAsDouble = (double)LanguagePrimitives.ConvertTo(
-                                                                        currentValue, typeof(double), CultureInfo.InvariantCulture);
+                                Double currentValueAsDouble = (Double)LanguagePrimitives.ConvertTo(
+                                                                        currentValue, typeof(Double), CultureInfo.InvariantCulture);
 
                                 if (currentValueAsDouble != 0)
                                 {
@@ -1226,7 +1223,7 @@ namespace System.Management.Automation
                             // the parameter type is Object or PSObject or enum.
 
                             if (GetIList(currentValue) != null &&
-                                toType != typeof(object) &&
+                                toType != typeof(Object) &&
                                 toType != typeof(PSObject) &&
                                 toType != typeof(PSListModifier) &&
                                 (!toType.IsGenericType || toType.GetGenericTypeDefinition() != typeof(PSListModifier<>)) &&
@@ -1516,7 +1513,7 @@ namespace System.Management.Automation
                         // If System.Array is the type we are encoding to, then
                         // the element type should be System.Object.
 
-                        collectionElementType = typeof(object);
+                        collectionElementType = typeof(System.Object);
                     }
 
                     bindingTracer.WriteLine(
@@ -1559,7 +1556,7 @@ namespace System.Management.Automation
                                 toType,
                                 0,
                                 null,
-                                Array.Empty<object>(),
+                                new object[] { },
                                 System.Globalization.CultureInfo.InvariantCulture);
                         if (collectionTypeInformation.ParameterCollectionType == ParameterCollectionType.IList)
                             resultAsIList = (IList)resultCollection;
@@ -1781,7 +1778,7 @@ namespace System.Management.Automation
                                     GetErrorExtent(argument),
                                     parameterName,
                                     toType,
-                                    currentValueElement?.GetType(),
+                                    (currentValueElement == null) ? null : currentValueElement.GetType(),
                                     ParameterBinderStrings.CannotConvertArgument,
                                     "CannotConvertArgument",
                                     currentValueElement ?? "null",
@@ -1801,7 +1798,7 @@ namespace System.Management.Automation
                         if (coerceElementTypeIfNeeded)
                         {
                             bindingTracer.WriteLine(
-                                "Coercing scalar arg value to type {0}",
+                                "Coercing scalar arg value to type {1}",
                                 collectionElementType);
 
                             // Coerce the scalar type into the collection
@@ -1878,7 +1875,7 @@ namespace System.Management.Automation
                                 GetErrorExtent(argument),
                                 parameterName,
                                 toType,
-                                currentValue?.GetType(),
+                                (currentValue == null) ? null : currentValue.GetType(),
                                 ParameterBinderStrings.CannotConvertArgument,
                                 "CannotConvertArgument",
                                 currentValue ?? "null",
@@ -1985,7 +1982,7 @@ namespace System.Management.Automation
 
         private static readonly IDictionary s_emptyUsingParameters = new ReadOnlyDictionary<object, object>(new Dictionary<object, object>());
 
-        public List<string> BoundPositionally { get; }
+        public List<string> BoundPositionally { get; private set; }
 
         internal IDictionary ImplicitUsingParameters { get; set; }
     }
@@ -2066,3 +2063,4 @@ namespace System.Management.Automation
         }
     }
 }
+

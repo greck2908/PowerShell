@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -21,7 +21,7 @@ namespace Microsoft.WSMan.Management
         /// <summary>
         /// This holds the current configurations XML.
         /// </summary>
-        private readonly XmlDocument rootDocument;
+        private XmlDocument rootDocument;
 
         /// <summary>
         /// Holds the reference to the current document element.
@@ -36,7 +36,7 @@ namespace Microsoft.WSMan.Management
         /// <summary>
         /// Session of the WsMan sserver.
         /// </summary>
-        private readonly IWSManSession serverSession;
+        private IWSManSession serverSession;
 
         /// <summary>
         /// Gets the server session associated with the configuration.
@@ -63,7 +63,7 @@ namespace Microsoft.WSMan.Management
         {
             if (serverSession == null)
             {
-                throw new ArgumentNullException(nameof(serverSession));
+                throw new ArgumentNullException("serverSession");
             }
 
             this.rootDocument = new XmlDocument();
@@ -81,7 +81,7 @@ namespace Microsoft.WSMan.Management
         {
             if (string.IsNullOrEmpty(responseOfGet))
             {
-                throw new ArgumentNullException(nameof(responseOfGet));
+                throw new ArgumentNullException("responseOfGet");
             }
 
             this.rootDocument.LoadXml(responseOfGet);
@@ -103,7 +103,7 @@ namespace Microsoft.WSMan.Management
         {
             if (string.IsNullOrEmpty(resourceUri))
             {
-                throw new ArgumentNullException(nameof(resourceUri));
+                throw new ArgumentNullException("resourceUri");
             }
 
             this.serverSession.Put(resourceUri, this.rootDocument.InnerXml, 0);
@@ -119,7 +119,7 @@ namespace Microsoft.WSMan.Management
         {
             if (pathToNodeFromRoot == null)
             {
-                throw new ArgumentNullException(nameof(pathToNodeFromRoot));
+                throw new ArgumentNullException("pathToNodeFromRoot");
             }
 
             XmlNode nodeToRemove =
@@ -131,12 +131,12 @@ namespace Microsoft.WSMan.Management
             {
                 if (nodeToRemove is XmlAttribute)
                 {
-                    RemoveAttribute(nodeToRemove as XmlAttribute);
+                    this.RemoveAttribute(nodeToRemove as XmlAttribute);
                 }
             }
             else
             {
-                throw new ArgumentException("Node is not present in the XML, Please give valid XPath", nameof(pathToNodeFromRoot));
+                throw new ArgumentException("Node is not present in the XML, Please give valid XPath", "pathToNodeFromRoot");
             }
         }
 
@@ -152,17 +152,17 @@ namespace Microsoft.WSMan.Management
         {
             if (pathToNodeFromRoot == null)
             {
-                throw new ArgumentNullException(nameof(pathToNodeFromRoot));
+                throw new ArgumentNullException("pathToNodeFromRoot");
             }
 
             if (string.IsNullOrEmpty(configurationName))
             {
-                throw new ArgumentNullException(nameof(configurationName));
+                throw new ArgumentNullException("configurationName");
             }
 
             if (configurationValue == null)
             {
-                throw new ArgumentNullException(nameof(configurationValue));
+                throw new ArgumentNullException("configurationValue");
             }
 
             XmlNode nodeToUpdate =
@@ -197,7 +197,7 @@ namespace Microsoft.WSMan.Management
         {
             if (pathFromRoot == null)
             {
-                throw new ArgumentNullException(nameof(pathFromRoot));
+                throw new ArgumentNullException("pathFromRoot");
             }
 
             XmlNode requiredNode =
@@ -217,7 +217,7 @@ namespace Microsoft.WSMan.Management
         /// Removes the attribute from OwnerNode.
         /// </summary>
         /// <param name="attributeToRemove">Attribute to Remove.</param>
-        private static void RemoveAttribute(XmlAttribute attributeToRemove)
+        private void RemoveAttribute(XmlAttribute attributeToRemove)
         {
             XmlElement ownerElement = attributeToRemove.OwnerElement;
             ownerElement.RemoveAttribute(attributeToRemove.Name);

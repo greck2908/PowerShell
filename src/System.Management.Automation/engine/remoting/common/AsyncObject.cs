@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Threading;
@@ -22,7 +22,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Value was set.
         /// </summary>
-        private readonly ManualResetEvent _valueWasSet;
+        private ManualResetEvent _valueWasSet;
 
         /// <summary>
         /// Value.
@@ -32,7 +32,7 @@ namespace System.Management.Automation.Remoting
             get
             {
                 bool result = _valueWasSet.WaitOne();
-                if (!result)
+                if (result == false)
                 {
                     _value = null;
                 }

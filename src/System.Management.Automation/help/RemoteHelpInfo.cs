@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -13,7 +13,7 @@ namespace System.Management.Automation
     /// </summary>
     internal class RemoteHelpInfo : BaseCommandHelpInfo
     {
-        private readonly PSObject _deserializedRemoteHelp;
+        private PSObject _deserializedRemoteHelp;
 
         internal RemoteHelpInfo(
             ExecutionContext context,

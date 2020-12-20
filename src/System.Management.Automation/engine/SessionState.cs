@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -18,6 +18,7 @@ namespace System.Management.Automation
     /// <summary>
     /// Holds the state of a Monad Shell session.
     /// </summary>
+
     [SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling", Justification = "This is a bridge class between internal classes and a public interface. It requires this much coupling.")]
     internal sealed partial class SessionStateInternal
     {
@@ -30,7 +31,7 @@ namespace System.Management.Automation
         [Dbg.TraceSourceAttribute(
              "SessionState",
              "SessionState Class")]
-        private static readonly Dbg.PSTraceSource s_tracer =
+        private static Dbg.PSTraceSource s_tracer =
             Dbg.PSTraceSource.GetTracer("SessionState",
              "SessionState Class");
 
@@ -55,7 +56,7 @@ namespace System.Management.Automation
         {
             if (context == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(context));
+                throw PSTraceSource.NewArgumentNullException("context");
             }
 
             ExecutionContext = context;
@@ -66,7 +67,7 @@ namespace System.Management.Automation
             _workingLocationStack = new Dictionary<string, Stack<PathInfo>>(StringComparer.OrdinalIgnoreCase);
 
             // Conservative choice to limit the Set-Location history in order to limit memory impact in case of a regression.
-            const int locationHistoryLimit = 20;
+            const uint locationHistoryLimit = 20;
             _setLocationHistory = new HistoryStack<PathInfo>(locationHistoryLimit);
 
             GlobalScope = new SessionStateScope(null);
@@ -143,7 +144,7 @@ namespace System.Management.Automation
         /// </summary>
         internal LocationGlobber Globber
         {
-            get { return _globberPrivate ??= ExecutionContext.LocationGlobber; }
+            get { return _globberPrivate ?? (_globberPrivate = ExecutionContext.LocationGlobber); }
         }
 
         private LocationGlobber _globberPrivate;
@@ -158,7 +159,7 @@ namespace System.Management.Automation
         /// </summary>
         internal SessionState PublicSessionState
         {
-            get { return _publicSessionState ??= new SessionState(this); }
+            get { return _publicSessionState ?? (_publicSessionState = new SessionState(this)); }
 
             set { _publicSessionState = value; }
         }
@@ -170,7 +171,7 @@ namespace System.Management.Automation
         /// </summary>
         internal ProviderIntrinsics InvokeProvider
         {
-            get { return _invokeProvider ??= new ProviderIntrinsics(this); }
+            get { return _invokeProvider ?? (_invokeProvider = new ProviderIntrinsics(this)); }
         }
 
         private ProviderIntrinsics _invokeProvider;
@@ -347,11 +348,11 @@ namespace System.Management.Automation
 
             // $PSCulture
             v = new PSCultureVariable();
-            this.GlobalScope.SetVariableForce(v, this);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $PSUICulture
             v = new PSUICultureVariable();
-            this.GlobalScope.SetVariableForce(v, this);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $?
             v = new QuestionMarkVariable(this.ExecutionContext);
@@ -389,7 +390,7 @@ namespace System.Management.Automation
             return checkPathVisibility(Applications, applicationPath);
         }
 
-        private static SessionStateEntryVisibility checkPathVisibility(List<string> list, string path)
+        private SessionStateEntryVisibility checkPathVisibility(List<string> list, string path)
         {
             if (list == null || list.Count == 0) return SessionStateEntryVisibility.Private;
             if (string.IsNullOrEmpty(path)) return SessionStateEntryVisibility.Private;

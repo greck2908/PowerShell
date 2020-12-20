@@ -1,26 +1,28 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #if !UNIX
 
 using System;
+using System.Management.Automation;
+using System.Management.Automation.Internal;
+using System.Management.Automation.Host;
 using System.ComponentModel;
 using System.Globalization;
-using System.Management.Automation;
-using System.Management.Automation.Host;
-using System.Management.Automation.Internal;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using ConsoleHandle = Microsoft.Win32.SafeHandles.SafeFileHandle;
 using Dbg = System.Management.Automation.Diagnostics;
+using ConsoleHandle = Microsoft.Win32.SafeHandles.SafeFileHandle;
 using WORD = System.UInt16;
+using DWORD = System.UInt32;
 
 namespace Microsoft.PowerShell
 {
     /// <summary>
     /// Implementation of RawConsole for powershell.
     /// </summary>
+
     internal sealed
     class ConsoleHostRawUserInterface : System.Management.Automation.Host.PSHostRawUserInterface
     {
@@ -29,6 +31,7 @@ namespace Microsoft.PowerShell
         /// <exception cref="HostException">
         /// If obtaining the buffer's foreground and background color failed
         /// </exception>
+
         internal
         ConsoleHostRawUserInterface(ConsoleHostUserInterface mshConsole) : base()
         {
@@ -75,6 +78,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's SetConsoleTextAttribute
         /// </exception>
+
         public override
         ConsoleColor
         ForegroundColor
@@ -125,6 +129,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's SetConsoleTextAttribute
         /// </exception>
+
         public override
         ConsoleColor
         BackgroundColor
@@ -217,6 +222,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's SetConsoleCursorInfo failed
         /// </exception>
+
         public override
         int
         CursorSize
@@ -272,6 +278,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's SetConsoleWindowInfo failed
         /// </exception>
+
         public override
         Coordinates
         WindowPosition
@@ -338,6 +345,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's SetConsoleScreenBufferSize failed
         /// </exception>
+
         public override
         Size
         BufferSize
@@ -390,6 +398,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's SetConsoleWindowInfo failed
         /// </exception>
+
         public override
         Size
         WindowSize
@@ -510,6 +519,7 @@ namespace Microsoft.PowerShell
         /// <exception cref="HostException">
         /// If obtaining information about the buffer failed
         /// </exception>
+
         public override
         Size
         MaxWindowSize
@@ -533,6 +543,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's GetLargestConsoleWindowSize failed
         /// </exception>
+
         public override
         Size
         MaxPhysicalWindowSize
@@ -548,7 +559,7 @@ namespace Microsoft.PowerShell
         /// Helper method to create and trace PipelineStoppedException.
         /// </summary>
         /// <returns></returns>
-        private static PipelineStoppedException NewPipelineStoppedException()
+        private PipelineStoppedException NewPipelineStoppedException()
         {
             PipelineStoppedException e = new PipelineStoppedException();
             return e;
@@ -591,13 +602,14 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's ReadConsoleInput failed
         /// </exception>
+
         public override
         KeyInfo
         ReadKey(ReadKeyOptions options)
         {
             if ((options & (ReadKeyOptions.IncludeKeyDown | ReadKeyOptions.IncludeKeyUp)) == 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(options), ConsoleHostRawUserInterfaceStrings.InvalidReadKeyOptionsError);
+                throw PSTraceSource.NewArgumentException("options", ConsoleHostRawUserInterfaceStrings.InvalidReadKeyOptionsError);
             }
 
             // keyInfo is initialized in the below if-else statement
@@ -718,6 +730,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's FlushConsoleInputBuffer failed
         /// </exception>
+
         public override
         void
         FlushInputBuffer()
@@ -739,6 +752,7 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    Win32's PeekConsoleInput failed
         /// </exception>
+
         public override
         bool
         KeyAvailable
@@ -859,20 +873,21 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    there is not enough memory to complete calls to Win32's WriteConsoleOutput
         /// </exception>
+
         public override
         void
         SetBufferContents(Coordinates origin, BufferCell[,] contents)
         {
             if (contents == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(contents));
+                PSTraceSource.NewArgumentNullException("contents");
             }
             // the origin must be within the window.
 
             ConsoleControl.CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
 
             ConsoleHandle handle = GetBufferInfo(out bufferInfo);
-            CheckCoordinateWithinBuffer(ref origin, ref bufferInfo, nameof(origin));
+            CheckCoordinateWithinBuffer(ref origin, ref bufferInfo, "origin");
 
             // The output is clipped by the console subsystem, so we don't have to check that the array exceeds the buffer
             // boundaries.
@@ -916,14 +931,14 @@ namespace Microsoft.PowerShell
             // make sure the rect is valid
             if (region.Right < region.Left)
             {
-                throw PSTraceSource.NewArgumentException(nameof(region),
+                throw PSTraceSource.NewArgumentException("region",
                     ConsoleHostRawUserInterfaceStrings.InvalidRegionErrorTemplate,
                     "region.Right", "region.Left");
             }
 
             if (region.Bottom < region.Top)
             {
-                throw PSTraceSource.NewArgumentException(nameof(region),
+                throw PSTraceSource.NewArgumentException("region",
                     ConsoleHostRawUserInterfaceStrings.InvalidRegionErrorTemplate,
                     "region.Bottom", "region.Top");
             }
@@ -945,7 +960,7 @@ namespace Microsoft.PowerShell
                     ConsoleControl.IsCJKOutputCodePage(out codePage) &&
                     LengthInBufferCells(fill.Character) == 2)
                 {
-                    throw PSTraceSource.NewArgumentException(nameof(fill));
+                    throw PSTraceSource.NewArgumentException("fill");
                 }
 
                 int cells = bufferWidth * bufferHeight;
@@ -990,7 +1005,7 @@ namespace Microsoft.PowerShell
                     {
                         if (leftExisting[r, 0].BufferCellType == BufferCellType.Leading)
                         {
-                            throw PSTraceSource.NewArgumentException(nameof(fill));
+                            throw PSTraceSource.NewArgumentException("fill");
                         }
                     }
                 }
@@ -999,7 +1014,7 @@ namespace Microsoft.PowerShell
                 {
                     if (charLength == 2)
                     {
-                        throw PSTraceSource.NewArgumentException(nameof(fill));
+                        throw PSTraceSource.NewArgumentException("fill");
                     }
                 }
                 else
@@ -1015,7 +1030,7 @@ namespace Microsoft.PowerShell
                         {
                             if (rightExisting[r, 0].BufferCellType == BufferCellType.Leading)
                             {
-                                throw PSTraceSource.NewArgumentException(nameof(fill));
+                                throw PSTraceSource.NewArgumentException("fill");
                             }
                         }
                     }
@@ -1025,7 +1040,7 @@ namespace Microsoft.PowerShell
                         {
                             if (rightExisting[r, 0].BufferCellType == BufferCellType.Leading ^ charLength == 2)
                             {
-                                throw PSTraceSource.NewArgumentException(nameof(fill));
+                                throw PSTraceSource.NewArgumentException("fill");
                             }
                         }
                     }
@@ -1069,20 +1084,21 @@ namespace Microsoft.PowerShell
         ///    OR
         ///    there is not enough memory to complete calls to Win32's ReadConsoleOutput
         /// </exception>
+
         public override
         BufferCell[,] GetBufferContents(Rectangle region)
         {
             // make sure the rect is valid
             if (region.Right < region.Left)
             {
-                throw PSTraceSource.NewArgumentException(nameof(region),
+                throw PSTraceSource.NewArgumentException("region",
                     ConsoleHostRawUserInterfaceStrings.InvalidRegionErrorTemplate,
                     "region.Right", "region.Left");
             }
 
             if (region.Bottom < region.Top)
             {
-                throw PSTraceSource.NewArgumentException(nameof(region),
+                throw PSTraceSource.NewArgumentException("region",
                     ConsoleHostRawUserInterfaceStrings.InvalidRegionErrorTemplate,
                     "region.Bottom", "region.Top");
             }
@@ -1192,6 +1208,7 @@ namespace Microsoft.PowerShell
         /// <exception cref="HostException">
         /// If Win32's WideCharToMultiByte fails
         /// </exception>
+
         public override
         int LengthInBufferCells(string s)
         {
@@ -1207,6 +1224,7 @@ namespace Microsoft.PowerShell
         /// <exception cref="HostException">
         /// If Win32's WideCharToMultiByte fails
         /// </exception>
+
         public override
         int LengthInBufferCells(string s, int offset)
         {
@@ -1226,6 +1244,7 @@ namespace Microsoft.PowerShell
         /// <exception cref="HostException">
         /// If Win32's WideCharToMultiByte fails
         /// </exception>
+
         public override
         int LengthInBufferCells(char c)
         {
@@ -1298,16 +1317,17 @@ namespace Microsoft.PowerShell
 
         #endregion helpers
 
-        private readonly ConsoleColor defaultForeground = ConsoleColor.Gray;
+        private ConsoleColor defaultForeground = ConsoleColor.Gray;
 
-        private readonly ConsoleColor defaultBackground = ConsoleColor.Black;
+        private ConsoleColor defaultBackground = ConsoleColor.Black;
 
-        private readonly ConsoleHostUserInterface parent = null;
+        private ConsoleHostUserInterface parent = null;
 
         private ConsoleControl.KEY_EVENT_RECORD cachedKeyEvent;
 
         [TraceSourceAttribute("ConsoleHostRawUserInterface", "Console host's subclass of S.M.A.Host.RawConsole")]
-        private static readonly PSTraceSource tracer = PSTraceSource.GetTracer("ConsoleHostRawUserInterface", "Console host's subclass of S.M.A.Host.RawConsole");
+        private static
+        PSTraceSource tracer = PSTraceSource.GetTracer("ConsoleHostRawUserInterface", "Console host's subclass of S.M.A.Host.RawConsole");
     }
 }   // namespace
 
@@ -1334,7 +1354,7 @@ namespace Microsoft.PowerShell
     internal sealed class ConsoleHostRawUserInterface : PSHostRawUserInterface
     {
 
-        private readonly ConsoleHostUserInterface _parent = null;
+        private ConsoleHostUserInterface _parent = null;
 
         internal ConsoleHostRawUserInterface(ConsoleHostUserInterface mshConsole) : base()
         {

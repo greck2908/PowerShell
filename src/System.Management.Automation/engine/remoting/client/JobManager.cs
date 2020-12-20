@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -81,43 +81,51 @@ namespace System.Management.Automation
             Dbg.Assert(jobSourceAdapterType != null, "JobSourceAdapterType should never be called with null value.");
             object instance = null;
 
-            ConstructorInfo constructor = jobSourceAdapterType.GetConstructor(Type.EmptyTypes);
-            if (!constructor.IsPublic)
+            if (jobSourceAdapterType.FullName != null && jobSourceAdapterType.FullName.EndsWith("WorkflowJobSourceAdapter", StringComparison.OrdinalIgnoreCase))
             {
-                string message = string.Format(CultureInfo.CurrentCulture,
-                                                RemotingErrorIdStrings.JobManagerRegistrationConstructorError,
-                                                jobSourceAdapterType.FullName);
-                throw new InvalidOperationException(message);
+                MethodInfo method = jobSourceAdapterType.GetMethod("GetInstance");
+                instance = method.Invoke(null, null);
             }
+            else
+            {
+                ConstructorInfo constructor = jobSourceAdapterType.GetConstructor(Type.EmptyTypes);
+                if (!constructor.IsPublic)
+                {
+                    string message = string.Format(CultureInfo.CurrentCulture,
+                                                   RemotingErrorIdStrings.JobManagerRegistrationConstructorError,
+                                                   jobSourceAdapterType.FullName);
+                    throw new InvalidOperationException(message);
+                }
 
-            try
-            {
-                instance = constructor.Invoke(null);
-            }
-            catch (MemberAccessException exception)
-            {
-                _tracer.TraceException(exception);
-                throw;
-            }
-            catch (TargetInvocationException exception)
-            {
-                _tracer.TraceException(exception);
-                throw;
-            }
-            catch (TargetParameterCountException exception)
-            {
-                _tracer.TraceException(exception);
-                throw;
-            }
-            catch (NotSupportedException exception)
-            {
-                _tracer.TraceException(exception);
-                throw;
-            }
-            catch (SecurityException exception)
-            {
-                _tracer.TraceException(exception);
-                throw;
+                try
+                {
+                    instance = constructor.Invoke(null);
+                }
+                catch (MemberAccessException exception)
+                {
+                    _tracer.TraceException(exception);
+                    throw;
+                }
+                catch (TargetInvocationException exception)
+                {
+                    _tracer.TraceException(exception);
+                    throw;
+                }
+                catch (TargetParameterCountException exception)
+                {
+                    _tracer.TraceException(exception);
+                    throw;
+                }
+                catch (NotSupportedException exception)
+                {
+                    _tracer.TraceException(exception);
+                    throw;
+                }
+                catch (SecurityException exception)
+                {
+                    _tracer.TraceException(exception);
+                    throw;
+                }
             }
 
             if (instance != null)
@@ -178,7 +186,7 @@ namespace System.Management.Automation
         {
             if (definition == null)
             {
-                throw new ArgumentNullException(nameof(definition));
+                throw new ArgumentNullException("definition");
             }
 
             JobSourceAdapter sourceAdapter = GetJobSourceAdapter(definition);
@@ -218,12 +226,12 @@ namespace System.Management.Automation
         {
             if (specification == null)
             {
-                throw new ArgumentNullException(nameof(specification));
+                throw new ArgumentNullException("specification");
             }
 
             if (specification.Definition == null)
             {
-                throw new ArgumentException(RemotingErrorIdStrings.NewJobSpecificationError, nameof(specification));
+                throw new ArgumentException(RemotingErrorIdStrings.NewJobSpecificationError, "specification");
             }
 
             JobSourceAdapter sourceAdapter = GetJobSourceAdapter(specification.Definition);
@@ -263,12 +271,12 @@ namespace System.Management.Automation
         {
             if (job == null)
             {
-                throw new PSArgumentNullException(nameof(job));
+                throw new PSArgumentNullException("job");
             }
 
             if (definition == null)
             {
-                throw new PSArgumentNullException(nameof(definition));
+                throw new PSArgumentNullException("definition");
             }
 
             JobSourceAdapter sourceAdapter = GetJobSourceAdapter(definition);
@@ -380,6 +388,10 @@ namespace System.Management.Automation
                         ex = e;
                     }
                     catch (SecurityException e)
+                    {
+                        ex = e;
+                    }
+                    catch (ThreadAbortException e)
                     {
                         ex = e;
                     }
@@ -616,7 +628,7 @@ namespace System.Management.Automation
         /// <param name="sourceAdapter"></param>
         /// <param name="jobSourceAdapterTypes"></param>
         /// <returns></returns>
-        private static bool CheckTypeNames(JobSourceAdapter sourceAdapter, string[] jobSourceAdapterTypes)
+        private bool CheckTypeNames(JobSourceAdapter sourceAdapter, string[] jobSourceAdapterTypes)
         {
             // If no type names were specified then allow all adapter types.
             if (jobSourceAdapterTypes == null ||
@@ -641,9 +653,9 @@ namespace System.Management.Automation
             return false;
         }
 
-        private static string GetAdapterName(JobSourceAdapter sourceAdapter)
+        private string GetAdapterName(JobSourceAdapter sourceAdapter)
         {
-            return (!string.IsNullOrEmpty(sourceAdapter.Name) ?
+            return (string.IsNullOrEmpty(sourceAdapter.Name) == false ?
                 sourceAdapter.Name :
                 sourceAdapter.GetType().ToString());
         }

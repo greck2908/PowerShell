@@ -1,267 +1,441 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Management.Automation.Remoting;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Security;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+
+using Microsoft.Win32.SafeHandles;
 
 using Dbg = System.Management.Automation.Diagnostics;
 
 namespace System.Management.Automation.Internal
 {
     /// <summary>
-    /// This class provides the converters for all Native CAPI key blob formats.
+    /// Class that encapsulates native crypto provider handles and provides a
+    /// mechanism for resources released by them.
     /// </summary>
-    internal static class PSCryptoNativeConverter
+    //    [SecurityPermission(SecurityAction.Demand, UnmanagedCode=true)]
+    //    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
+    internal class PSSafeCryptProvHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        /// <summary>
+        /// This safehandle instance "owns" the handle, hence base(true)
+        /// is being called. When safehandle is no longer in use it will
+        /// call this class's ReleaseHandle method which will release
+        /// the resources.
+        /// </summary>
+        internal PSSafeCryptProvHandle() : base(true) { }
+
+        /// <summary>
+        /// Release the crypto handle held by this instance.
+        /// </summary>
+        /// <returns>True on success, false otherwise.</returns>
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        protected override bool ReleaseHandle()
+        {
+            return PSCryptoNativeUtils.CryptReleaseContext(handle, 0);
+        }
+    }
+
+    /// <summary>
+    /// Class the encapsulates native crypto key handles and provides a
+    /// mechanism to release resources used by it.
+    /// </summary>
+    // [SecurityPermission(SecurityAction.Demand, UnmanagedCode=true)]
+    // [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
+    internal class PSSafeCryptKey : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        /// <summary>
+        /// This safehandle instance "owns" the handle, hence base(true)
+        /// is being called. When safehandle is no longer in use it will
+        /// call this class's ReleaseHandle method which will release the
+        /// resources.
+        /// </summary>
+        internal PSSafeCryptKey() : base(true) { }
+
+        /// <summary>
+        /// Release the crypto handle held by this instance.
+        /// </summary>
+        /// <returns>True on success, false otherwise.</returns>
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        protected override bool ReleaseHandle()
+        {
+            return PSCryptoNativeUtils.CryptDestroyKey(handle);
+        }
+
+        /// <summary>
+        /// Equivalent of IntPtr.Zero for the safe crypt key.
+        /// </summary>
+        internal static PSSafeCryptKey Zero { get; } = new PSSafeCryptKey();
+    }
+
+    /// <summary>
+    /// This class provides the wrapper for all Native CAPI functions.
+    /// </summary>
+    internal class PSCryptoNativeUtils
+    {
+        #region Functions
+
+#if UNIX
+        /// Return Type: BOOL->int
+        ///hProv: HCRYPTPROV->ULONG_PTR->unsigned int
+        ///Algid: ALG_ID->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        ///phKey: HCRYPTKEY*
+        public static bool CryptGenKey(
+            PSSafeCryptProvHandle hProv,
+            uint Algid,
+            uint dwFlags,
+            ref PSSafeCryptKey phKey)
+        {
+            throw new PSCryptoException();
+        }
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        public static bool CryptDestroyKey(IntPtr hKey)
+        {
+            throw new PSCryptoException();
+        }
+
+        /// Return Type: BOOL->int
+        ///phProv: HCRYPTPROV*
+        ///szContainer: LPCWSTR->WCHAR*
+        ///szProvider: LPCWSTR->WCHAR*
+        ///dwProvType: DWORD->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        public static bool CryptAcquireContext(ref PSSafeCryptProvHandle phProv,
+            [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string szContainer,
+            [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string szProvider,
+            uint dwProvType,
+            uint dwFlags)
+        {
+            throw new PSCryptoException();
+        }
+
+        /// Return Type: BOOL->int
+        ///hProv: HCRYPTPROV->ULONG_PTR->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        public static bool CryptReleaseContext(IntPtr hProv, uint dwFlags)
+        {
+            throw new PSCryptoException();
+        }
+
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///hHash: HCRYPTHASH->ULONG_PTR->unsigned int
+        ///Final: BOOL->int
+        ///dwFlags: DWORD->unsigned int
+        ///pbData: BYTE*
+        ///pdwDataLen: DWORD*
+        ///dwBufLen: DWORD->unsigned int
+        public static bool CryptEncrypt(PSSafeCryptKey hKey,
+            IntPtr hHash,
+            [MarshalAsAttribute(UnmanagedType.Bool)] bool Final,
+            uint dwFlags,
+            byte[] pbData,
+            ref int pdwDataLen,
+            int dwBufLen)
+        {
+            throw new PSCryptoException();
+        }
+
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///hHash: HCRYPTHASH->ULONG_PTR->unsigned int
+        ///Final: BOOL->int
+        ///dwFlags: DWORD->unsigned int
+        ///pbData: BYTE*
+        ///pdwDataLen: DWORD*
+        public static bool CryptDecrypt(PSSafeCryptKey hKey,
+            IntPtr hHash,
+            [MarshalAsAttribute(UnmanagedType.Bool)] bool Final,
+            uint dwFlags,
+            byte[] pbData,
+            ref int pdwDataLen)
+        {
+            throw new PSCryptoException();
+        }
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///hExpKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///dwBlobType: DWORD->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        ///pbData: BYTE*
+        ///pdwDataLen: DWORD*
+        public static bool CryptExportKey(PSSafeCryptKey hKey,
+            PSSafeCryptKey hExpKey,
+            uint dwBlobType,
+            uint dwFlags,
+            byte[] pbData,
+            ref uint pdwDataLen)
+        {
+            throw new PSCryptoException();
+        }
+
+        /// Return Type: BOOL->int
+        ///hProv: HCRYPTPROV->ULONG_PTR->unsigned int
+        ///pbData: BYTE*
+        ///dwDataLen: DWORD->unsigned int
+        ///hPubKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        ///phKey: HCRYPTKEY*
+        public static bool CryptImportKey(PSSafeCryptProvHandle hProv,
+            byte[] pbData,
+            int dwDataLen,
+            PSSafeCryptKey hPubKey,
+            uint dwFlags,
+            ref PSSafeCryptKey phKey)
+        {
+            throw new PSCryptoException();
+        }
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///pdwReserved: DWORD*
+        ///dwFlags: DWORD->unsigned int
+        ///phKey: HCRYPTKEY*
+        public static bool CryptDuplicateKey(PSSafeCryptKey hKey,
+                                                    ref uint pdwReserved,
+                                                    uint dwFlags,
+                                                    ref PSSafeCryptKey phKey)
+        {
+            throw new PSCryptoException();
+        }
+
+        /// Return Type: DWORD->unsigned int
+        public static uint GetLastError()
+        {
+            throw new PSCryptoException();
+        }
+#else
+
+        /// Return Type: BOOL->int
+        ///hProv: HCRYPTPROV->ULONG_PTR->unsigned int
+        ///Algid: ALG_ID->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        ///phKey: HCRYPTKEY*
+        [DllImportAttribute(PinvokeDllNames.CryptGenKeyDllName, EntryPoint = "CryptGenKey")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptGenKey(PSSafeCryptProvHandle hProv,
+                                              uint Algid,
+                                              uint dwFlags,
+                                              ref PSSafeCryptKey phKey);
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        [DllImportAttribute(PinvokeDllNames.CryptDestroyKeyDllName, EntryPoint = "CryptDestroyKey")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptDestroyKey(IntPtr hKey);
+
+        /// Return Type: BOOL->int
+        ///phProv: HCRYPTPROV*
+        ///szContainer: LPCWSTR->WCHAR*
+        ///szProvider: LPCWSTR->WCHAR*
+        ///dwProvType: DWORD->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        [DllImportAttribute(PinvokeDllNames.CryptAcquireContextDllName, EntryPoint = "CryptAcquireContext")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptAcquireContext(ref PSSafeCryptProvHandle phProv,
+            [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string szContainer,
+            [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string szProvider,
+            uint dwProvType,
+            uint dwFlags);
+
+        /// Return Type: BOOL->int
+        ///hProv: HCRYPTPROV->ULONG_PTR->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        [DllImportAttribute(PinvokeDllNames.CryptReleaseContextDllName, EntryPoint = "CryptReleaseContext")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptReleaseContext(IntPtr hProv, uint dwFlags);
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///hHash: HCRYPTHASH->ULONG_PTR->unsigned int
+        ///Final: BOOL->int
+        ///dwFlags: DWORD->unsigned int
+        ///pbData: BYTE*
+        ///pdwDataLen: DWORD*
+        ///dwBufLen: DWORD->unsigned int
+        [DllImportAttribute(PinvokeDllNames.CryptEncryptDllName, EntryPoint = "CryptEncrypt")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptEncrypt(PSSafeCryptKey hKey,
+            IntPtr hHash,
+            [MarshalAsAttribute(UnmanagedType.Bool)] bool Final,
+            uint dwFlags,
+            byte[] pbData,
+            ref int pdwDataLen,
+            int dwBufLen);
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///hHash: HCRYPTHASH->ULONG_PTR->unsigned int
+        ///Final: BOOL->int
+        ///dwFlags: DWORD->unsigned int
+        ///pbData: BYTE*
+        ///pdwDataLen: DWORD*
+        [DllImportAttribute(PinvokeDllNames.CryptDecryptDllName, EntryPoint = "CryptDecrypt")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptDecrypt(PSSafeCryptKey hKey,
+            IntPtr hHash,
+            [MarshalAsAttribute(UnmanagedType.Bool)] bool Final,
+            uint dwFlags,
+            byte[] pbData,
+            ref int pdwDataLen);
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///hExpKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///dwBlobType: DWORD->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        ///pbData: BYTE*
+        ///pdwDataLen: DWORD*
+        [DllImportAttribute(PinvokeDllNames.CryptExportKeyDllName, EntryPoint = "CryptExportKey")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptExportKey(PSSafeCryptKey hKey,
+            PSSafeCryptKey hExpKey,
+            uint dwBlobType,
+            uint dwFlags,
+            byte[] pbData,
+            ref uint pdwDataLen);
+
+        /// Return Type: BOOL->int
+        ///hProv: HCRYPTPROV->ULONG_PTR->unsigned int
+        ///pbData: BYTE*
+        ///dwDataLen: DWORD->unsigned int
+        ///hPubKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///dwFlags: DWORD->unsigned int
+        ///phKey: HCRYPTKEY*
+        [DllImportAttribute(PinvokeDllNames.CryptImportKeyDllName, EntryPoint = "CryptImportKey")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptImportKey(PSSafeCryptProvHandle hProv,
+            byte[] pbData,
+            int dwDataLen,
+            PSSafeCryptKey hPubKey,
+            uint dwFlags,
+            ref PSSafeCryptKey phKey);
+
+        /// Return Type: BOOL->int
+        ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
+        ///pdwReserved: DWORD*
+        ///dwFlags: DWORD->unsigned int
+        ///phKey: HCRYPTKEY*
+        [DllImportAttribute(PinvokeDllNames.CryptDuplicateKeyDllName, EntryPoint = "CryptDuplicateKey")]
+        [return: MarshalAsAttribute(UnmanagedType.Bool)]
+        public static extern bool CryptDuplicateKey(PSSafeCryptKey hKey,
+                                                    ref uint pdwReserved,
+                                                    uint dwFlags,
+                                                    ref PSSafeCryptKey phKey);
+
+        /// Return Type: DWORD->unsigned int
+        [DllImportAttribute(PinvokeDllNames.GetLastErrorDllName, EntryPoint = "GetLastError")]
+        public static extern uint GetLastError();
+#endif
+
+        #endregion Functions
+
         #region Constants
 
         /// <summary>
-        /// The blob version is fixed.
+        /// Do not use persisted private key.
         /// </summary>
-        public const uint CUR_BLOB_VERSION = 0x00000002;
+        public const uint CRYPT_VERIFYCONTEXT = 0xF0000000;
+
+        /// <summary>
+        /// Mark the key for export.
+        /// </summary>
+        public const uint CRYPT_EXPORTABLE = 0x00000001;
+
+        /// <summary>
+        /// Automatically assign a salt value when creating a
+        /// session key.
+        /// </summary>
+        public const int CRYPT_CREATE_SALT = 4;
+
+        /// <summary>
+        /// RSA Provider.
+        /// </summary>
+        public const int PROV_RSA_FULL = 1;
+
+        /// <summary>
+        /// RSA Provider that supports AES
+        /// encryption.
+        /// </summary>
+        public const int PROV_RSA_AES = 24;
+
+        /// <summary>
+        /// Public key to be used for encryption.
+        /// </summary>
+        public const int AT_KEYEXCHANGE = 1;
 
         /// <summary>
         /// RSA Key.
         /// </summary>
-        public const uint CALG_RSA_KEYX = 0x000000a4;
+        public const int CALG_RSA_KEYX =
+            (PSCryptoNativeUtils.ALG_CLASS_KEY_EXCHANGE |
+            (PSCryptoNativeUtils.ALG_TYPE_RSA | PSCryptoNativeUtils.ALG_SID_RSA_ANY));
 
         /// <summary>
-        /// AES 256 symmetric key.
+        /// Create a key for encryption.
         /// </summary>
-        public const uint CALG_AES_256 = 0x00000010;
+        public const int ALG_CLASS_KEY_EXCHANGE = (5) << (13);
+
+        /// <summary>
+        /// Create a RSA key pair.
+        /// </summary>
+        public const int ALG_TYPE_RSA = (2) << (9);
+
+        /// <summary>
+        /// </summary>
+        public const int ALG_SID_RSA_ANY = 0;
 
         /// <summary>
         /// Option for exporting public key blob.
         /// </summary>
-        public const uint PUBLICKEYBLOB = 0x00000006;
-
-        /// <summmary>
-        /// PUBLICKEYBLOB header length.
-        /// </summary>
-        public const int PUBLICKEYBLOB_HEADER_LEN = 20;
+        public const int PUBLICKEYBLOB = 6;
 
         /// <summary>
         /// Option for exporting a session key.
         /// </summary>
-        public const uint SIMPLEBLOB = 0x00000001;
+        public const int SIMPLEBLOB = 1;
 
-        /// <summmary>
-        /// SIMPLEBLOB header length.
+        /// <summary>
+        /// AES 256 symmetric key.
         /// </summary>
-        public const int SIMPLEBLOB_HEADER_LEN = 12;
+        public const int CALG_AES_256 = (ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_BLOCK | ALG_SID_AES_256);
+
+        /// <summary>
+        /// ALG_CLASS_DATA_ENCRYPT.
+        /// </summary>
+        public const int ALG_CLASS_DATA_ENCRYPT = (3) << (13);
+
+        /// <summary>
+        /// ALG_TYPE_BLOCK.
+        /// </summary>
+        public const int ALG_TYPE_BLOCK = (3) << (9);
+
+        /// <summary>
+        /// ALG_SID_AES_256 -> 16.
+        /// </summary>
+        public const int ALG_SID_AES_256 = 16;
+
+        /// CALG_AES_128 -> (ALG_CLASS_DATA_ENCRYPT|ALG_TYPE_BLOCK|ALG_SID_AES_128)
+        public const int CALG_AES_128 = (ALG_CLASS_DATA_ENCRYPT
+                    | (ALG_TYPE_BLOCK | ALG_SID_AES_128));
+
+        /// ALG_SID_AES_128 -> 14
+        public const int ALG_SID_AES_128 = 14;
 
         #endregion Constants
-
-        #region Functions
-
-        private static int ToInt32LE(byte[] bytes, int offset)
-        {
-            return (bytes[offset + 3] << 24) | (bytes[offset + 2] << 16) | (bytes[offset + 1] << 8) | bytes[offset];
-        }
-
-        private static uint ToUInt32LE(byte[] bytes, int offset)
-        {
-            return (uint)((bytes[offset + 3] << 24) | (bytes[offset + 2] << 16) | (bytes[offset + 1] << 8) | bytes[offset]);
-        }
-
-        private static byte[] GetBytesLE(int val)
-        {
-            return new[] {
-                (byte)(val & 0xff),
-                (byte)((val >> 8) & 0xff),
-                (byte)((val >> 16) & 0xff),
-                (byte)((val >> 24) & 0xff)
-            };
-        }
-
-        private static byte[] CreateReverseByteArray(byte[] data)
-        {
-            byte[] reverseData = new byte[data.Length];
-            Array.Copy(data, reverseData, data.Length);
-            Array.Reverse(reverseData);
-            return reverseData;
-        }
-
-        internal static RSA FromCapiPublicKeyBlob(byte[] blob)
-        {
-            return FromCapiPublicKeyBlob(blob, 0);
-        }
-
-        private static RSA FromCapiPublicKeyBlob(byte[] blob, int offset)
-        {
-            if (blob == null)
-            {
-                throw new ArgumentNullException(nameof(blob));
-            }
-
-            if (offset > blob.Length)
-            {
-                throw new ArgumentException(SecuritySupportStrings.InvalidOffset);
-            }
-
-            var rsap = GetParametersFromCapiPublicKeyBlob(blob, offset);
-
-            try
-            {
-                RSA rsa = RSA.Create();
-                rsa.ImportParameters(rsap);
-                return rsa;
-            }
-            catch (Exception ex)
-            {
-                throw new CryptographicException(SecuritySupportStrings.CannotImportPublicKey, ex);
-            }
-        }
-
-        private static RSAParameters GetParametersFromCapiPublicKeyBlob(byte[] blob, int offset)
-        {
-            if (blob == null)
-            {
-                throw new ArgumentNullException(nameof(blob));
-            }
-
-            if (offset > blob.Length)
-            {
-                throw new ArgumentException(SecuritySupportStrings.InvalidOffset);
-            }
-
-            if (blob.Length < PUBLICKEYBLOB_HEADER_LEN)
-            {
-                throw new ArgumentException(SecuritySupportStrings.InvalidPublicKey);
-            }
-
-            try
-            {
-                if ((blob[offset] != PUBLICKEYBLOB) ||            // PUBLICKEYBLOB (0x06)
-                    (blob[offset + 1] != CUR_BLOB_VERSION) ||       // Version (0x02)
-                    (blob[offset + 2] != 0x00) ||                   // Reserved (word)
-                    (blob[offset + 3] != 0x00) ||
-                    (ToUInt32LE(blob, offset + 8) != 0x31415352))   // DWORD magic = RSA1
-                {
-                    throw new CryptographicException(SecuritySupportStrings.InvalidPublicKey);
-                }
-
-                // DWORD bitlen
-                int bitLen = ToInt32LE(blob, offset + 12);
-
-                // DWORD public exponent
-                RSAParameters rsap = new RSAParameters();
-                rsap.Exponent = new byte[3];
-                rsap.Exponent[0] = blob[offset + 18];
-                rsap.Exponent[1] = blob[offset + 17];
-                rsap.Exponent[2] = blob[offset + 16];
-
-                int pos = offset + 20;
-                int byteLen = (bitLen >> 3);
-                rsap.Modulus = new byte[byteLen];
-                Buffer.BlockCopy(blob, pos, rsap.Modulus, 0, byteLen);
-                Array.Reverse(rsap.Modulus);
-
-                return rsap;
-            }
-            catch (Exception ex)
-            {
-                throw new CryptographicException(SecuritySupportStrings.InvalidPublicKey, ex);
-            }
-        }
-
-        internal static byte[] ToCapiPublicKeyBlob(RSA rsa)
-        {
-            if (rsa == null)
-            {
-                throw new ArgumentNullException(nameof(rsa));
-            }
-
-            RSAParameters p = rsa.ExportParameters(false);
-            int keyLength = p.Modulus.Length;   // in bytes
-            byte[] blob = new byte[PUBLICKEYBLOB_HEADER_LEN + keyLength];
-
-            blob[0] = (byte)PUBLICKEYBLOB;      // Type - PUBLICKEYBLOB (0x06)
-            blob[1] = (byte)CUR_BLOB_VERSION;   // Version - Always CUR_BLOB_VERSION (0x02)
-            // [2], [3]                         // RESERVED - Always 0
-            blob[5] = (byte)CALG_RSA_KEYX;      // ALGID - Always 00 a4 00 00 (for CALG_RSA_KEYX)
-            blob[8] = 0x52;                     // Magic - RSA1 (ASCII in hex)
-            blob[9] = 0x53;
-            blob[10] = 0x41;
-            blob[11] = 0x31;
-
-            byte[] bitlen = GetBytesLE(keyLength << 3);
-            blob[12] = bitlen[0];               // bitlen
-            blob[13] = bitlen[1];
-            blob[14] = bitlen[2];
-            blob[15] = bitlen[3];
-
-            // public exponent (DWORD)
-            int pos = 16;
-            int n = p.Exponent.Length;
-
-            Dbg.Assert(n <= 4, "RSA exponent byte length cannot exceed allocated segment");
-
-            while (n > 0)
-            {
-                blob[pos++] = p.Exponent[--n];
-            }
-
-            // modulus
-            pos = 20;
-            byte[] key = p.Modulus;
-            Array.Reverse(key);
-            Buffer.BlockCopy(key, 0, blob, pos, keyLength);
-
-            return blob;
-        }
-
-        internal static byte[] FromCapiSimpleKeyBlob(byte[] blob)
-        {
-            if (blob == null)
-            {
-                throw new ArgumentNullException(nameof(blob));
-            }
-
-            if (blob.Length < SIMPLEBLOB_HEADER_LEN)
-            {
-                throw new ArgumentException(SecuritySupportStrings.InvalidSessionKey);
-            }
-
-            // just ignore the header of the capi blob and go straight for the key
-            return CreateReverseByteArray(blob.Skip(SIMPLEBLOB_HEADER_LEN).ToArray());
-        }
-
-        internal static byte[] ToCapiSimpleKeyBlob(byte[] encryptedKey)
-        {
-            if (encryptedKey == null)
-            {
-                throw new ArgumentNullException(nameof(encryptedKey));
-            }
-
-            // formulate the PUBLICKEYSTRUCT
-            byte[] blob = new byte[SIMPLEBLOB_HEADER_LEN + encryptedKey.Length];
-
-            blob[0] = (byte)SIMPLEBLOB;         // Type - SIMPLEBLOB (0x01)
-            blob[1] = (byte)CUR_BLOB_VERSION;   // Version - Always CUR_BLOB_VERSION (0x02)
-            // [2], [3]                         // RESERVED - Always 0
-            blob[4] = (byte)CALG_AES_256;       // AES-256 algo id (0x10)
-            blob[5] = 0x66;                     // ??
-            // [6], [7], [8]                    // 0x00 
-            blob[9] = (byte)CALG_RSA_KEYX;      // 0xa4
-            // [10], [11]                       // 0x00 
-
-            // create a reversed copy and add the encrypted key
-            byte[] reversedKey = CreateReverseByteArray(encryptedKey);
-            Buffer.BlockCopy(reversedKey, 0, blob, SIMPLEBLOB_HEADER_LEN, reversedKey.Length);
-
-            return blob;
-        }
-
-        #endregion Functions
     }
 
     /// <summary>
@@ -278,7 +452,7 @@ namespace System.Management.Automation.Internal
     {
         #region Private Members
 
-        private readonly uint _errorCode;
+        private uint _errorCode;
 
         #endregion Private Members
 
@@ -366,27 +540,33 @@ namespace System.Management.Automation.Internal
     }
 
     /// <summary>
-    /// A reverse compatible implementation of session key exchange. This supports the CAPI
-    /// keyblob formats but uses dotnet std abstract AES and RSA classes for all crypto operations.
+    /// One of the issues with RSACryptoServiceProvider is that it never uses CRYPT_VERIFYCONTEXT
+    /// to create ephemeral keys.  This class is a facade written on top of native CAPI APIs
+    /// to create ephemeral keys.
     /// </summary>
     internal class PSRSACryptoServiceProvider : IDisposable
     {
         #region Private Members
 
-        // handle session key encryption/decryption
-        private RSA _rsa;
-
-        // handle to the AES provider object (houses session key and iv)
-        private readonly Aes _aes;
-
-        // this flag indicates that this class has a key imported from the 
-        // remote end and so can be used for encryption
-        private bool _canEncrypt;
-
-        // bool indicating if session key was generated before
+        private PSSafeCryptProvHandle _hProv;
+        // handle to the provider
+        private bool _canEncrypt = false;            // this flag indicates that this class has a key
+        // imported from the remote end and so can be
+        // used for encryption
+        private PSSafeCryptKey _hRSAKey;
+        // handle to the RSA key with which the session
+        // key is exchange. This can either be generated
+        // or imported
+        private PSSafeCryptKey _hSessionKey;
+        // handle to the session key. This can either
+        // be generated or imported
         private bool _sessionKeyGenerated = false;
+        // bool indicating if session key was generated before
 
-        private static readonly object s_syncObject = new object();
+        private static PSSafeCryptProvHandle s_hStaticProv;
+        private static PSSafeCryptKey s_hStaticRSAKey;
+        private static bool s_keyPairGenerated = false;
+        private static object s_syncObject = new object();
 
         #endregion Private Members
 
@@ -401,11 +581,22 @@ namespace System.Management.Automation.Internal
         {
             if (serverMode)
             {
-                GenerateKeyPair();
+                _hProv = new PSSafeCryptProvHandle();
+
+                // We need PROV_RSA_AES to support AES-256 symmetric key
+                // encryption. PROV_RSA_FULL supports only RC2 and RC4
+                bool ret = PSCryptoNativeUtils.CryptAcquireContext(ref _hProv,
+                    null,
+                    null,
+                    PSCryptoNativeUtils.PROV_RSA_AES,
+                    PSCryptoNativeUtils.CRYPT_VERIFYCONTEXT);
+
+                CheckStatus(ret);
+
+                _hRSAKey = new PSSafeCryptKey();
             }
 
-            _aes = Aes.Create();
-            _aes.IV = new byte[16];  // iv should be 0
+            _hSessionKey = new PSSafeCryptKey();
         }
 
         #endregion Constructors
@@ -413,16 +604,37 @@ namespace System.Management.Automation.Internal
         #region Internal Methods
 
         /// <summary>
-        /// Get the public key, in CAPI-compatible form, as a base64 encoded string.
+        /// Get the public key as a base64 encoded string.
         /// </summary>
         /// <returns>Public key as base64 encoded string.</returns>
         internal string GetPublicKeyAsBase64EncodedString()
         {
-            Dbg.Assert(_rsa != null, "No public key available.");
+            uint publicKeyLength = 0;
 
-            byte[] capiPublicKeyBlob = PSCryptoNativeConverter.ToCapiPublicKeyBlob(_rsa);
+            // Get key length first
+            bool ret = PSCryptoNativeUtils.CryptExportKey(_hRSAKey,
+                                                          PSSafeCryptKey.Zero,
+                                                          PSCryptoNativeUtils.PUBLICKEYBLOB,
+                                                          0,
+                                                          null,
+                                                          ref publicKeyLength);
+            CheckStatus(ret);
 
-            return Convert.ToBase64String(capiPublicKeyBlob);
+            // Create enough buffer and get the actual data
+            byte[] publicKey = new byte[publicKeyLength];
+            ret = PSCryptoNativeUtils.CryptExportKey(_hRSAKey,
+                                                      PSSafeCryptKey.Zero,
+                                                      PSCryptoNativeUtils.PUBLICKEYBLOB,
+                                                      0,
+                                                      publicKey,
+                                                      ref publicKeyLength);
+            CheckStatus(ret);
+
+            // Convert the public key into base64 encoding so that it can be exported to
+            // the other end.
+            string result = Convert.ToBase64String(publicKey);
+
+            return result;
         }
 
         /// <summary>
@@ -437,9 +649,13 @@ namespace System.Management.Automation.Internal
             {
                 if (!_sessionKeyGenerated)
                 {
-                    // Aes object gens key automatically on construction, so this is somewhat redundant, 
-                    // but at least the actionable key will not be in-memory until it's requested fwiw.
-                    _aes.GenerateKey();
+                    bool ret = PSCryptoNativeUtils.CryptGenKey(_hProv,
+                                                              PSCryptoNativeUtils.CALG_AES_256,
+                                                              0x01000000 |    // key length = 256 bits
+                                                              PSCryptoNativeUtils.CRYPT_EXPORTABLE |
+                                                              PSCryptoNativeUtils.CRYPT_CREATE_SALT,
+                                                              ref _hSessionKey);
+                    CheckStatus(ret);
                     _sessionKeyGenerated = true;
                     _canEncrypt = true;  // we can encrypt and decrypt once session key is available
                 }
@@ -456,17 +672,35 @@ namespace System.Management.Automation.Internal
         /// and encoded as a base 64 string.</returns>
         internal string SafeExportSessionKey()
         {
-            Dbg.Assert(_rsa != null, "No public key available.");
-
             // generate one if not already done.
             GenerateSessionKey();
 
-            // encrypt it
-            byte[] encryptedKey = _rsa.Encrypt(_aes.Key, RSAEncryptionPadding.Pkcs1);
+            uint length = 0;
 
-            // convert the key to capi simpleblob format before exporting
-            byte[] simpleKeyBlob = PSCryptoNativeConverter.ToCapiSimpleKeyBlob(encryptedKey);
-            return Convert.ToBase64String(simpleKeyBlob);
+            // get key length first
+            bool ret = PSCryptoNativeUtils.CryptExportKey(_hSessionKey,
+                                                     _hRSAKey,
+                                                     PSCryptoNativeUtils.SIMPLEBLOB,
+                                                     0,
+                                                     null,
+                                                     ref length);
+            CheckStatus(ret);
+
+            // allocate buffer and export the key
+            byte[] sessionkey = new byte[length];
+            ret = PSCryptoNativeUtils.CryptExportKey(_hSessionKey,
+                                                     _hRSAKey,
+                                                     PSCryptoNativeUtils.SIMPLEBLOB,
+                                                     0,
+                                                     sessionkey,
+                                                     ref length);
+            CheckStatus(ret);
+
+            // now we can encrypt as we have the session key
+            _canEncrypt = true;
+
+            // convert the key to base64 before exporting
+            return Convert.ToBase64String(sessionkey);
         }
 
         /// <summary>
@@ -478,8 +712,16 @@ namespace System.Management.Automation.Internal
         {
             Dbg.Assert(!string.IsNullOrEmpty(publicKey), "key cannot be null or empty");
 
-            byte[] publicKeyBlob = Convert.FromBase64String(publicKey);
-            _rsa = PSCryptoNativeConverter.FromCapiPublicKeyBlob(publicKeyBlob);
+            byte[] convertedBase64 = Convert.FromBase64String(publicKey);
+
+            bool ret = PSCryptoNativeUtils.CryptImportKey(_hProv,
+                                           convertedBase64,
+                                           convertedBase64.Length,
+                                           PSSafeCryptKey.Zero,
+                                           0,
+                                           ref _hRSAKey);
+
+            CheckStatus(ret);
         }
 
         /// <summary>
@@ -492,10 +734,15 @@ namespace System.Management.Automation.Internal
         {
             Dbg.Assert(!string.IsNullOrEmpty(sessionKey), "key cannot be null or empty");
 
-            byte[] sessionKeyBlob = Convert.FromBase64String(sessionKey);
-            byte[] rsaEncryptedKey = PSCryptoNativeConverter.FromCapiSimpleKeyBlob(sessionKeyBlob);
+            byte[] convertedBase64 = Convert.FromBase64String(sessionKey);
 
-            _aes.Key = _rsa.Decrypt(rsaEncryptedKey, RSAEncryptionPadding.Pkcs1);
+            bool ret = PSCryptoNativeUtils.CryptImportKey(_hProv,
+                                            convertedBase64,
+                                            convertedBase64.Length,
+                                            _hRSAKey,
+                                            0,
+                                            ref _hSessionKey);
+            CheckStatus(ret);
 
             // now we have imported the key and will be able to
             // encrypt using the session key
@@ -509,19 +756,58 @@ namespace System.Management.Automation.Internal
         /// <returns>Encrypted byte array.</returns>
         internal byte[] EncryptWithSessionKey(byte[] data)
         {
+            // first make a copy of the original data.This is needed
+            // as CryptEncrypt uses the same buffer to write the encrypted data
+            // into.
             Dbg.Assert(_canEncrypt, "Remote key has not been imported to encrypt");
 
-            using (ICryptoTransform encryptor = _aes.CreateEncryptor())
-            using (MemoryStream targetStream = new MemoryStream())
-            using (MemoryStream sourceStream = new MemoryStream(data))
+            byte[] encryptedData = new byte[data.Length];
+            Array.Copy(data, 0, encryptedData, 0, data.Length);
+
+            int dataLength = encryptedData.Length;
+
+            // encryption always happens using the session key
+            bool ret = PSCryptoNativeUtils.CryptEncrypt(_hSessionKey,
+                                                        IntPtr.Zero,
+                                                        true,
+                                                        0,
+                                                        encryptedData,
+                                                        ref dataLength,
+                                                        data.Length);
+
+            // if encryption failed, then dataLength will contain the length
+            // of buffer needed to store the encrypted contents. Recreate
+            // the buffer
+            if (false == ret)
             {
-                using (CryptoStream cryptoStream = new CryptoStream(targetStream, encryptor, CryptoStreamMode.Write))
+                // before reallocating the encryptedData buffer,
+                // zero out its contents
+                for (int i = 0; i < encryptedData.Length; i++)
                 {
-                    sourceStream.CopyTo(cryptoStream);
+                    encryptedData[i] = 0;
                 }
 
-                return targetStream.ToArray();
+                encryptedData = new byte[dataLength];
+
+                Array.Copy(data, 0, encryptedData, 0, data.Length);
+                dataLength = data.Length;
+                ret = PSCryptoNativeUtils.CryptEncrypt(_hSessionKey,
+                                                       IntPtr.Zero,
+                                                       true,
+                                                       0,
+                                                       encryptedData,
+                                                       ref dataLength,
+                                                       encryptedData.Length);
+
+                CheckStatus(ret);
             }
+
+            // make sure we copy only appropriate data
+            // dataLength will contain the length of the encrypted
+            // data buffer
+            byte[] result = new byte[dataLength];
+            Array.Copy(encryptedData, 0, result, 0, dataLength);
+            return result;
         }
 
         /// <summary>
@@ -531,17 +817,53 @@ namespace System.Management.Automation.Internal
         /// <returns>Decrypted buffer.</returns>
         internal byte[] DecryptWithSessionKey(byte[] data)
         {
-            using (ICryptoTransform decryptor = _aes.CreateDecryptor())
-            using (MemoryStream sourceStream = new MemoryStream(data))
-            using (MemoryStream targetStream = new MemoryStream())
-            {
-                using (CryptoStream csDecrypt = new CryptoStream(sourceStream, decryptor, CryptoStreamMode.Read))
-                {
-                    csDecrypt.CopyTo(targetStream);
-                }
+            // first make a copy of the original data.This is needed
+            // as CryptDecrypt uses the same buffer to write the decrypted data
+            // into.
+            byte[] decryptedData = new byte[data.Length];
 
-                return targetStream.ToArray();
+            Array.Copy(data, 0, decryptedData, 0, data.Length);
+
+            int dataLength = decryptedData.Length;
+
+            bool ret = PSCryptoNativeUtils.CryptDecrypt(_hSessionKey,
+                                                        IntPtr.Zero,
+                                                        true,
+                                                        0,
+                                                        decryptedData,
+                                                        ref dataLength);
+
+            // if decryption failed, then dataLength will contain the length
+            // of buffer needed to store the decrypted contents. Recreate
+            // the buffer
+            if (false == ret)
+            {
+                decryptedData = new byte[dataLength];
+
+                Array.Copy(data, 0, decryptedData, 0, data.Length);
+                ret = PSCryptoNativeUtils.CryptDecrypt(_hSessionKey,
+                                                       IntPtr.Zero,
+                                                       true,
+                                                       0,
+                                                       decryptedData,
+                                                       ref dataLength);
+                CheckStatus(ret);
             }
+
+            // make sure we copy only appropriate data
+            // dataLength will contain the length of the encrypted
+            // data buffer
+            byte[] result = new byte[dataLength];
+
+            Array.Copy(decryptedData, 0, result, 0, dataLength);
+
+            // zero out the decryptedData buffer
+            for (int i = 0; i < decryptedData.Length; i++)
+            {
+                decryptedData[i] = 0;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -550,8 +872,39 @@ namespace System.Management.Automation.Internal
         /// </summary>
         internal void GenerateKeyPair()
         {
-            _rsa = RSA.Create();
-            _rsa.KeySize = 2048;
+            if (!s_keyPairGenerated)
+            {
+                lock (s_syncObject)
+                {
+                    if (!s_keyPairGenerated)
+                    {
+                        s_hStaticProv = new PSSafeCryptProvHandle();
+                        // We need PROV_RSA_AES to support AES-256 symmetric key
+                        // encryption. PROV_RSA_FULL supports only RC2 and RC4
+                        bool ret = PSCryptoNativeUtils.CryptAcquireContext(ref s_hStaticProv,
+                            null,
+                            null,
+                            PSCryptoNativeUtils.PROV_RSA_AES,
+                            PSCryptoNativeUtils.CRYPT_VERIFYCONTEXT);
+
+                        CheckStatus(ret);
+
+                        s_hStaticRSAKey = new PSSafeCryptKey();
+                        ret = PSCryptoNativeUtils.CryptGenKey(s_hStaticProv,
+                            PSCryptoNativeUtils.AT_KEYEXCHANGE,
+                            0x08000000 | PSCryptoNativeUtils.CRYPT_EXPORTABLE,  // key length -> 2048
+                            ref s_hStaticRSAKey);
+
+                        CheckStatus(ret);
+
+                        // key needs to be generated once
+                        s_keyPairGenerated = true;
+                    }
+                }
+            }
+
+            _hProv = s_hStaticProv;
+            _hRSAKey = s_hStaticRSAKey;
         }
 
         /// <summary>
@@ -584,7 +937,13 @@ namespace System.Management.Automation.Internal
         /// the client side.</returns>
         internal static PSRSACryptoServiceProvider GetRSACryptoServiceProviderForClient()
         {
-            return new PSRSACryptoServiceProvider(false);
+            PSRSACryptoServiceProvider cryptoProvider = new PSRSACryptoServiceProvider(false);
+
+            // set the handles for provider and rsa key
+            cryptoProvider._hProv = s_hStaticProv;
+            cryptoProvider._hRSAKey = s_hStaticRSAKey;
+
+            return cryptoProvider;
         }
 
         /// <summary>
@@ -595,10 +954,35 @@ namespace System.Management.Automation.Internal
         /// the server side.</returns>
         internal static PSRSACryptoServiceProvider GetRSACryptoServiceProviderForServer()
         {
-            return new PSRSACryptoServiceProvider(true);
+            PSRSACryptoServiceProvider cryptoProvider = new PSRSACryptoServiceProvider(true);
+
+            return cryptoProvider;
         }
 
         #endregion Internal Static Methods
+
+        #region Private Methods
+
+        /// <summary>
+        /// Checks the status of a call, if it had resulted in an error
+        /// then obtains the last error, wraps it in an exception and
+        /// throws the same.
+        /// </summary>
+        /// <param name="value">Value to examine.</param>
+        private void CheckStatus(bool value)
+        {
+            if (value)
+            {
+                return;
+            }
+
+            uint errorCode = PSCryptoNativeUtils.GetLastError();
+            StringBuilder errorMessage = new StringBuilder(new ComponentModel.Win32Exception(unchecked((int)errorCode)).Message);
+
+            throw new PSCryptoException(errorCode, errorMessage);
+        }
+
+        #endregion Private Methods
 
         #region IDisposable
 
@@ -611,20 +995,64 @@ namespace System.Management.Automation.Internal
             System.GC.SuppressFinalize(this);
         }
 
+        // [SecurityPermission(SecurityAction.Demand, UnmanagedCode=true)]
         protected void Dispose(bool disposing)
         {
             if (disposing)
             {
-                if (_rsa != null)
+                if (_hSessionKey != null)
                 {
-                    _rsa.Dispose();
+                    if (!_hSessionKey.IsInvalid)
+                    {
+                        _hSessionKey.Dispose();
+                    }
+
+                    _hSessionKey = null;
                 }
 
-                if (_aes != null)
+                // we need to dismiss the provider and key
+                // only if the static members are not allocated
+                // since otherwise, these are just references
+                // to the static members
+
+                if (s_hStaticRSAKey == null)
                 {
-                    _aes.Dispose();
+                    if (_hRSAKey != null)
+                    {
+                        if (!_hRSAKey.IsInvalid)
+                        {
+                            _hRSAKey.Dispose();
+                        }
+
+                        _hRSAKey = null;
+                    }
+                }
+
+                if (s_hStaticProv == null)
+                {
+                    if (_hProv != null)
+                    {
+                        if (!_hProv.IsInvalid)
+                        {
+                            _hProv.Dispose();
+                        }
+
+                        _hProv = null;
+                    }
                 }
             }
+        }
+
+        /// <summary>
+        /// Destructor.
+        /// </summary>
+        ~PSRSACryptoServiceProvider()
+        {
+            // When Dispose() is called, GC.SuppressFinalize()
+            // is called and therefore this finalizer will not
+            // be invoked. Hence this is run only on process
+            // shutdown
+            Dispose(true);
         }
 
         #endregion IDisposable
@@ -896,7 +1324,11 @@ namespace System.Management.Automation.Internal
         /// </summary>
         internal PSRemotingCryptoHelperServer()
         {
+#if UNIX
+            _rsaCryptoProvider = null;
+#else
             _rsaCryptoProvider = PSRSACryptoServiceProvider.GetRSACryptoServiceProviderForServer();
+#endif
         }
 
         #endregion Constructors
@@ -1023,6 +1455,8 @@ namespace System.Management.Automation.Internal
         internal PSRemotingCryptoHelperClient()
         {
             _rsaCryptoProvider = PSRSACryptoServiceProvider.GetRSACryptoServiceProviderForClient();
+
+            // _session = new RemoteSession();
         }
 
         #endregion Constructors

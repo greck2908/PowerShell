@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -21,9 +21,8 @@ namespace Microsoft.PowerShell.GlobalTool.Shim
         /// <summary>
         /// Entry point for the global tool.
         /// </summary>
-        /// <param name="args">Arguments passed to the global tool.</param>'
-        /// <returns>Exit code returned by pwsh.</returns>
-        public static int Main(string[] args)
+        /// <param name="args">Arguments passed to the global tool.</param>
+        public static void Main(string[] args)
         {
             var currentPath = new FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).Directory.FullName;
             var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -32,18 +31,11 @@ namespace Microsoft.PowerShell.GlobalTool.Shim
 
             string argsString = args.Length > 0 ? string.Join(" ", args) : null;
             var pwshPath = Path.Combine(currentPath, platformFolder, PwshDllName);
-            string processArgs = string.IsNullOrEmpty(argsString) ? $"\"{pwshPath}\"" : $"\"{pwshPath}\" {argsString}";
+            string processArgs = string.IsNullOrEmpty(argsString) ? $"{pwshPath}" : $"{pwshPath} -c {argsString}";
 
             if (File.Exists(pwshPath))
             {
-                Console.CancelKeyPress += (sender, e) =>
-                {
-                    e.Cancel = true;
-                };
-
-                var process = System.Diagnostics.Process.Start("dotnet", processArgs);
-                process.WaitForExit();
-                return process.ExitCode;
+                System.Diagnostics.Process.Start("dotnet", processArgs).WaitForExit();
             }
             else
             {

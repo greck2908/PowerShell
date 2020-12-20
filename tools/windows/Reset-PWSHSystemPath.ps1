@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 <#
@@ -32,13 +32,11 @@
 
   Removes ALL PowerShell paths from the Machine level path.
   Good for running right before upgrading PowerShell.
-
 .EXAMPLE
   .\Reset-PWSHSystemPath.ps1 -PathScope Machine, User, Process
 
   Removes all paths but the very last one when sorted in ascending order.
   Processes all path scopes including current process.
-
 .EXAMPLE
   .\Reset-PWSHSystemPath.ps1 -PathScope Machine, User, Process -RemoveAllOccurencs
 
@@ -55,13 +53,13 @@ ForEach ($PathScopeItem in $PathScope)
 {
   $AssembledNewPath = $NewPath = ''
   #From the current path scope. retrieve the array of paths that match the pathspec of PowerShell (to use as a filter)
-  $pathstoremove = @([Environment]::GetEnvironmentVariable("PATH","$PathScopeItem").split(';') | Where-Object { $_ -ilike "*\Program Files\Powershell\6*"})
+  $pathstoremove = @([Environment]::GetEnvironmentVariable("PATH","$PathScopeItem").split(';') | Where { $_ -ilike "*\Program Files\Powershell\6*"})
   If (!$RemoveAllOccurences)
   {
     #If we are not removing all occurances of PowerShell paths, then remove the highest sorted path from the filter
-    $pathstoremove = @($pathstoremove | Sort-Object | Select-Object -SkipLast 1)
+    $pathstoremove = @($pathstoremove | sort-object | Select-Object -skiplast 1)
   }
-  Write-Verbose "Reset-PWSHSystemPath: Found $($pathstoremove.count) paths to remove from $PathScopeItem path scope: $($Pathstoremove -join ', ' | Out-String)"
+  Write-Verbose "Reset-PWSHSystemPath: Found $($pathstoremove.count) paths to remove from $PathScopeItem path scope: $($Pathstoremove -join ', ' | out-string)"
   If ($pathstoremove.count -gt 0)
   {
     foreach ($Path in [Environment]::GetEnvironmentVariable("PATH","$PathScopeItem").split(';'))

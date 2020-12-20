@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -228,7 +228,7 @@ namespace System.Management.Automation
         // Estimated length of all Strings.* values
         // Rough estimate of values
         // max path for Command path
-        private const int LogContextInitialSize = 30 * 16 + 13 * 20 + 255;
+        const int LogContextInitialSize = 30 * 16 + 13 * 20 + 255;
 
         /// <summary>
         /// Converts log context to string.

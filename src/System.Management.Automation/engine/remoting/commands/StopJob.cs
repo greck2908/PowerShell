@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -16,7 +16,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet stops the asynchronously invoked remote operations.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Stop, "Job", SupportsShouldProcess = true, DefaultParameterSetName = JobCmdletBase.SessionIdParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096795")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113413")]
     [OutputType(typeof(Job))]
     public class StopJobCommand : JobCmdletBase, IDisposable
     {
@@ -253,7 +253,6 @@ namespace Microsoft.PowerShell.Commands
 
         private readonly HashSet<Guid> _pendingJobs = new HashSet<Guid>();
         private readonly ManualResetEvent _waitForJobs = new ManualResetEvent(false);
-
         private readonly Dictionary<Job2, EventHandler<AsyncCompletedEventArgs>> _cleanUpActions =
             new Dictionary<Job2, EventHandler<AsyncCompletedEventArgs>>();
 

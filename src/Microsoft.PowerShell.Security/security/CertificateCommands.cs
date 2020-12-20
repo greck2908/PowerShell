@@ -1,8 +1,11 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Management.Automation;
 using System.Security;
 using System.Security.Cryptography;
@@ -15,7 +18,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Defines the implementation of the get-pfxcertificate cmdlet.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "PfxCertificate", DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096918")]
+    [Cmdlet(VerbsCommon.Get, "PfxCertificate", DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113323")]
     [OutputType(typeof(X509Certificate2))]
     public sealed class GetPfxCertificateCommand : PSCmdlet
     {
@@ -77,7 +80,7 @@ namespace Microsoft.PowerShell.Commands
         //
         // list of files that were not found
         //
-        private readonly List<string> _filesNotFound = new List<string>();
+        private ArrayList _filesNotFound = new ArrayList();
 
         /// <summary>
         /// Initializes a new instance of the GetPfxCertificateCommand
@@ -213,3 +216,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

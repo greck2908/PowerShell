@@ -1,13 +1,13 @@
 parameters:
   parentJobs: []
-  pool: 'vs2017-win2016'
+  pool: 'Hosted VS2017'
   jobName: 'xunit_verify'
 
 jobs:
 - job: verify_xunit
   displayName: Verify xUnit Results
   pool:
-    vmImage: ${{ parameters.pool }}
+    name: ${{ parameters.pool }}
   dependsOn:
     ${{ parameters.parentJobs }}
   steps:

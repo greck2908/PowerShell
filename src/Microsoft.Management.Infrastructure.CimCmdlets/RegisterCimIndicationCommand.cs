@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -19,7 +19,6 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     /// cancel the subscription
     /// Should we have the second parameter set with a -Query?
     /// </summary>
-    [Alias("rcie")]
     [Cmdlet(VerbsLifecycle.Register, "CimIndicationEvent", DefaultParameterSetName = CimBaseCommand.ClassNameComputerSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkId=227960")]
     public class RegisterCimIndicationCommand : ObjectEventRegistrationBase
     {
@@ -35,7 +34,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </para>
         /// </summary>
         [Parameter]
-        public string Namespace { get; set; }
+        public string Namespace
+        {
+            get { return nameSpace; }
+
+            set { nameSpace = value; }
+        }
+
+        private string nameSpace;
 
         /// <summary>
         /// The following is the definition of the input parameter "ClassName".
@@ -115,7 +121,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Alias(CimBaseCommand.AliasOT)]
         [Parameter]
-        public UInt32 OperationTimeoutSec { get; set; }
+        public UInt32 OperationTimeoutSec
+        {
+            get { return operationTimeout; }
+
+            set { operationTimeout = value; }
+        }
+
+        private UInt32 operationTimeout;
 
         /// <summary>
         /// The following is the definition of the input parameter "Session".
@@ -243,7 +256,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             if (newSubscriber != null)
             {
                 DebugHelper.WriteLog("RegisterCimIndicationCommand::EndProcessing subscribe to Unsubscribed event", 4);
-                newSubscriber.Unsubscribed += newSubscriber_Unsubscribed;
+                newSubscriber.Unsubscribed += new PSEventUnsubscribedEventHandler(newSubscriber_Unsubscribed);
             }
         }
 
@@ -278,7 +291,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Parameter binder used to resolve parameter set name.
         /// </summary>
-        private readonly ParameterBinder parameterBinder = new(
+        private ParameterBinder parameterBinder = new ParameterBinder(
             parameters, parameterSets);
 
         /// <summary>
@@ -306,7 +319,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter definition entries.
         /// </summary>
-        private static readonly Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new()
+        static Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new Dictionary<string, HashSet<ParameterDefinitionEntry>>
         {
             {
                 nameClassName, new HashSet<ParameterDefinitionEntry> {
@@ -343,7 +356,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter set entries.
         /// </summary>
-        private static readonly Dictionary<string, ParameterSetEntry> parameterSets = new()
+        static Dictionary<string, ParameterSetEntry> parameterSets = new Dictionary<string, ParameterSetEntry>
         {
             {   CimBaseCommand.QueryExpressionSessionSet, new ParameterSetEntry(2)     },
             {   CimBaseCommand.QueryExpressionComputerSet, new ParameterSetEntry(1)     },

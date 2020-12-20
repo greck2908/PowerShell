@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 #-----------------
@@ -24,7 +24,7 @@ function Get-Issue
         {
             if ($link -match '\s*<(.*)>;\s+rel="next"')
             {
-                $uri = $Matches[1]
+                $uri = $matches[1]
             }
         }
     }

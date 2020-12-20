@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -17,11 +17,10 @@ namespace Microsoft.PowerShell.Commands
     /// This class implements get-member command.
     /// </summary>
     [Cmdlet(VerbsCommon.Add, "Member", DefaultParameterSetName = "TypeNameSet",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097109", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113280", RemotingCapability = RemotingCapability.None)]
     public class AddMemberCommand : PSCmdlet
     {
-        private static readonly object s_notSpecified = new();
-
+        private static readonly object s_notSpecified = new object();
         private static bool HasBeenSpecified(object obj)
         {
             return !System.Object.ReferenceEquals(obj, s_notSpecified);
@@ -37,9 +36,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Mandatory = true, ValueFromPipeline = true, ParameterSetName = NotePropertyMultiMemberSet)]
         public PSObject InputObject
         {
-            get { return _inputObject; }
-
             set { _inputObject = value; }
+
+            get { return _inputObject; }
         }
 
         private PSMemberTypes _memberType;
@@ -50,9 +49,9 @@ namespace Microsoft.PowerShell.Commands
         [Alias("Type")]
         public PSMemberTypes MemberType
         {
-            get { return _memberType; }
-
             set { _memberType = value; }
+
+            get { return _memberType; }
         }
 
         private string _memberName;
@@ -62,9 +61,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Mandatory = true, Position = 1, ParameterSetName = "MemberSet")]
         public string Name
         {
-            get { return _memberName; }
-
             set { _memberName = value; }
+
+            get { return _memberName; }
         }
 
         private object _value1 = s_notSpecified;
@@ -74,9 +73,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Position = 2, ParameterSetName = "MemberSet")]
         public object Value
         {
-            get { return _value1; }
-
             set { _value1 = value; }
+
+            get { return _value1; }
         }
 
         private object _value2 = s_notSpecified;
@@ -86,9 +85,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Position = 3, ParameterSetName = "MemberSet")]
         public object SecondValue
         {
-            get { return _value2; }
-
             set { _value2 = value; }
+
+            get { return _value2; }
         }
 
         private string _typeName;
@@ -102,9 +101,9 @@ namespace Microsoft.PowerShell.Commands
         [ValidateNotNullOrEmpty]
         public string TypeName
         {
-            get { return _typeName; }
-
             set { _typeName = value; }
+
+            get { return _typeName; }
         }
 
         private bool _force;
@@ -116,9 +115,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = NotePropertyMultiMemberSet)]
         public SwitchParameter Force
         {
-            get { return _force; }
-
             set { _force = value; }
+
+            get { return _force; }
         }
 
         private bool _passThru /* = false */;
@@ -132,9 +131,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = NotePropertyMultiMemberSet)]
         public SwitchParameter PassThru
         {
-            get { return _passThru; }
-
             set { _passThru = value; }
+
+            get { return _passThru; }
         }
 
         #region Simplifying NoteProperty Declaration
@@ -152,9 +151,9 @@ namespace Microsoft.PowerShell.Commands
         [ValidateNotNullOrEmpty]
         public string NotePropertyName
         {
-            get { return _notePropertyName; }
-
             set { _notePropertyName = value; }
+
+            get { return _notePropertyName; }
         }
 
         private object _notePropertyValue;
@@ -165,9 +164,9 @@ namespace Microsoft.PowerShell.Commands
         [AllowNull]
         public object NotePropertyValue
         {
-            get { return _notePropertyValue; }
-
             set { _notePropertyValue = value; }
+
+            get { return _notePropertyValue; }
         }
 
         // Use IDictionary to support both Hashtable and OrderedHashtable
@@ -221,7 +220,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (!HasBeenSpecified(_value1))
             {
-                Collection<FieldDescription> fdc = new();
+                Collection<FieldDescription> fdc = new Collection<FieldDescription>();
                 fdc.Add(new FieldDescription("Value"));
                 string prompt = StringUtil.Format(AddMember.Value1Prompt, _memberType);
                 Dictionary<string, PSObject> result = this.Host.UI.Prompt(prompt, null, fdc);
@@ -388,7 +387,7 @@ namespace Microsoft.PowerShell.Commands
                         memberCount++;
                     }
 
-                    memberCountHelper >>= 1;
+                    memberCountHelper = memberCountHelper >> 1;
                 }
 
                 if (memberCount != 1)
@@ -531,9 +530,9 @@ namespace Microsoft.PowerShell.Commands
 
         private ErrorRecord NewError(string errorId, string resourceId, object targetObject, params object[] args)
         {
-            ErrorDetails details = new(this.GetType().GetTypeInfo().Assembly,
+            ErrorDetails details = new ErrorDetails(this.GetType().GetTypeInfo().Assembly,
                 "Microsoft.PowerShell.Commands.Utility.resources.AddMember", resourceId, args);
-            ErrorRecord errorRecord = new(
+            ErrorRecord errorRecord = new ErrorRecord(
                 new InvalidOperationException(details.Message),
                 errorId,
                 ErrorCategory.InvalidOperation,

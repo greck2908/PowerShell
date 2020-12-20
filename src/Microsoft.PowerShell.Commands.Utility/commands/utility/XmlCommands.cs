@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -19,7 +19,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implementation for the Export-Clixml command.
     /// </summary>
-    [Cmdlet(VerbsData.Export, "Clixml", SupportsShouldProcess = true, DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096926")]
+    [Cmdlet(VerbsData.Export, "Clixml", SupportsShouldProcess = true, DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113297")]
     public sealed class ExportClixmlCommand : PSCmdlet, IDisposable
     {
         #region Command Line Parameters
@@ -32,7 +32,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter]
         [ValidateRange(1, int.MaxValue)]
-        public int Depth { get; set; }
+        public int Depth { get; set; } = 0;
 
         /// <summary>
         /// Mandatory file name to write to.
@@ -114,21 +114,7 @@ namespace Microsoft.PowerShell.Commands
         [ArgumentToEncodingTransformationAttribute()]
         [ArgumentEncodingCompletionsAttribute]
         [ValidateNotNullOrEmpty]
-        public Encoding Encoding
-        {
-            get
-            {
-                return _encoding;
-            }
-
-            set
-            {
-                EncodingConversion.WarnIfObsolete(this, value);
-                _encoding = value;
-            }
-        }
-
-        private Encoding _encoding = ClrFacade.GetDefaultEncoding();
+        public Encoding Encoding { get; set; } = ClrFacade.GetDefaultEncoding();
 
         #endregion Command Line Parameters
 
@@ -226,7 +212,7 @@ namespace Microsoft.PowerShell.Commands
                 );
 
             // create xml writer
-            XmlWriterSettings xmlSettings = new();
+            XmlWriterSettings xmlSettings = new XmlWriterSettings();
             xmlSettings.CloseOutput = true;
             xmlSettings.Encoding = sw.Encoding;
             xmlSettings.Indent = true;
@@ -275,7 +261,7 @@ namespace Microsoft.PowerShell.Commands
         void
         Dispose()
         {
-            if (!_disposed)
+            if (_disposed == false)
             {
                 CleanUp();
             }
@@ -289,7 +275,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements Import-Clixml command.
     /// </summary>
-    [Cmdlet(VerbsData.Import, "Clixml", SupportsPaging = true, DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096618")]
+    [Cmdlet(VerbsData.Import, "Clixml", SupportsPaging = true, DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113340")]
     public sealed class ImportClixmlCommand : PSCmdlet, IDisposable
     {
         #region Command Line Parameters
@@ -377,7 +363,7 @@ namespace Microsoft.PowerShell.Commands
     /// Implementation for the convertto-xml command.
     /// </summary>
     [Cmdlet(VerbsData.ConvertTo, "Xml", SupportsShouldProcess = false,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096603", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135204", RemotingCapability = RemotingCapability.None)]
     [OutputType(typeof(XmlDocument), typeof(string))]
     public sealed class ConvertToXmlCommand : PSCmdlet, IDisposable
     {
@@ -388,7 +374,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(HelpMessage = "Specifies how many levels of contained objects should be included in the XML representation")]
         [ValidateRange(1, int.MaxValue)]
-        public int Depth { get; set; }
+        public int Depth { get; set; } = 0;
 
         /// <summary>
         /// Input Object which is written to XML format.
@@ -463,7 +449,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 // Loading to the XML Document
                 _ms.Position = 0;
-                StreamReader read = new(_ms);
+                StreamReader read = new StreamReader(_ms);
                 string data = read.ReadToEnd();
                 WriteObject(data);
 
@@ -498,13 +484,13 @@ namespace Microsoft.PowerShell.Commands
                 if (As.Equals("Document", StringComparison.OrdinalIgnoreCase))
                 {
                     // this is a trusted xml doc - the cmdlet generated the doc into a private memory stream
-                    XmlDocument xmldoc = new();
+                    XmlDocument xmldoc = new XmlDocument();
                     xmldoc.Load(_ms);
                     WriteObject(xmldoc);
                 }
                 else if (As.Equals("String", StringComparison.OrdinalIgnoreCase))
                 {
-                    StreamReader read = new(_ms);
+                    StreamReader read = new StreamReader(_ms);
                     string data = read.ReadToEnd();
                     WriteObject(data);
                 }
@@ -620,7 +606,7 @@ namespace Microsoft.PowerShell.Commands
         void
         Dispose()
         {
-            if (!_disposed)
+            if (_disposed == false)
             {
                 CleanUp();
             }
@@ -647,7 +633,7 @@ namespace Microsoft.PowerShell.Commands
         /// Reference to cmdlet which is using this helper class.
         /// </summary>
         private readonly PSCmdlet _cmdlet;
-        private readonly bool _isLiteralPath;
+        private bool _isLiteralPath;
 
         internal ImportXmlHelper(string fileName, PSCmdlet cmdlet, bool isLiteralPath)
         {
@@ -719,7 +705,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         public void Dispose()
         {
-            if (!_disposed)
+            if (_disposed == false)
             {
                 CleanUp();
             }
@@ -814,7 +800,7 @@ namespace Microsoft.PowerShell.Commands
     ///<summary>
     ///This cmdlet is used to search an xml document based on the XPath Query.
     ///</summary>
-    [Cmdlet(VerbsCommon.Select, "Xml", DefaultParameterSetName = "Xml", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097031")]
+    [Cmdlet(VerbsCommon.Select, "Xml", DefaultParameterSetName = "Xml", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135255")]
     [OutputType(typeof(SelectXmlInfo))]
     public class SelectXmlCommand : PSCmdlet
     {
@@ -892,7 +878,7 @@ namespace Microsoft.PowerShell.Commands
 
             foreach (XmlNode foundXmlNode in foundXmlNodes)
             {
-                SelectXmlInfo selectXmlInfo = new();
+                SelectXmlInfo selectXmlInfo = new SelectXmlInfo();
                 selectXmlInfo.Node = foundXmlNode;
                 selectXmlInfo.Pattern = XPath;
                 selectXmlInfo.Path = filePath;
@@ -968,8 +954,8 @@ namespace Microsoft.PowerShell.Commands
                 filePath,
                 exception.Message);
 
-            ArgumentException argumentException = new(errorMessage, exception);
-            ErrorRecord errorRecord = new(argumentException, "ProcessingFile", ErrorCategory.InvalidArgument, filePath);
+            ArgumentException argumentException = new ArgumentException(errorMessage, exception);
+            ErrorRecord errorRecord = new ErrorRecord(argumentException, "ProcessingFile", ErrorCategory.InvalidArgument, filePath);
 
             this.WriteError(errorRecord);
         }
@@ -996,15 +982,15 @@ namespace Microsoft.PowerShell.Commands
                 catch (NullReferenceException)
                 {
                     string message = StringUtil.Format(UtilityCommonStrings.SearchXMLPrefixNullError);
-                    InvalidOperationException e = new(message);
-                    ErrorRecord er = new(e, "PrefixError", ErrorCategory.InvalidOperation, namespacetable);
+                    InvalidOperationException e = new InvalidOperationException(message);
+                    ErrorRecord er = new ErrorRecord(e, "PrefixError", ErrorCategory.InvalidOperation, namespacetable);
                     WriteError(er);
                 }
                 catch (ArgumentNullException)
                 {
                     string message = StringUtil.Format(UtilityCommonStrings.SearchXMLPrefixNullError);
-                    InvalidOperationException e = new(message);
-                    ErrorRecord er = new(e, "PrefixError", ErrorCategory.InvalidOperation, namespacetable);
+                    InvalidOperationException e = new InvalidOperationException(message);
+                    ErrorRecord er = new ErrorRecord(e, "PrefixError", ErrorCategory.InvalidOperation, namespacetable);
                     WriteError(er);
                 }
             }
@@ -1033,7 +1019,7 @@ namespace Microsoft.PowerShell.Commands
                 (ParameterSetName.Equals("LiteralPath", StringComparison.OrdinalIgnoreCase))))
             {
                 // If any file not resolved, execution stops. this is to make consistent with select-string.
-                List<string> fullresolvedPaths = new();
+                List<string> fullresolvedPaths = new List<string>();
                 foreach (string fpath in Path)
                 {
                     if (_isLiteralPath)
@@ -1049,8 +1035,8 @@ namespace Microsoft.PowerShell.Commands
                         {
                             // Cannot open File error
                             string message = StringUtil.Format(UtilityCommonStrings.FileOpenError, provider.FullName);
-                            InvalidOperationException e = new(message);
-                            ErrorRecord er = new(e, "ProcessingFile", ErrorCategory.InvalidOperation, fpath);
+                            InvalidOperationException e = new InvalidOperationException(message);
+                            ErrorRecord er = new ErrorRecord(e, "ProcessingFile", ErrorCategory.InvalidOperation, fpath);
                             WriteError(er);
                             continue;
                         }
@@ -1194,7 +1180,7 @@ namespace Microsoft.PowerShell.Commands
             string relPath = _path;
             if (!relPath.Equals(inputStream))
             {
-                if (relPath.StartsWith(directory, StringComparison.OrdinalIgnoreCase))
+                if (relPath.StartsWith(directory, StringComparison.CurrentCultureIgnoreCase))
                 {
                     int offset = directory.Length;
                     if (offset < relPath.Length)

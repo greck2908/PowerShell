@@ -1,9 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
+using System.Reflection;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -11,7 +12,7 @@ namespace Microsoft.PowerShell.Commands
     /// The ConvertFrom-Json command.
     /// This command converts a Json string representation to a JsonObject.
     /// </summary>
-    [Cmdlet(VerbsData.ConvertFrom, "Json", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096606", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.ConvertFrom, "Json", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=217031", RemotingCapability = RemotingCapability.None)]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
     public class ConvertFromJsonCommand : Cmdlet
     {
@@ -27,7 +28,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// InputObjectBuffer buffers all InputObject contents available in the pipeline.
         /// </summary>
-        private readonly List<string> _inputObjectBuffer = new();
+        private List<string> _inputObjectBuffer = new List<string>();
 
         /// <summary>
         /// Returned data structure is a Hashtable instead a CustomPSObject.
@@ -41,13 +42,6 @@ namespace Microsoft.PowerShell.Commands
         [Parameter()]
         [ValidateRange(ValidateRangeKind.Positive)]
         public int Depth { get; set; } = 1024;
-
-        /// <summary>
-        /// Gets or sets the switch to prevent ConvertFrom-Json from unravelling collections during deserialization, instead passing them as a single
-        /// object through the pipeline.
-        /// </summary>
-        [Parameter]
-        public SwitchParameter NoEnumerate { get; set; }
 
         #endregion parameters
 
@@ -120,7 +114,7 @@ namespace Microsoft.PowerShell.Commands
                 ThrowTerminatingError(error);
             }
 
-            WriteObject(result, !NoEnumerate.IsPresent);
+            WriteObject(result);
             return (result != null);
         }
 

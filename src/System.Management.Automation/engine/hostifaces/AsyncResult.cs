@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Threading;
@@ -42,7 +42,7 @@ namespace System.Management.Automation.Runspaces
         /// </param>
         internal AsyncResult(Guid ownerId, AsyncCallback callback, object state)
         {
-            Dbg.Assert(ownerId != Guid.Empty, "ownerId cannot be empty");
+            Dbg.Assert(Guid.Empty != ownerId, "ownerId cannot be empty");
             OwnerId = ownerId;
             Callback = callback;
             AsyncState = state;
@@ -152,7 +152,10 @@ namespace System.Management.Automation.Runspaces
             }
 
             // call the user supplied callback
-            Callback?.Invoke(this);
+            if (Callback != null)
+            {
+                Callback(this);
+            }
         }
 
         /// <summary>
@@ -238,7 +241,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (callback == null)
             {
-                throw new PSArgumentNullException(nameof(callback));
+                throw new PSArgumentNullException("callback");
             }
 
             _invokeCallback = callback;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -177,8 +177,8 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly string _userName;
-        private readonly SecureString _password;
+        private string _userName;
+        private SecureString _password;
 
         /// <summary>
         /// User's name.
@@ -219,7 +219,7 @@ namespace System.Management.Automation
         public PSCredential(PSObject pso)
         {
             if (pso == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(pso));
+                throw PSTraceSource.NewArgumentNullException("pso");
 
             if (pso.Properties["UserName"] != null)
             {
@@ -405,3 +405,4 @@ namespace System.Management.Automation
         }
     }
 }
+

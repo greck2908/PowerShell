@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Describe "Verify Markdown Links" {
@@ -17,12 +17,12 @@ Describe "Verify Markdown Links" {
         }
 
         # Cleanup jobs for reliability
-        Get-Job | Remove-Job -Force
+        get-job | remove-job -force
     }
 
     AfterAll {
         # Cleanup jobs to leave the process the same
-        Get-Job | Remove-Job -Force
+        get-job | remove-job -force
     }
 
     $groups = Get-ChildItem -Path "$PSScriptRoot\..\..\..\*.md" -Recurse | Where-Object {$_.DirectoryName -notlike '*node_modules*'} | Group-Object -Property directory
@@ -31,7 +31,7 @@ Describe "Verify Markdown Links" {
     # start all link verification in parallel
     Foreach($group in $groups)
     {
-        Write-Verbose -Verbose "starting jobs for $($group.Name) ..."
+        Write-Verbose -verbose "starting jobs for $($group.Name) ..."
         $job = Start-ThreadJob {
             param([object] $group)
             foreach($file in $group.Group)
@@ -46,13 +46,13 @@ Describe "Verify Markdown Links" {
         $jobs.add($group.name,$job)
     }
 
-    Write-Verbose -Verbose "Getting results ..."
+    Write-Verbose -verbose "Getting results ..."
     # Get the results and verify
     foreach($key in $jobs.keys)
     {
         $job = $jobs.$key
         $results = Receive-Job -Job $job -Wait
-        Remove-Job -Job $Job
+        Remove-job -job $Job
         foreach($jobResult in $results)
         {
             $file = $jobResult.file
@@ -85,39 +85,30 @@ Describe "Verify Markdown Links" {
 
                 if($passes)
                 {
-                    It "<url> should work" -TestCases $passes {
+                    it "<url> should work" -TestCases $passes {
                         noop
                     }
                 }
 
                 if($trueFailures)
                 {
-                    It "<url> should work" -TestCases $trueFailures  {
+                    it "<url> should work" -TestCases $trueFailures  {
                         param($url)
-
-                        # there could be multiple reasons why a failure is ok
-                        # check against the allowed failures
-                        $allowedFailures = [System.Net.HttpStatusCode[]](
-                            503, # Service Unavailable
-                            504  # Gateway Timeout
-                        )
 
                         $prefix = $url.Substring(0,7)
 
                         # Logging for diagnosability.  Azure DevOps sometimes redacts the full url.
-                        Write-Verbose "prefix: '$prefix'"
+                        Write-Verbose "prefix: '$prefix'" -Verbose
                         if($url -match '^http(s)?:')
                         {
-                            # If invoke-WebRequest can handle the URL, re-verify, with 6 retries
+                            # If invoke-WebRequest can handle the URL, re-verify, with 5 retries
                             try
                             {
-                                $null = Invoke-WebRequest -Uri $url -RetryIntervalSec 10 -MaximumRetryCount 6
+                                $null = Invoke-WebRequest -uri $url -RetryIntervalSec 3 -MaximumRetryCount 6
                             }
-                            catch [Microsoft.PowerShell.Commands.HttpResponseException]
+                            catch
                             {
-                                if ( $allowedFailures -notcontains $_.Exception.Response.StatusCode )  {
-                                    throw "Failed to complete request to `"$url`". $($_.Exception.Message)"
-                                }
+                                throw "retry of URL failed with error: $($_.Message)"
                             }
                         }
                         else {
@@ -128,7 +119,7 @@ Describe "Verify Markdown Links" {
 
                 if($verifyFailures)
                 {
-                    It "<url> should work" -TestCases $verifyFailures -Pending  {
+                    it "<url> should work" -TestCases $verifyFailures -Pending  {
                     }
                 }
 

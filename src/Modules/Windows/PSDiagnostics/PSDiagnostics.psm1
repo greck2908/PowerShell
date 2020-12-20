@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 <#
@@ -130,35 +130,35 @@ function Enable-WSManTrace
 {
 
     # winrm
-    "{04c6e16d-b99f-4a3a-9b3e-b8325bbc781e} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii
+    "{04c6e16d-b99f-4a3a-9b3e-b8325bbc781e} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii
 
     # winrsmgr
-    "{c0a36be8-a515-4cfa-b2b6-2676366efff7} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii -Append
+    "{c0a36be8-a515-4cfa-b2b6-2676366efff7} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii -append
 
     # WinrsExe
-    "{f1cab2c0-8beb-4fa2-90e1-8f17e0acdd5d} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii -Append
+    "{f1cab2c0-8beb-4fa2-90e1-8f17e0acdd5d} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii -append
 
     # WinrsCmd
-    "{03992646-3dfe-4477-80e3-85936ace7abb} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii -Append
+    "{03992646-3dfe-4477-80e3-85936ace7abb} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii -append
 
     # IPMIPrv
-    "{651d672b-e11f-41b7-add3-c2f6a4023672} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii -Append
+    "{651d672b-e11f-41b7-add3-c2f6a4023672} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii -append
 
     #IpmiDrv
-    "{D5C6A3E9-FA9C-434e-9653-165B4FC869E4} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii -Append
+    "{D5C6A3E9-FA9C-434e-9653-165B4FC869E4} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii -append
 
     # WSManProvHost
-    "{6e1b64d7-d3be-4651-90fb-3583af89d7f1} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii -Append
+    "{6e1b64d7-d3be-4651-90fb-3583af89d7f1} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii -append
 
     # Event Forwarding
-    "{6FCDF39A-EF67-483D-A661-76D715C6B008} 0xffffffff 0xff" | Out-File $script:wsmprovfile -Encoding ascii -Append
+    "{6FCDF39A-EF67-483D-A661-76D715C6B008} 0xffffffff 0xff" | out-file $script:wsmprovfile -encoding ascii -append
 
-    Start-Trace -SessionName $script:wsmsession -ETS -OutputFilePath $script:wsmanlogfile -Format bincirc -MinBuffers 16 -MaxBuffers 256 -BufferSizeInKB 64 -MaxLogFileSizeInMB 256 -ProviderFilePath $script:wsmprovfile
+    Start-Trace -SessionName $script:wsmsession -ETS -OutputFilePath $script:wsmanlogfile -Format bincirc -MinBuffers 16 -MaxBuffers 256 -BufferSizeInKb 64 -MaxLogFileSizeInMB 256 -ProviderFilePath $script:wsmprovfile
 }
 
 function Disable-WSManTrace
 {
-    Stop-Trace $script:wsmsession -ETS
+    Stop-Trace $script:wsmsession -ets
 }
 
 function Enable-PSWSManCombinedTrace
@@ -172,32 +172,32 @@ function Enable-PSWSManCombinedTrace
     $traceFileName = [string][Guid]::NewGuid()
     if ($DoNotOverwriteExistingTrace) {
         $fileName = [string][guid]::newguid()
-        $logfile = $PSHOME + "\\Traces\\PSTrace_$fileName.etl"
+        $logfile = $pshome + "\\Traces\\PSTrace_$fileName.etl"
     } else {
-        $logfile = $PSHOME + "\\Traces\\PSTrace.etl"
+        $logfile = $pshome + "\\Traces\\PSTrace.etl"
     }
 
-    "Microsoft-Windows-PowerShell 0 5" | Out-File $provfile -Encoding ascii
-    "Microsoft-Windows-WinRM 0 5" | Out-File $provfile -Encoding ascii -Append
+    "Microsoft-Windows-PowerShell 0 5" | out-file $provfile -encoding ascii
+    "Microsoft-Windows-WinRM 0 5" | out-file $provfile -encoding ascii -append
 
-    if (!(Test-Path $PSHOME\Traces))
+    if (!(Test-Path $pshome\Traces))
     {
-        New-Item -ItemType Directory -Force $PSHOME\Traces | Out-Null
+        New-Item -ItemType Directory -Force $pshome\Traces | out-null
     }
 
     if (Test-Path $logfile)
     {
-        Remove-Item -Force $logfile | Out-Null
+        Remove-Item -Force $logfile | out-null
     }
 
-    Start-Trace -SessionName $script:pssession -OutputFilePath $logfile -ProviderFilePath $provfile -ETS
+    Start-Trace -SessionName $script:pssession -OutputFilePath $logfile -ProviderFilePath $provfile -ets
 
-    Remove-Item $provfile -Force -ea 0
+    remove-item $provfile -Force -ea 0
 }
 
 function Disable-PSWSManCombinedTrace
 {
-    Stop-Trace -SessionName $script:pssession -ETS
+    Stop-Trace -SessionName $script:pssession -ets
 }
 
 function Set-LogProperties
@@ -220,7 +220,7 @@ function Set-LogProperties
         $retention = $LogDetails.Retention.ToString()
         $autobackup = $LogDetails.AutoBackup.ToString()
         $maxLogSize = $LogDetails.MaxLogSize.ToString()
-        $osVersion = [Version] (Get-CimInstance Win32_OperatingSystem).Version
+        $osVersion = [Version] (Get-Ciminstance Win32_OperatingSystem).Version
 
         if (($LogDetails.Type -eq "Analytic") -or ($LogDetails.Type -eq "Debug"))
         {
@@ -347,7 +347,7 @@ function Disable-PSTrace
 		}
 	}
 }
-Add-Type @"
+add-type @"
 using System;
 
 namespace Microsoft.PowerShell.Diagnostics

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -36,6 +36,24 @@ namespace System.Management.Automation
         }
 
         #endregion ctor
+
+        /// <summary>
+        /// Override of parent class which should not be used.
+        /// </summary>
+        /// <param name="parameters">
+        /// The parameters to bind.
+        /// </param>
+        /// <remarks>
+        /// For any parameters that do not have a name, they are added to the command
+        /// line arguments for the command
+        /// </remarks>
+        internal override
+        Collection<CommandParameterInternal>
+        BindParameters(Collection<CommandParameterInternal> parameters)
+        {
+            Dbg.Assert(false, "this method should be used");
+            return null;
+        }
 
         /// <summary>
         /// Value of input format. This property should be read after binding of parameters.
@@ -99,7 +117,7 @@ namespace System.Management.Automation
                         // Value of -Command parameter must be scriptblock
                         var scriptBlockArgument = parameters[i];
                         var argumentValue = PSObject.Base(scriptBlockArgument.ArgumentValue);
-                        if (!scriptBlockArgument.ArgumentSpecified || argumentValue is not ScriptBlock)
+                        if (!scriptBlockArgument.ArgumentSpecified || !(argumentValue is ScriptBlock))
                         {
                             throw NewParameterBindingException(null, ErrorCategory.InvalidArgument, CommandParameter,
                                                                typeof(ScriptBlock), argumentValue.GetType(),
@@ -254,7 +272,7 @@ namespace System.Management.Automation
             Arguments = 0x02,
             InputFormat = 0x04,
             OutputFormat = 0x08
-        }
+        };
 
         /// <summary>
         /// Handles error handling if some parameter is specified more than once.
@@ -271,7 +289,7 @@ namespace System.Management.Automation
             }
             else
             {
-                seen |= parameter;
+                seen = seen | parameter;
             }
         }
 

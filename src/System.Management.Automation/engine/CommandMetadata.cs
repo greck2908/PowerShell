@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -105,7 +105,7 @@ namespace System.Management.Automation
         {
             if (commandInfo == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(commandInfo));
+                throw PSTraceSource.NewArgumentNullException("commandInfo");
             }
             while (commandInfo is AliasInfo)
             {
@@ -162,7 +162,7 @@ namespace System.Management.Automation
         {
             if (other == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(other));
+                throw PSTraceSource.NewArgumentNullException("other");
             }
 
             Name = other.Name;
@@ -315,7 +315,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(commandName))
             {
-                throw PSTraceSource.NewArgumentException(nameof(commandName));
+                throw PSTraceSource.NewArgumentException("commandName");
             }
 
             CommandMetadata result = null;
@@ -369,7 +369,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(commandName))
             {
-                throw PSTraceSource.NewArgumentException(nameof(commandName));
+                throw PSTraceSource.NewArgumentException("commandName");
             }
 
             Name = commandName;
@@ -412,7 +412,7 @@ namespace System.Management.Automation
         {
             if (scriptblock == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(scriptblock));
+                throw PSTraceSource.NewArgumentException("scriptblock");
             }
 
             CmdletBindingAttribute cmdletBindingAttribute = scriptblock.CmdletBindingAttribute;
@@ -647,7 +647,6 @@ namespace System.Management.Automation
         // The CommandType for a script cmdlet is not CommandTypes.Cmdlet, yet
         // proxy generation needs to know the difference between script and script cmdlet.
         private bool _wrappedAnyCmdlet;
-
         internal bool WrappedAnyCmdlet
         {
             get { return _wrappedAnyCmdlet; }
@@ -680,7 +679,7 @@ namespace System.Management.Automation
 
             // Determine if the cmdlet implements dynamic parameters by looking for the interface
 
-            Type dynamicParametersType = CommandType.GetInterface(nameof(IDynamicParameters), true);
+            Type dynamicParametersType = CommandType.GetInterface(typeof(IDynamicParameters).Name, true);
 
             if (dynamicParametersType != null)
             {
@@ -726,7 +725,7 @@ namespace System.Management.Automation
         {
             if (attribute == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(attribute));
+                throw PSTraceSource.NewArgumentNullException("attribute");
             }
 
             // Process the default parameter set name
@@ -897,7 +896,7 @@ end
                     decl.Append(separator);
                     decl.Append("DefaultParameterSetName='");
                     decl.Append(CodeGeneration.EscapeSingleQuotedStringContent(_defaultParameterSetName));
-                    decl.Append('\'');
+                    decl.Append("'");
                     separator = ", ";
                 }
 
@@ -909,7 +908,7 @@ end
                     decl.Append(separator);
                     decl.Append("ConfirmImpact='");
                     decl.Append(ConfirmImpact);
-                    decl.Append('\'');
+                    decl.Append("'");
                 }
 
                 if (SupportsPaging)
@@ -926,7 +925,7 @@ end
                     separator = ", ";
                 }
 
-                if (!PositionalBinding)
+                if (PositionalBinding == false)
                 {
                     decl.Append(separator);
                     decl.Append("PositionalBinding=$false");
@@ -938,7 +937,7 @@ end
                     decl.Append(separator);
                     decl.Append("HelpUri='");
                     decl.Append(CodeGeneration.EscapeSingleQuotedStringContent(HelpUri));
-                    decl.Append('\'');
+                    decl.Append("'");
                     separator = ", ";
                 }
 
@@ -947,7 +946,7 @@ end
                     decl.Append(separator);
                     decl.Append("RemotingCapability='");
                     decl.Append(_remotingCapability);
-                    decl.Append('\'');
+                    decl.Append("'");
                     separator = ", ";
                 }
 
@@ -1251,7 +1250,7 @@ end
                     ParameterSetMetadata.ParameterFlags.ValueFromPipeline | ParameterSetMetadata.ParameterFlags.Mandatory,
                     null)); // no help message
 
-            return GetRestrictedCmdlet("Select-Object", null, "https://go.microsoft.com/fwlink/?LinkID=2096716", propertyParameter, inputParameter);
+            return GetRestrictedCmdlet("Select-Object", null, "https://go.microsoft.com/fwlink/?LinkID=113387", propertyParameter, inputParameter);
         }
 
         private static CommandMetadata GetRestrictedMeasureObject()
@@ -1292,7 +1291,7 @@ end
             // remote Exit-PSSession is not called by PowerShell, but is needed so that users
             // can exit an interactive remoting session
 
-            return GetRestrictedCmdlet("Exit-PSSession", null, "https://go.microsoft.com/fwlink/?LinkID=2096787"); // no parameters are used
+            return GetRestrictedCmdlet("Exit-PSSession", null, "https://go.microsoft.com/fwlink/?LinkID=135210"); // no parameters are used
         }
 
         /// <summary>
@@ -1316,7 +1315,7 @@ end
             List<CommandMetadata> restrictedCommands = new List<CommandMetadata>();
 
             // all remoting cmdlets need to be included for workflow scenarios as wel
-            if ((sessionCapabilities & SessionCapabilities.RemoteServer) == SessionCapabilities.RemoteServer)
+            if (SessionCapabilities.RemoteServer == (sessionCapabilities & SessionCapabilities.RemoteServer))
             {
                 restrictedCommands.AddRange(GetRestrictedRemotingCommands());
             }
@@ -1445,7 +1444,7 @@ end
             ParameterMetadata passThruParameter = new ParameterMetadata("PassThru", typeof(SwitchParameter));
             ParameterMetadata anyParameter = new ParameterMetadata("Any", typeof(SwitchParameter));
 
-            CommandMetadata stopJob = GetRestrictedCmdlet("Stop-Job", JobCmdletBase.SessionIdParameterSet, "https://go.microsoft.com/fwlink/?LinkID=2096795", nameParameter,
+            CommandMetadata stopJob = GetRestrictedCmdlet("Stop-Job", JobCmdletBase.SessionIdParameterSet, "https://go.microsoft.com/fwlink/?LinkID=113413", nameParameter,
                                                           instanceIdParameter, idParameter,
                                                           stateParameter, filterParameter, jobParameter, passThruParameter);
             restrictedJobCommands.Add(stopJob);
@@ -1454,7 +1453,7 @@ end
             ParameterMetadata timeoutParameter = new ParameterMetadata("Timeout", typeof(int));
             timeoutParameter.Attributes.Add(new ValidateRangeAttribute(-1, Int32.MaxValue));
 
-            CommandMetadata waitJob = GetRestrictedCmdlet("Wait-Job", JobCmdletBase.SessionIdParameterSet, "https://go.microsoft.com/fwlink/?LinkID=2096902", nameParameter,
+            CommandMetadata waitJob = GetRestrictedCmdlet("Wait-Job", JobCmdletBase.SessionIdParameterSet, "https://go.microsoft.com/fwlink/?LinkID=113422", nameParameter,
                                                           instanceIdParameter, idParameter,
                                                           jobParameter, stateParameter, filterParameter, anyParameter, timeoutParameter);
             restrictedJobCommands.Add(waitJob);
@@ -1493,7 +1492,7 @@ end
             ParameterMetadata writeJobParameter = new ParameterMetadata("WriteJobInResults", typeof(SwitchParameter));
             ParameterMetadata autoRemoveParameter = new ParameterMetadata("AutoRemoveJob", typeof(SwitchParameter));
 
-            CommandMetadata receiveJob = GetRestrictedCmdlet("Receive-Job", "Location", "https://go.microsoft.com/fwlink/?LinkID=2096965", nameParameter,
+            CommandMetadata receiveJob = GetRestrictedCmdlet("Receive-Job", "Location", "https://go.microsoft.com/fwlink/?LinkID=113372", nameParameter,
                                                              instanceIdParameter,
                                                              idParameter, stateParameter, jobParameter2,
                                                              computerNameParameter, locationParameter,
@@ -1504,7 +1503,7 @@ end
             // Remove-Job cmdlet
             ParameterMetadata forceParameter = new ParameterMetadata("Force", typeof(SwitchParameter));
 
-            CommandMetadata removeJob = GetRestrictedCmdlet("Remove-Job", JobCmdletBase.SessionIdParameterSet, "https://go.microsoft.com/fwlink/?LinkID=2096868",
+            CommandMetadata removeJob = GetRestrictedCmdlet("Remove-Job", JobCmdletBase.SessionIdParameterSet, "https://go.microsoft.com/fwlink/?LinkID=113377",
                                                             nameParameter, instanceIdParameter,
                                                             idParameter, stateParameter, filterParameter, jobParameter, forceParameter);
 
@@ -1533,7 +1532,7 @@ end
         /// The command metadata cache. This is separate from the parameterMetadata cache
         /// because it is specific to cmdlets.
         /// </summary>
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, CommandMetadata> s_commandMetadataCache =
+        private static System.Collections.Concurrent.ConcurrentDictionary<string, CommandMetadata> s_commandMetadataCache =
             new System.Collections.Concurrent.ConcurrentDictionary<string, CommandMetadata>(StringComparer.OrdinalIgnoreCase);
 
         #endregion

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -26,7 +26,11 @@ namespace Microsoft.PowerShell.Commands
         /// debugger is currently attached.  The script or command will remain stopped until
         /// a debugger is attached to debug the breakpoint.
         /// </summary>
-        public bool Enabled { get; }
+        public bool Enabled
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// When true this property will cause any running command or script in the Runspace
@@ -34,24 +38,36 @@ namespace Microsoft.PowerShell.Commands
         /// script or command will remain stopped until a debugger is attached to debug the
         /// current stop point.
         /// </summary>
-        public bool BreakAll { get; }
+        public bool BreakAll
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Name of runspace for which the options apply.
         /// </summary>
-        public string RunspaceName { get; }
+        public string RunspaceName
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Local Id of runspace for which the options apply.
         /// </summary>
-        public int RunspaceId { get; }
+        public int RunspaceId
+        {
+            get;
+            private set;
+        }
 
         #endregion
 
         #region Constructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PSRunspaceDebug"/> class.
+        /// Constructor.
         /// </summary>
         /// <param name="enabled">Enable debugger option.</param>
         /// <param name="breakAll">BreakAll option.</param>
@@ -59,7 +75,7 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="runspaceId">Runspace local Id.</param>
         public PSRunspaceDebug(bool enabled, bool breakAll, string runspaceName, int runspaceId)
         {
-            if (string.IsNullOrEmpty(runspaceName)) { throw new PSArgumentNullException(nameof(runspaceName)); }
+            if (string.IsNullOrEmpty(runspaceName)) { throw new PSArgumentNullException("runspaceName"); }
 
             this.Enabled = enabled;
             this.BreakAll = breakAll;
@@ -291,7 +307,7 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                ErrorRecord errorRecord = new(
+                ErrorRecord errorRecord = new ErrorRecord(
                 new PSInvalidOperationException(string.Format(CultureInfo.InvariantCulture, Debugger.PersistDebugPreferenceFailure, processName), ex),
                 fullyQualifiedErrorId,
                 ErrorCategory.InvalidOperation,
@@ -311,7 +327,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet enables debugging for selected runspaces in the current or specified process.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Enable, "RunspaceDebug", DefaultParameterSetName = CommonRunspaceCommandBase.RunspaceNameParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096831")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=403732")]
     public sealed class EnableRunspaceDebugCommand : CommonRunspaceCommandBase
     {
         #region Parameters
@@ -329,6 +345,22 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Position = 1,
                    ParameterSetName = CommonRunspaceCommandBase.RunspaceIdParameterSet)]
         public SwitchParameter BreakAll
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// The optional breakpoint objects to use for debugging.
+        /// </summary>
+        [Experimental("Microsoft.PowerShell.Utility.PSDebugRunspaceWithBreakpoints", ExperimentAction.Show)]
+        [Parameter(Position = 1,
+                   ParameterSetName = CommonRunspaceCommandBase.RunspaceParameterSet)]
+        [Parameter(Position = 1,
+                   ParameterSetName = CommonRunspaceCommandBase.RunspaceNameParameterSet)]
+        [Parameter(Position = 1,
+                   ParameterSetName = CommonRunspaceCommandBase.RunspaceIdParameterSet)]
+        public Breakpoint[] Breakpoint
         {
             get;
             set;
@@ -396,6 +428,12 @@ namespace Microsoft.PowerShell.Commands
                         debugger.SetDebuggerStepMode(false);
                     }
                 }
+
+                // If any breakpoints were provided, set those in the debugger.
+                if (Breakpoint?.Length > 0)
+                {
+                    debugger.SetBreakpoints(Breakpoint);
+                }
             }
         }
 
@@ -410,7 +448,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet disables Runspace debugging in selected Runspaces.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Disable, "RunspaceDebug", DefaultParameterSetName = CommonRunspaceCommandBase.RunspaceNameParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096924")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=403733")]
     public sealed class DisableRunspaceDebugCommand : CommonRunspaceCommandBase
     {
         #region Overrides
@@ -466,7 +504,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet returns a PSRunspaceDebug object for each found Runspace object.
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "RunspaceDebug", DefaultParameterSetName = CommonRunspaceCommandBase.RunspaceNameParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2097015")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=403734")]
     [OutputType(typeof(PSRunspaceDebug))]
     public sealed class GetRunspaceDebugCommand : CommonRunspaceCommandBase
     {
@@ -505,7 +543,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet causes a running script or command to stop in the debugger at the next execution point.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Wait, "Debugger",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2097035")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=403735")]
     public sealed class WaitDebuggerCommand : PSCmdlet
     {
         #region Overrides
@@ -517,11 +555,19 @@ namespace Microsoft.PowerShell.Commands
         {
             Runspace currentRunspace = this.Context.CurrentRunspace;
 
-            if (currentRunspace != null && currentRunspace.Debugger != null)
+            if ((currentRunspace != null) && (currentRunspace.Debugger != null))
             {
-                WriteVerbose(string.Format(CultureInfo.InvariantCulture, Debugger.DebugBreakMessage, MyInvocation.ScriptLineNumber, MyInvocation.ScriptName));
+                if (!currentRunspace.Debugger.IsDebugHandlerSubscribed &&
+                    (currentRunspace.Debugger.UnhandledBreakpointMode == UnhandledBreakpointProcessingMode.Ignore))
+                {
+                    // No debugger attached and runspace debugging is not enabled.  Enable runspace debugging here
+                    // so that this command is effective.
+                    currentRunspace.Debugger.UnhandledBreakpointMode = UnhandledBreakpointProcessingMode.Wait;
+                }
 
-                currentRunspace.Debugger.Break();
+                // Set debugger to step mode so that a break occurs immediately.
+                currentRunspace.Debugger.SetDebuggerStepMode(true);
+                WriteVerbose(string.Format(CultureInfo.InvariantCulture, Debugger.DebugBreakMessage, MyInvocation.ScriptLineNumber, MyInvocation.ScriptName));
             }
         }
 

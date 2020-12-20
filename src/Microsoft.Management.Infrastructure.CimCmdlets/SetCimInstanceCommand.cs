@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -17,7 +17,6 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     /// CimInstance must have values of all [KEY] properties.
     /// </para>
     /// </summary>
-    [Alias("scim")]
     [Cmdlet(
         VerbsCommon.Set,
         "CimInstance",
@@ -29,7 +28,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         #region constructor
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SetCimInstanceCommand"/> class.
+        /// Constructor.
         /// </summary>
         public SetCimInstanceCommand()
             : base(parameters, parameterSets)
@@ -139,7 +138,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Alias(AliasOT)]
         [Parameter]
-        public UInt32 OperationTimeoutSec { get; set; }
+        public UInt32 OperationTimeoutSec
+        {
+            get { return operationTimeout; }
+
+            set { operationTimeout = value; }
+        }
+
+        private UInt32 operationTimeout;
 
         /// <summary>
         /// The following is the definition of the input parameter "InputObject".
@@ -158,11 +164,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         [Alias(CimBaseCommand.AliasCimInstance)]
         public CimInstance InputObject
         {
-            get { return CimInstance; }
+            get { return cimInstance; }
 
             set
             {
-                CimInstance = value;
+                cimInstance = value;
                 base.SetParameter(value, nameCimInstance);
             }
         }
@@ -170,7 +176,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Property for internal usage purpose.
         /// </summary>
-        internal CimInstance CimInstance { get; private set; }
+        internal CimInstance CimInstance
+        {
+            get { return cimInstance; }
+        }
+
+        private CimInstance cimInstance;
 
         /// <summary>
         /// The following is the definition of the input parameter "Query".
@@ -256,10 +267,8 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         private IDictionary property;
 
         /// <summary>
-        /// <para>
         /// The following is the definition of the input parameter "PassThru",
         /// indicate whether Set-CimInstance should output modified result instance or not.
-        /// </para>
         /// <para>
         /// True indicates output the result instance, otherwise output nothing as by default
         /// behavior.
@@ -267,7 +276,20 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Parameter]
         [ValidateNotNull]
-        public SwitchParameter PassThru { get; set; }
+        public SwitchParameter PassThru
+        {
+            set
+            {
+                this.passThru = value;
+            }
+
+            get
+            {
+                return this.passThru;
+            }
+        }
+
+        private SwitchParameter passThru;
 
         #endregion
 
@@ -278,7 +300,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         protected override void BeginProcessing()
         {
-            CimSetCimInstance cimSetCimInstance = this.GetOperationAgent() ?? CreateOperationAgent();
+            CimSetCimInstance cimSetCimInstance = this.GetOperationAgent();
+            if (cimSetCimInstance == null)
+            {
+                cimSetCimInstance = CreateOperationAgent();
+            }
 
             this.CmdletOperation = new CmdletOperationSetCimInstance(this, cimSetCimInstance);
             this.AtBeginProcess = false;
@@ -317,7 +343,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// used to delegate all Set-CimInstance operations.
         /// </para>
         /// </summary>
-        private CimSetCimInstance GetOperationAgent()
+        CimSetCimInstance GetOperationAgent()
         {
             return (this.AsyncOperation as CimSetCimInstance);
         }
@@ -329,9 +355,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </para>
         /// </summary>
         /// <returns></returns>
-        private CimSetCimInstance CreateOperationAgent()
+        CimSetCimInstance CreateOperationAgent()
         {
-            CimSetCimInstance cimSetCimInstance = new();
+            CimSetCimInstance cimSetCimInstance = new CimSetCimInstance();
             this.AsyncOperation = cimSetCimInstance;
             return cimSetCimInstance;
         }
@@ -354,7 +380,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter definition entries.
         /// </summary>
-        private static readonly Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new()
+        static Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new Dictionary<string, HashSet<ParameterDefinitionEntry>>
         {
             {
                 nameCimSession, new HashSet<ParameterDefinitionEntry> {
@@ -411,7 +437,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter set entries.
         /// </summary>
-        private static readonly Dictionary<string, ParameterSetEntry> parameterSets = new()
+        static Dictionary<string, ParameterSetEntry> parameterSets = new Dictionary<string, ParameterSetEntry>
         {
             {   CimBaseCommand.QuerySessionSet, new ParameterSetEntry(3)     },
             {   CimBaseCommand.QueryComputerSet, new ParameterSetEntry(2)     },

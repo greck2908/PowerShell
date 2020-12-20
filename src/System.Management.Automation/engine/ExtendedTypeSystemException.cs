@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Internal;
@@ -527,11 +527,12 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="info">The <see cref="System.Runtime.Serialization.SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             base.GetObjectData(info, context);
@@ -604,6 +605,7 @@ namespace System.Management.Automation
         }
 
         private ErrorRecord _errorRecord;
-        private readonly string _errorId = "PSInvalidCastException";
+        private string _errorId = "PSInvalidCastException";
     }
 }
+

@@ -1,7 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Management.Automation;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -9,7 +12,7 @@ namespace Microsoft.PowerShell.Commands
     /// A command to set the property of an item at a specified path.
     /// </summary>
     [Cmdlet(VerbsCommon.Set, "ItemProperty", DefaultParameterSetName = "propertyValuePathSet", SupportsShouldProcess = true, SupportsTransactions = true,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097147")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113396")]
     public class SetItemPropertyCommand : PassThroughItemPropertyCommandBase
     {
         private const string propertyValuePathSet = "propertyValuePathSet";

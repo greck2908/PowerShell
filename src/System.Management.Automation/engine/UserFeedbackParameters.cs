@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Globalization;
@@ -18,7 +18,7 @@ namespace System.Management.Automation
         {
             if (commandRuntime == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(commandRuntime));
+                throw PSTraceSource.NewArgumentNullException("commandRuntime");
             }
 
             commandRuntime.PagingParameters = this;
@@ -116,7 +116,7 @@ namespace System.Management.Automation.Internal
         {
             if (commandRuntime == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(commandRuntime));
+                throw PSTraceSource.NewArgumentNullException("commandRuntime");
             }
 
             _commandRuntime = commandRuntime;
@@ -162,7 +162,7 @@ namespace System.Management.Automation.Internal
         }
         #endregion parameters
 
-        private readonly MshCommandRuntime _commandRuntime;
+        private MshCommandRuntime _commandRuntime;
     }
 
     /// <summary>
@@ -208,6 +208,7 @@ namespace System.Management.Automation.Internal
 
         #endregion parameters
 
-        private readonly MshCommandRuntime _commandRuntime;
+        private MshCommandRuntime _commandRuntime;
     }
 }
+

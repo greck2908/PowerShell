@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -124,7 +124,7 @@ namespace Microsoft.PowerShell.Commands
     /// "Microsoft.PowerShell" is used.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Invoke, "Command", DefaultParameterSetName = InvokeCommandCommand.InProcParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096789", RemotingCapability = RemotingCapability.OwnedByCommand)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135225", RemotingCapability = RemotingCapability.OwnedByCommand)]
     public class InvokeCommandCommand : PSExecutionCmdlet, IDisposable
     {
         #region Parameters
@@ -347,14 +347,14 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = InvokeCommandCommand.FilePathContainerIdParameterSet)]
         public override int ThrottleLimit
         {
-            get
-            {
-                return base.ThrottleLimit;
-            }
-
             set
             {
                 base.ThrottleLimit = value;
+            }
+
+            get
+            {
+                return base.ThrottleLimit;
             }
         }
 
@@ -486,8 +486,6 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = InvokeCommandCommand.FilePathUriParameterSet)]
         [Parameter(ParameterSetName = InvokeCommandCommand.ContainerIdParameterSet)]
         [Parameter(ParameterSetName = InvokeCommandCommand.FilePathContainerIdParameterSet)]
-        [Parameter(ParameterSetName = InvokeCommandCommand.SSHHostHashParameterSet)]
-        [Parameter(ParameterSetName = InvokeCommandCommand.SSHHostParameterSet)]
         public string JobName
         {
             get
@@ -533,11 +531,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Position = 1,
                    Mandatory = true,
                    ParameterSetName = InvokeCommandCommand.ContainerIdParameterSet)]
-        [Parameter(Position = 1,
-                   Mandatory = true,
+        [Parameter(Mandatory = true,
                    ParameterSetName = InvokeCommandCommand.SSHHostParameterSet)]
-        [Parameter(Position = 1,
-                   Mandatory = true,
+        [Parameter(Mandatory = true,
                    ParameterSetName = InvokeCommandCommand.SSHHostHashParameterSet)]
         [ValidateNotNull]
         [Alias("Command")]
@@ -972,7 +968,7 @@ namespace Microsoft.PowerShell.Commands
                         // of this bug in Win8 where not responding can occur during data piping.
                         // We are reverting to Win7 behavior for {icm | icm} and {proxycommand | proxycommand}
                         // cases. For ICM | % ICM case, we are using remote steppable pipeline.
-                        if ((MyInvocation != null) && (MyInvocation.PipelinePosition == 1) && !MyInvocation.ExpectingInput)
+                        if ((MyInvocation != null) && (MyInvocation.PipelinePosition == 1) && (MyInvocation.ExpectingInput == false))
                         {
                             PSPrimitiveDictionary table = (object)runspaceInfo.ApplicationPrivateData[PSVersionInfo.PSVersionTableName] as PSPrimitiveDictionary;
                             if (table != null)
@@ -1007,7 +1003,8 @@ namespace Microsoft.PowerShell.Commands
                 // create collection of input writers here
                 foreach (IThrottleOperation operation in Operations)
                 {
-                    if (!(operation is ExecutionCmdletHelperRunspace ecHelper))
+                    ExecutionCmdletHelperRunspace ecHelper = operation as ExecutionCmdletHelperRunspace;
+                    if (ecHelper == null)
                     {
                         // either all the operations will be of type ExecutionCmdletHelperRunspace
                         // or not...there is no mix.
@@ -1108,7 +1105,7 @@ namespace Microsoft.PowerShell.Commands
                                 {
                                     if (Operations.Count > 0)
                                     {
-                                        string[] locations = new string[ConnectionUri.Length];
+                                        string[] locations = new String[ConnectionUri.Length];
                                         for (int i = 0; i < locations.Length; i++)
                                         {
                                             locations[i] = ConnectionUri[i].ToString();
@@ -1205,15 +1202,8 @@ namespace Microsoft.PowerShell.Commands
                         // be connected to later.
                         WriteJobResults(false);
 
-                        // Dispose job object if it is not returned to the user.
-                        // The _asjob field can change dynamically and needs to be checked before the job 
-                        // object is disposed. For example, if remote sessions are disconnected abruptly
-                        // via WinRM, a disconnected job object is created to facilitate a reconnect.
-                        // If the job object is disposed here, then a session reconnect cannot happen.
-                        if (!_asjob)
-                        {
-                            _job.Dispose();
-                        }
+                        // finally dispose the job.
+                        _job.Dispose();
 
                         // We no longer need to call ClearInvokeCommandOnRunspaces() here because
                         // this command might finish before the foreach block finishes. previously,
@@ -1259,15 +1249,8 @@ namespace Microsoft.PowerShell.Commands
                             // be connected to later.
                             WriteJobResults(false);
 
-                            // Dispose job object if it is not returned to the user.
-                            // The _asjob field can change dynamically and needs to be checked before the job 
-                            // object is disposed. For example, if remote sessions are disconnected abruptly
-                            // via WinRM, a disconnected job object is created to facilitate a reconnect.
-                            // If the job object is disposed here, then a session reconnect cannot happen.
-                            if (!_asjob)
-                            {
-                                _job.Dispose();
-                            }
+                            // finally dispose the job.
+                            _job.Dispose();
                         }
                     }
                 }
@@ -1358,7 +1341,7 @@ namespace Microsoft.PowerShell.Commands
         private void HandleThrottleComplete(object sender, EventArgs eventArgs)
         {
             _operationsComplete.Set();
-            _throttleManager.ThrottleComplete -= HandleThrottleComplete;
+            _throttleManager.ThrottleComplete -= new EventHandler<EventArgs>(HandleThrottleComplete);
         }
 
         /// <summary>
@@ -1388,14 +1371,14 @@ namespace Microsoft.PowerShell.Commands
                 if (!_nojob)
                 {
                     _throttleManager.ThrottleLimit = ThrottleLimit;
-                    _throttleManager.ThrottleComplete += HandleThrottleComplete;
+                    _throttleManager.ThrottleComplete += new EventHandler<EventArgs>(HandleThrottleComplete);
 
                     _operationsComplete.Reset();
                     Dbg.Assert(_disconnectComplete == null, "disconnectComplete event should only be used once.");
                     _disconnectComplete = new ManualResetEvent(false);
                     _job = new PSInvokeExpressionSyncJob(Operations, _throttleManager);
                     _job.HideComputerName = _hideComputerName;
-                    _job.StateChanged += HandleJobStateChanged;
+                    _job.StateChanged += new EventHandler<JobStateEventArgs>(HandleJobStateChanged);
 
                     // Add robust connection retry notification handler.
                     AddConnectionRetryHandler(_job);
@@ -1434,7 +1417,7 @@ namespace Microsoft.PowerShell.Commands
                 state == JobState.Stopped ||
                 state == JobState.Failed)
             {
-                _job.StateChanged -= HandleJobStateChanged;
+                _job.StateChanged -= new EventHandler<JobStateEventArgs>(HandleJobStateChanged);
                 RemoveConnectionRetryHandler(sender as PSInvokeExpressionSyncJob);
 
                 // Signal that this job has been disconnected, or has ended.
@@ -1460,7 +1443,8 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (ps.RemotePowerShell != null)
                 {
-                    ps.RemotePowerShell.RCConnectionNotification += RCConnectionNotificationHandler;
+                    ps.RemotePowerShell.RCConnectionNotification +=
+                        new EventHandler<PSConnectionRetryStatusEventArgs>(RCConnectionNotificationHandler);
                 }
             }
         }
@@ -1480,7 +1464,8 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (ps.RemotePowerShell != null)
                 {
-                    ps.RemotePowerShell.RCConnectionNotification -= RCConnectionNotificationHandler;
+                    ps.RemotePowerShell.RCConnectionNotification -=
+                        new EventHandler<PSConnectionRetryStatusEventArgs>(RCConnectionNotificationHandler);
                 }
             }
         }
@@ -1875,7 +1860,7 @@ namespace Microsoft.PowerShell.Commands
                 this.Host);
         }
 
-        private static void StopProgressBar(
+        private void StopProgressBar(
             long sourceId)
         {
             s_RCProgress.StopProgress(sourceId);
@@ -1954,7 +1939,7 @@ namespace Microsoft.PowerShell.Commands
         /// Process the stream object before writing it in the specified collection.
         /// </summary>
         /// <param name="streamObject">Stream object to process.</param>
-        private static void PreProcessStreamObject(PSStreamObject streamObject)
+        private void PreProcessStreamObject(PSStreamObject streamObject)
         {
             ErrorRecord errorRecord = streamObject.Value as ErrorRecord;
 
@@ -1983,7 +1968,7 @@ namespace Microsoft.PowerShell.Commands
 
         private ThrottleManager _throttleManager = new ThrottleManager();
         // throttle manager for handling all throttling operations
-        private readonly ManualResetEvent _operationsComplete = new ManualResetEvent(true);
+        private ManualResetEvent _operationsComplete = new ManualResetEvent(true);
         private ManualResetEvent _disconnectComplete;
         // the initial state is true because when no
         // operations actually take place as in case of a
@@ -2000,18 +1985,17 @@ namespace Microsoft.PowerShell.Commands
         private bool _inputStreamClosed = false;
 
         private const string InProcParameterSet = "InProcess";
-
-        private readonly PSDataCollection<object> _input = new PSDataCollection<object>();
+        private PSDataCollection<object> _input = new PSDataCollection<object>();
         private bool _needToCollect = false;
         private bool _needToStartSteppablePipelineOnServer = false;
         private bool _clearInvokeCommandOnRunspace = false;
-        private readonly List<PipelineWriter> _inputWriters = new List<PipelineWriter>();
-        private readonly object _jobSyncObject = new object();
+        private List<PipelineWriter> _inputWriters = new List<PipelineWriter>();
+        private object _jobSyncObject = new object();
         private bool _nojob = false;
-        private readonly Guid _instanceId = Guid.NewGuid();
+        private Guid _instanceId = Guid.NewGuid();
         private bool _propagateErrors = false;
 
-        private static readonly RobustConnectionProgress s_RCProgress = new RobustConnectionProgress();
+        private static RobustConnectionProgress s_RCProgress = new RobustConnectionProgress();
 
         internal static readonly string RemoteJobType = "RemoteJob";
 
@@ -2053,7 +2037,7 @@ namespace Microsoft.PowerShell.Commands
                         _job.Dispose();
                     }
 
-                    _throttleManager.ThrottleComplete -= HandleThrottleComplete;
+                    _throttleManager.ThrottleComplete -= new EventHandler<EventArgs>(HandleThrottleComplete);
                     _throttleManager.Dispose();
                     _throttleManager = null;
                 }
@@ -2091,14 +2075,14 @@ namespace System.Management.Automation.Internal
     internal class RobustConnectionProgress
     {
         private System.Management.Automation.Host.PSHost _psHost;
-        private readonly string _activity;
+        private string _activity;
         private string _status;
         private int _secondsTotal;
         private int _secondsRemaining;
         private ProgressRecord _progressRecord;
         private long _sourceId;
         private bool _progressIsRunning;
-        private readonly object _syncObject;
+        private object _syncObject;
         private Timer _updateTimer;
 
         /// <summary>
@@ -2135,7 +2119,7 @@ namespace System.Management.Automation.Internal
 
             if (string.IsNullOrEmpty(computerName))
             {
-                throw new ArgumentNullException(nameof(computerName));
+                throw new ArgumentNullException("computerName");
             }
 
             lock (_syncObject)

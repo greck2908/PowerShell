@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -413,21 +413,6 @@ namespace System.Management.Automation.Language
         /// <summary>The PS class base class and implemented interfaces operator ':'. Also used in base class ctor calls.</summary>
         Colon = 99,
 
-        /// <summary>The ternary operator '?'.</summary>
-        QuestionMark = 100,
-
-        /// <summary>The null conditional assignment operator '??='.</summary>
-        QuestionQuestionEquals = 101,
-
-        /// <summary>The null coalesce operator '??'.</summary>
-        QuestionQuestion = 102,
-
-        /// <summary>The null conditional member access operator '?.'.</summary>
-        QuestionDot = 103,
-
-        /// <summary>The null conditional index access operator '?[]'.</summary>
-        QuestionLBracket = 104,
-
         #endregion Operators
 
         #region Keywords
@@ -585,9 +570,6 @@ namespace System.Management.Automation.Language
         /// <summary>The 'base' keyword</summary>
         Base = 168,
 
-        /// <summary>The 'default' keyword</summary>
-        Default = 169,
-
         #endregion Keywords
     }
 
@@ -607,51 +589,46 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The precedence of the logical operators '-and', '-or', and '-xor'.
         /// </summary>
-        BinaryPrecedenceLogical = 0x1,
+        BinaryPrecedenceLogical = 1,
 
         /// <summary>
         /// The precedence of the bitwise operators '-band', '-bor', and '-bxor'
         /// </summary>
-        BinaryPrecedenceBitwise = 0x2,
+        BinaryPrecedenceBitwise = 2,
 
         /// <summary>
         /// The precedence of comparison operators including: '-eq', '-ne', '-ge', '-gt', '-lt', '-le', '-like', '-notlike',
         /// '-match', '-notmatch', '-replace', '-contains', '-notcontains', '-in', '-notin', '-split', '-join', '-is', '-isnot', '-as',
         /// and all of the case sensitive variants of these operators, if they exists.
         /// </summary>
-        BinaryPrecedenceComparison = 0x5,
-
-        /// <summary>
-        /// The precedence of null coalesce operator '??'.
-        /// </summary>
-        BinaryPrecedenceCoalesce = 0x7,
+        BinaryPrecedenceComparison = 3,
 
         /// <summary>
         /// The precedence of the binary operators '+' and '-'.
         /// </summary>
-        BinaryPrecedenceAdd = 0x9,
+        BinaryPrecedenceAdd = 4,
 
         /// <summary>
         /// The precedence of the operators '*', '/', and '%'.
         /// </summary>
-        BinaryPrecedenceMultiply = 0xa,
+        BinaryPrecedenceMultiply = 5,
 
         /// <summary>
         /// The precedence of the '-f' operator.
         /// </summary>
-        BinaryPrecedenceFormat = 0xc,
+        BinaryPrecedenceFormat = 6,
 
         /// <summary>
         /// The precedence of the '..' operator.
         /// </summary>
-        BinaryPrecedenceRange = 0xd,
+        BinaryPrecedenceRange = 7,
 
         #endregion Precedence Values
 
         /// <summary>
         /// A bitmask to get the precedence of binary operators.
         /// </summary>
-        BinaryPrecedenceMask = 0x0000000f,
+        BinaryPrecedenceMask = 0x00000007,
 
         /// <summary>
         /// The token is a keyword.
@@ -678,10 +655,7 @@ namespace System.Management.Automation.Language
         /// </summary>
         CaseSensitiveOperator = 0x00000400,
 
-        /// <summary>
-        /// The token is a ternary operator '?'.
-        /// </summary>
-        TernaryOperator = 0x00000800,
+        // Unused = 0x00000800,
 
         /// <summary>
         /// The operators '&amp;', '|', and the member access operators ':' and '::'.
@@ -689,7 +663,7 @@ namespace System.Management.Automation.Language
         SpecialOperator = 0x00001000,
 
         /// <summary>
-        /// The token is one of the assignment operators: '=', '+=', '-=', '*=', '/=', '%=' or '??='
+        /// The token is one of the assignment operators: '=', '+=', '-=', '*=', '/=', or '%='
         /// </summary>
         AssignmentOperator = 0x00002000,
 
@@ -799,8 +773,8 @@ namespace System.Management.Automation.Language
 
             #region Flags for operators
 
-            /*               AndAnd */ TokenFlags.ParseModeInvariant,
-            /*                 OrOr */ TokenFlags.ParseModeInvariant,
+            /*               AndAnd */ TokenFlags.BinaryOperator | TokenFlags.ParseModeInvariant,
+            /*                 OrOr */ TokenFlags.BinaryOperator | TokenFlags.ParseModeInvariant,
             /*            Ampersand */ TokenFlags.SpecialOperator | TokenFlags.ParseModeInvariant,
             /*                 Pipe */ TokenFlags.SpecialOperator | TokenFlags.ParseModeInvariant,
             /*                Comma */ TokenFlags.UnaryOperator | TokenFlags.ParseModeInvariant,
@@ -873,11 +847,11 @@ namespace System.Management.Automation.Language
             /*                  Shl */ TokenFlags.BinaryOperator | TokenFlags.BinaryPrecedenceComparison | TokenFlags.CanConstantFold,
             /*                  Shr */ TokenFlags.BinaryOperator | TokenFlags.BinaryPrecedenceComparison | TokenFlags.CanConstantFold,
             /*                Colon */ TokenFlags.SpecialOperator | TokenFlags.DisallowedInRestrictedMode,
-            /*         QuestionMark */ TokenFlags.TernaryOperator | TokenFlags.DisallowedInRestrictedMode,
-          /* QuestionQuestionEquals */ TokenFlags.AssignmentOperator,
-            /*     QuestionQuestion */ TokenFlags.BinaryOperator | TokenFlags.BinaryPrecedenceCoalesce,
-            /*          QuestionDot */ TokenFlags.SpecialOperator | TokenFlags.DisallowedInRestrictedMode,
-            /*     QuestionLBracket */ TokenFlags.None,
+            /*     Reserved slot 2  */ TokenFlags.None,
+            /*     Reserved slot 3  */ TokenFlags.None,
+            /*     Reserved slot 4  */ TokenFlags.None,
+            /*     Reserved slot 5  */ TokenFlags.None,
+            /*     Reserved slot 6  */ TokenFlags.None,
             /*     Reserved slot 7  */ TokenFlags.None,
             /*     Reserved slot 8  */ TokenFlags.None,
             /*     Reserved slot 9  */ TokenFlags.None,
@@ -947,7 +921,6 @@ namespace System.Management.Automation.Language
             /*              Command */ TokenFlags.Keyword,
             /*               Hidden */ TokenFlags.Keyword,
             /*                 Base */ TokenFlags.Keyword,
-            /*              Default */ TokenFlags.Keyword,
 
             #endregion Flags for keywords
         };
@@ -1072,11 +1045,11 @@ namespace System.Management.Automation.Language
             /*                  Shl */ "-shl",
             /*                  Shr */ "-shr",
             /*                Colon */ ":",
-            /*         QuestionMark */ "?",
-          /* QuestionQuestionEquals */ "??=",
-            /*     QuestionQuestion */ "??",
-            /*          QuestionDot */ "?.",
-            /*     QuestionLBracket */ "?[",
+            /*    Reserved slot 2   */ string.Empty,
+            /*    Reserved slot 3   */ string.Empty,
+            /*    Reserved slot 4   */ string.Empty,
+            /*    Reserved slot 5   */ string.Empty,
+            /*    Reserved slot 6   */ string.Empty,
             /*    Reserved slot 7   */ string.Empty,
             /*    Reserved slot 8   */ string.Empty,
             /*    Reserved slot 9   */ string.Empty,
@@ -1146,7 +1119,6 @@ namespace System.Management.Automation.Language
             /*              Command */ "command",
             /*               Hidden */ "hidden",
             /*                 Base */ "base",
-            /*              Default */ "default",
 
             #endregion Text for keywords
         };
@@ -1154,9 +1126,9 @@ namespace System.Management.Automation.Language
 #if DEBUG
         static TokenTraits()
         {
-            Diagnostics.Assert(s_staticTokenFlags.Length == ((int)TokenKind.Default + 1),
+            Diagnostics.Assert(s_staticTokenFlags.Length == ((int)TokenKind.Base + 1),
                                "Table size out of sync with enum - _staticTokenFlags");
-            Diagnostics.Assert(s_tokenText.Length == ((int)TokenKind.Default + 1),
+            Diagnostics.Assert(s_tokenText.Length == ((int)TokenKind.Base + 1),
                                "Table size out of sync with enum - _tokenText");
             // Some random assertions to make sure the enum and the traits are in sync
             Diagnostics.Assert(GetTraits(TokenKind.Begin) == (TokenFlags.Keyword | TokenFlags.ScriptBlockBlockName),
@@ -1349,7 +1321,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The full details of the variable path.
         /// </summary>
-        public VariablePath VariablePath { get; }
+        public VariablePath VariablePath { get; private set; }
 
         internal override string ToDebugString(int indent)
         {
@@ -1503,12 +1475,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The stream being redirected.
         /// </summary>
-        public RedirectionStream FromStream { get; }
+        public RedirectionStream FromStream { get; private set; }
 
         /// <summary>
         /// The stream being written to.
         /// </summary>
-        public RedirectionStream ToStream { get; }
+        public RedirectionStream ToStream { get; private set; }
     }
 
     /// <summary>
@@ -1526,12 +1498,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The stream being redirected.
         /// </summary>
-        public RedirectionStream FromStream { get; }
+        public RedirectionStream FromStream { get; private set; }
 
         /// <summary>
         /// True if the redirection should append the file rather than create a new file.
         /// </summary>
-        public bool Append { get; }
+        public bool Append { get; private set; }
     }
 
     internal class UnscannedSubExprToken : StringLiteralToken
@@ -1542,6 +1514,6 @@ namespace System.Management.Automation.Language
             this.SkippedCharOffsets = skippedCharOffsets;
         }
 
-        internal BitArray SkippedCharOffsets { get; }
+        internal BitArray SkippedCharOffsets { get; private set; }
     }
 }

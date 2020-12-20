@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Write-Verbose" -Tags "CI" {
     It "Should be able to call cmdlet without error" {

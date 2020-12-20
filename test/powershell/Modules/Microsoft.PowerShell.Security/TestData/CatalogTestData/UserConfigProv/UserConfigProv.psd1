@@ -2,7 +2,7 @@
     ModuleVersion = '3.0.0.1'
     Author = 'PowerShell'
     CompanyName = 'Microsoft Corporation'
-    Copyright = 'Copyright (c) Microsoft Corporation.'
+    Copyright = 'Copyright (c) Microsoft Corporation. All rights reserved.'
     Description = 'Hello World!'
     PowerShellVersion = '3.0'
     CLRVersion = '4.0'

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -10,10 +10,11 @@ namespace System.Management.Automation
     /// Defines a data structure used to represent informational context destined for the host or user.
     /// </summary>
     /// <remarks>
-    /// InformationRecords are passed to <see cref="System.Management.Automation.Cmdlet.WriteInformation(object, string[])"/>,
+    /// InformationRecords are passed to <see cref="System.Management.Automation.Cmdlet.WriteInformation(Object, string[])"/>,
     /// which, according to host or user preference, forwards that information on to the host for rendering to the user.
     /// </remarks>
-    /// <seealso cref="System.Management.Automation.Cmdlet.WriteInformation(object, string[])"/>
+    /// <seealso cref="System.Management.Automation.Cmdlet.WriteInformation(Object, string[])"/>
+
     [DataContract()]
     public class InformationRecord
     {
@@ -22,14 +23,14 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="messageData">The object to be transmitted to the host.</param>
         /// <param name="source">The source of the message (i.e.: script path, function name, etc.).</param>
-        public InformationRecord(object messageData, string source)
+        public InformationRecord(Object messageData, string source)
         {
             this.MessageData = messageData;
             this.Source = source;
 
             this.TimeGenerated = DateTime.Now;
             this.NativeThreadId = PsUtils.GetNativeThreadId();
-            this.ManagedThreadId = (uint)Environment.CurrentManagedThreadId;
+            this.ManagedThreadId = (uint)System.Threading.Thread.CurrentThread.ManagedThreadId;
         }
 
         private InformationRecord() { }
@@ -81,7 +82,7 @@ namespace System.Management.Automation
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public List<string> Tags
         {
-            get { return _tags ??= new List<string>(); }
+            get { return _tags ?? (_tags = new List<string>()); }
 
             internal set { _tags = value; }
         }
@@ -120,7 +121,7 @@ namespace System.Management.Automation
         [DataMember]
         public string Computer
         {
-            get { return this._computerName ??= PsUtils.GetHostName(); }
+            get { return this._computerName ?? (this._computerName = PsUtils.GetHostName()); }
 
             set { this._computerName = value; }
         }
@@ -137,7 +138,7 @@ namespace System.Management.Automation
             {
                 if (!this._processId.HasValue)
                 {
-                    this._processId = (uint)Environment.ProcessId;
+                    this._processId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
                 }
 
                 return this._processId.Value;
@@ -179,7 +180,7 @@ namespace System.Management.Automation
         {
             InformationRecord informationRecord = new InformationRecord();
 
-            informationRecord.MessageData = RemotingDecoder.GetPropertyValue<object>(inputObject, "MessageData");
+            informationRecord.MessageData = RemotingDecoder.GetPropertyValue<Object>(inputObject, "MessageData");
             informationRecord.Source = RemotingDecoder.GetPropertyValue<string>(inputObject, "Source");
             informationRecord.TimeGenerated = RemotingDecoder.GetPropertyValue<DateTime>(inputObject, "TimeGenerated");
 

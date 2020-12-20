@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 #
@@ -10,5 +10,5 @@
 # picking up the Python script from the same directory
 #
 
-& $PSScriptRoot/class1.py | ConvertFrom-Json
+& $PSScriptRoot/class1.py | ConvertFrom-JSON
 

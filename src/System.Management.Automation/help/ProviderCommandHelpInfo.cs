@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using Dbg = System.Management.Automation.Diagnostics;
@@ -13,7 +13,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Help info.
         /// </summary>
-        private readonly HelpInfo _helpInfo;
+        private HelpInfo _helpInfo;
 
         /// <summary>
         /// Constructor for ProviderCommandHelpInfo.

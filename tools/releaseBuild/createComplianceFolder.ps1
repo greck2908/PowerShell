@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 param(
     [Parameter(HelpMessage="Artifact folder to find compliance files in.")]

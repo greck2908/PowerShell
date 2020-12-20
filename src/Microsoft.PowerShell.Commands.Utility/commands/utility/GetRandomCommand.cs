@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -20,17 +20,14 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     /// <!-- author: LukaszA -->
     [Cmdlet(VerbsCommon.Get, "Random", DefaultParameterSetName = GetRandomCommand.RandomNumberParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097016", RemotingCapability = RemotingCapability.None)]
-    [OutputType(typeof(Int32), typeof(Int64), typeof(double))]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113446", RemotingCapability = RemotingCapability.None)]
+    [OutputType(typeof(Int32), typeof(Int64), typeof(Double))]
     public class GetRandomCommand : PSCmdlet
     {
         #region Parameter set handling
 
         private const string RandomNumberParameterSet = "RandomNumberParameterSet";
         private const string RandomListItemParameterSet = "RandomListItemParameterSet";
-        private const string ShuffleParameterSet = "ShuffleParameterSet";
-
-        private static readonly object[] _nullInArray = new object[] { null };
 
         private enum MyParameterSet
         {
@@ -52,8 +49,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         _effectiveParameterSet = MyParameterSet.RandomListItem;
                     }
-                    else if (ParameterSetName == GetRandomCommand.RandomListItemParameterSet
-                        || ParameterSetName == GetRandomCommand.ShuffleParameterSet)
+                    else if (ParameterSetName.Equals(GetRandomCommand.RandomListItemParameterSet, StringComparison.OrdinalIgnoreCase))
                     {
                         _effectiveParameterSet = MyParameterSet.RandomListItem;
                     }
@@ -95,7 +91,7 @@ namespace Microsoft.PowerShell.Commands
                 throw PSTraceSource.NewArgumentNullException("max");
             }
 
-            ErrorRecord errorRecord = new(
+            ErrorRecord errorRecord = new ErrorRecord(
                 new ArgumentException(string.Format(
                     CultureInfo.InvariantCulture, GetRandomCommandStrings.MinGreaterThanOrEqualMax, minValue, maxValue)),
                 "MinGreaterThanOrEqualMax",
@@ -109,10 +105,10 @@ namespace Microsoft.PowerShell.Commands
 
         #region Random generator state
 
-        private static readonly ReaderWriterLockSlim s_runspaceGeneratorMapLock = new();
+        private static ReaderWriterLockSlim s_runspaceGeneratorMapLock = new ReaderWriterLockSlim();
 
         // 1-to-1 mapping of runspaces and random number generators
-        private static readonly Dictionary<Guid, PolymorphicRandomNumberGenerator> s_runspaceGeneratorMap = new();
+        private static Dictionary<Guid, PolymorphicRandomNumberGenerator> s_runspaceGeneratorMap = new Dictionary<Guid, PolymorphicRandomNumberGenerator>();
 
         private static void CurrentRunspace_StateChanged(object sender, RunspaceStateEventArgs e)
         {
@@ -217,7 +213,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = RandomNumberParameterSet)]
         public object Minimum { get; set; }
 
-        private static bool IsInt(object o)
+        private bool IsInt(object o)
         {
             if (o == null || o is int)
             {
@@ -227,7 +223,7 @@ namespace Microsoft.PowerShell.Commands
             return false;
         }
 
-        private static bool IsInt64(object o)
+        private bool IsInt64(object o)
         {
             if (o == null || o is Int64)
             {
@@ -237,7 +233,7 @@ namespace Microsoft.PowerShell.Commands
             return false;
         }
 
-        private static object ProcessOperand(object o)
+        private object ProcessOperand(object o)
         {
             if (o == null)
             {
@@ -257,7 +253,7 @@ namespace Microsoft.PowerShell.Commands
             return baseObject;
         }
 
-        private static double ConvertToDouble(object o, double defaultIfNull)
+        private double ConvertToDouble(object o, double defaultIfNull)
         {
             if (o == null)
             {
@@ -279,28 +275,16 @@ namespace Microsoft.PowerShell.Commands
         /// List from which random elements are chosen.
         /// </summary>
         [Parameter(ParameterSetName = RandomListItemParameterSet, ValueFromPipeline = true, Position = 0, Mandatory = true)]
-        [Parameter(ParameterSetName = ShuffleParameterSet, ValueFromPipeline = true, Position = 0, Mandatory = true)]
-        [System.Management.Automation.AllowNull]
+        [ValidateNotNullOrEmpty]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public object[] InputObject { get; set; }
 
         /// <summary>
         /// Number of items to output (number of list items or of numbers).
         /// </summary>
-        [Parameter(ParameterSetName = RandomNumberParameterSet)]
-        [Parameter(ParameterSetName = RandomListItemParameterSet)]
+        [Parameter]
         [ValidateRange(1, int.MaxValue)]
         public int Count { get; set; } = 1;
-
-        #endregion
-
-        #region Shuffle parameter
-
-        /// <summary>
-        /// Gets or sets whether the command should return all input objects in randomized order.
-        /// </summary>
-        [Parameter(ParameterSetName = ShuffleParameterSet, Mandatory = true)]
-        public SwitchParameter Shuffle { get; set; }
 
         #endregion
 
@@ -334,7 +318,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     double r = Generator.NextDouble();
                     randomNumber = minValue + r * diff;
-                    diff *= r;
+                    diff = diff * r;
                 }
                 while (randomNumber >= maxValue);
             }
@@ -507,39 +491,24 @@ namespace Microsoft.PowerShell.Commands
         {
             if (EffectiveParameterSet == MyParameterSet.RandomListItem)
             {
-                if (ParameterSetName == ShuffleParameterSet)
+                foreach (object item in InputObject)
                 {
-                    // this allows for $null to be in an array passed to InputObject
-                    foreach (object item in InputObject ?? _nullInArray)
+                    if (_numberOfProcessedListItems < Count) // (3)
                     {
+                        Debug.Assert(_chosenListItems.Count == _numberOfProcessedListItems, "Initial K elements should all be included in chosenListItems");
                         _chosenListItems.Add(item);
                     }
-                }
-                else
-                {
-                    foreach (object item in InputObject ?? _nullInArray)
+                    else
                     {
-                        // (3)
-                        if (_numberOfProcessedListItems < Count)
+                        Debug.Assert(_chosenListItems.Count == Count, "After processing K initial elements, the length of chosenItems should stay equal to K");
+                        if (Generator.Next(_numberOfProcessedListItems + 1) < Count) // (1)
                         {
-                            Debug.Assert(_chosenListItems.Count == _numberOfProcessedListItems, "Initial K elements should all be included in chosenListItems");
-                            _chosenListItems.Add(item);
+                            int indexToReplace = Generator.Next(_chosenListItems.Count); // (2)
+                            _chosenListItems[indexToReplace] = item;
                         }
-                        else
-                        {
-                            Debug.Assert(_chosenListItems.Count == Count, "After processing K initial elements, the length of chosenItems should stay equal to K");
-
-                            // (1)
-                            if (Generator.Next(_numberOfProcessedListItems + 1) < Count)
-                            {
-                                // (2)
-                                int indexToReplace = Generator.Next(_chosenListItems.Count);
-                                _chosenListItems[indexToReplace] = item;
-                            }
-                        }
-
-                        _numberOfProcessedListItems++;
                     }
+
+                    _numberOfProcessedListItems++;
                 }
             }
         }
@@ -583,7 +552,7 @@ namespace Microsoft.PowerShell.Commands
     internal class PolymorphicRandomNumberGenerator
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PolymorphicRandomNumberGenerator"/> class.
+        /// Constructor.
         /// </summary>
         public PolymorphicRandomNumberGenerator()
         {
@@ -597,8 +566,8 @@ namespace Microsoft.PowerShell.Commands
             _pseudoGenerator = new Random(seed);
         }
 
-        private readonly Random _pseudoGenerator = null;
-        private readonly RandomNumberGenerator _cryptographicGenerator = null;
+        private Random _pseudoGenerator = null;
+        private RandomNumberGenerator _cryptographicGenerator = null;
 
         /// <summary>
         /// Generates a random floating-point number that is greater than or equal to 0.0, and less than 1.0.
@@ -645,7 +614,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (maxValue < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxValue), GetRandomCommandStrings.MaxMustBeGreaterThanZeroApi);
+                throw new ArgumentOutOfRangeException("maxValue", GetRandomCommandStrings.MaxMustBeGreaterThanZeroApi);
             }
 
             return Next(0, maxValue);
@@ -661,7 +630,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (minValue > maxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(minValue), GetRandomCommandStrings.MinGreaterThanOrEqualMaxApi);
+                throw new ArgumentOutOfRangeException("minValue", GetRandomCommandStrings.MinGreaterThanOrEqualMaxApi);
             }
 
             int randomNumber = 0;

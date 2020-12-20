@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -76,7 +76,7 @@ namespace System.Management.Automation.Internal
         /// <value>The invocation object for this command.</value>
         internal InvocationInfo MyInvocation
         {
-            get { return _myInvocation ??= new InvocationInfo(this); }
+            get { return _myInvocation ?? (_myInvocation = new InvocationInfo(this)); }
         }
 
         /// <summary>
@@ -266,23 +266,6 @@ namespace System.Management.Automation.Internal
 
 namespace System.Management.Automation
 {
-    #region ErrorView
-    /// <summary>
-    /// Defines the potential ErrorView options.
-    /// </summary>
-    public enum ErrorView
-    {
-        /// <summary>Existing all red multi-line output.</summary>
-        NormalView = 0,
-
-        /// <summary>Only show category information.</summary>
-        CategoryView = 1,
-
-        /// <summary>Concise shows more information on the context of the error or just the message if not a script or parser error.</summary>
-        ConciseView = 2,
-    }
-    #endregion ErrorView
-
     #region ActionPreference
     /// <summary>
     /// Defines the Action Preference options.  These options determine
@@ -294,26 +277,18 @@ namespace System.Management.Automation
     public enum ActionPreference
     {
         /// <summary>Ignore this event and continue</summary>
-        SilentlyContinue = 0,
-
+        SilentlyContinue,
         /// <summary>Stop the command</summary>
-        Stop = 1,
-
+        Stop,
         /// <summary>Handle this event as normal and continue</summary>
-        Continue = 2,
-
+        Continue,
         /// <summary>Ask whether to stop or continue</summary>
-        Inquire = 3,
-
+        Inquire,
         /// <summary>Ignore the event completely (not even logging it to the target stream)</summary>
-        Ignore = 4,
-
-        /// <summary>Reserved for future use.</summary>
-        Suspend = 5,
-
-        /// <summary>Enter the debugger.</summary>
-        Break = 6,
-    } // enum ActionPreference
+        Ignore,
+        /// <summary>Suspend the command for further diagnosis. Supported only for workflows.</summary>
+        Suspend,
+    }
     #endregion ActionPreference
 
     #region ConfirmImpact
@@ -470,7 +445,7 @@ namespace System.Management.Automation
             {
                 using (PSTransactionManager.GetEngineProtectionScope())
                 {
-                    return _invokeProvider ??= new ProviderIntrinsics(this);
+                    return _invokeProvider ?? (_invokeProvider = new ProviderIntrinsics(this));
                 }
             }
         }
@@ -484,7 +459,7 @@ namespace System.Management.Automation
             {
                 if (providerId == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(providerId));
+                    throw PSTraceSource.NewArgumentNullException("providerId");
                 }
 
                 PathInfo result = SessionState.Path.CurrentProviderLocation(providerId);
@@ -543,6 +518,7 @@ namespace System.Management.Automation
         }
 
         /// <Content contentref="System.Management.Automation.VariableIntrinsics.GetValue" />
+
         public object GetVariableValue(string name, object defaultValue)
         {
             using (PSTransactionManager.GetEngineProtectionScope())
@@ -560,3 +536,4 @@ namespace System.Management.Automation
         #endregion public_methods
     }
 }
+

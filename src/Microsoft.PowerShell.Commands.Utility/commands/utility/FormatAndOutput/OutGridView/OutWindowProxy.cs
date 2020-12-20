@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -20,7 +20,6 @@ namespace Microsoft.PowerShell.Commands
         internal const string OriginalObjectPropertyName = "OutGridViewOriginalObject";
         private const string ToStringValuePropertyName = "ToStringValue";
         private const string IndexPropertyName = "IndexValue";
-
         private int _index;
 
         /// <summary> Columns definition of the underlying Management List</summary>
@@ -28,18 +27,18 @@ namespace Microsoft.PowerShell.Commands
 
         private bool _isWindowStarted;
 
-        private readonly string _title;
+        private string _title;
 
-        private readonly OutputModeOption _outputMode;
+        private OutputModeOption _outputMode;
 
         private AutoResetEvent _closedEvent;
 
-        private readonly OutGridViewCommand _parentCmdlet;
+        private OutGridViewCommand _parentCmdlet;
 
-        private readonly GraphicalHostReflectionWrapper _graphicalHostReflectionWrapper;
+        private GraphicalHostReflectionWrapper _graphicalHostReflectionWrapper;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OutWindowProxy"/> class.
+        /// Initializes a new instance of the OutWindowProxy class.
         /// </summary>
         internal OutWindowProxy(string title, OutputModeOption outPutMode, OutGridViewCommand parentCmdlet)
         {
@@ -60,17 +59,17 @@ namespace Microsoft.PowerShell.Commands
         {
             if (propertyNames == null)
             {
-                throw new ArgumentNullException(nameof(propertyNames));
+                throw new ArgumentNullException("propertyNames");
             }
 
             if (displayNames == null)
             {
-                throw new ArgumentNullException(nameof(displayNames));
+                throw new ArgumentNullException("displayNames");
             }
 
             if (types == null)
             {
-                throw new ArgumentNullException(nameof(types));
+                throw new ArgumentNullException("types");
             }
 
             try
@@ -179,7 +178,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (livePSObject == null)
             {
-                throw new ArgumentNullException(nameof(livePSObject));
+                throw new ArgumentNullException("livePSObject");
             }
 
             if (_headerInfo == null)
@@ -205,7 +204,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (livePSObject == null)
             {
-                throw new ArgumentNullException(nameof(livePSObject));
+                throw new ArgumentNullException("livePSObject");
             }
 
             if (_headerInfo == null)

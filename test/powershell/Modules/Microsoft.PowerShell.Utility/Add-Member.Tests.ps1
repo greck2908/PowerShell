@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Add-Member DRT Unit Tests" -Tags "CI" {
 
@@ -24,7 +24,7 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
         $memberTypesWhereV1CannotBeNull = "CodeMethod", "MemberSet", "PropertySet", "ScriptMethod", "NoteProperty"
         foreach ($memberType in $memberTypesWhereV1CannotBeNull)
         {
-            { Add-Member -InputObject a -MemberType $memberType -Name Name -Value something -SecondValue somethingElse } |
+            { Add-Member -InputObject a -memberType $memberType -Name Name -Value something -SecondValue somethingElse } |
                 Should -Throw -ErrorId "Value2ShouldNotBeSpecified,Microsoft.PowerShell.Commands.AddMemberCommand"
         }
     }
@@ -33,10 +33,10 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
         $membersYouCannotAdd = "Method", "Property", "ParameterizedProperty"
         foreach ($member in $membersYouCannotAdd)
         {
-            { Add-Member -InputObject a -MemberType $member -Name Name } | Should -Throw -ErrorId "CannotAddMemberType,Microsoft.PowerShell.Commands.AddMemberCommand"
+            { Add-Member -InputObject a -memberType $member -Name Name } | Should -Throw -ErrorId "CannotAddMemberType,Microsoft.PowerShell.Commands.AddMemberCommand"
         }
 
-        { Add-Member -InputObject a -MemberType AnythingElse -Name Name } | Should -Throw -ErrorId "CannotConvertArgumentNoMessage,Microsoft.PowerShell.Commands.AddMemberCommand"
+        { Add-Member -InputObject a -memberType AnythingElse -Name Name } | Should -Throw -ErrorId "CannotConvertArgumentNoMessage,Microsoft.PowerShell.Commands.AddMemberCommand"
 
     }
 
@@ -44,7 +44,7 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
         $memberTypes = "CodeProperty", "ScriptProperty"
         foreach ($memberType in $memberTypes)
         {
-            { Add-Member -MemberType $memberType -Name PropertyName -Value $null -SecondValue $null -InputObject a } |
+            { Add-Member -memberType $memberType -Name PropertyName -Value $null -SecondValue $null -InputObject a } |
                 Should -Throw -ErrorId "Value1AndValue2AreNotBothNull,Microsoft.PowerShell.Commands.AddMemberCommand"
         }
 
@@ -56,13 +56,13 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
     }
 
     It "Successful alias, no type" {
-        $results = Add-Member -InputObject a -MemberType AliasProperty -Name Cnt -Value Length -PassThru
+        $results = Add-Member -InputObject a -MemberType AliasProperty -Name Cnt -Value Length -passthru
         $results.Cnt | Should -BeOfType Int32
         $results.Cnt | Should -Be 1
     }
 
     It "Successful alias, with type" {
-        $results = Add-Member -InputObject a -MemberType AliasProperty -Name Cnt -Value Length -SecondValue String -PassThru
+        $results = add-member -InputObject a -MemberType AliasProperty -Name Cnt -Value Length -SecondValue String -passthru
         $results.Cnt | Should -BeOfType String
         $results.Cnt | Should -Be '1'
     }
@@ -73,16 +73,16 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
     }
 
     It "Empty Member Set Null Value1" {
-        $results = Add-Member -InputObject a -MemberType MemberSet -Name Name -Value $null -PassThru
+        $results = add-member -InputObject a -MemberType MemberSet -Name Name -Value $null -passthru
         $results.Length | Should -Be 1
         $results.Name.a | Should -BeNullOrEmpty
     }
 
     It "Member Set With 1 Member" {
-        $members = New-Object System.Collections.ObjectModel.Collection[System.Management.Automation.PSMemberInfo]
-        $n=New-Object Management.Automation.PSNoteProperty a,1
+        $members = new-object System.Collections.ObjectModel.Collection[System.Management.Automation.PSMemberInfo]
+        $n=new-object Management.Automation.PSNoteProperty a,1
         $members.Add($n)
-        $r=Add-Member -InputObject a -MemberType MemberSet -Name Name -Value $members -PassThru
+        $r=Add-Member -InputObject a -MemberType MemberSet -Name Name -Value $members -passthru
         $r.Name.a | Should -Be '1'
     }
 
@@ -108,8 +108,8 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
     }
 
     It "Add ScriptProperty Success" {
-        Set-Alias ScriptPropertyTestAlias dir
-        $al=(Get-Alias ScriptPropertyTestAlias)
+        set-alias ScriptPropertyTestAlias dir
+        $al=(get-alias ScriptPropertyTestAlias)
         $al.Description="MyDescription"
         $al | Add-Member -MemberType ScriptProperty -Name NewDescription -Value {$this.Description} -SecondValue {$this.Description=$args[0]}
         $al.NewDescription | Should -BeExactly 'MyDescription'
@@ -118,12 +118,12 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
     }
 
     It "Add TypeName MemberSet Success" {
-        $a = 'string' | Add-Member -MemberType NoteProperty -Name TestNote -Value Any -TypeName MyType -PassThru
+        $a = 'string' | add-member -MemberType NoteProperty -Name TestNote -Value Any -TypeName MyType -passthru
         $a.PSTypeNames[0] | Should -Be MyType
     }
 
     It "Add TypeName Existing Name Success" {
-        $a = 'string' | Add-Member -TypeName System.Object -PassThru
+        $a = 'string' | add-member -TypeName System.Object -passthru
         $a.PSTypeNames[0] | Should -Be System.Object
     }
 
@@ -134,43 +134,43 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
     }
 
     It "Add Multiple Note Members" {
-        $obj=New-Object psobject
+        $obj=new-object psobject
         $hash=@{Name='Name';TestInt=1;TestNull=$null}
-        Add-Member -InputObject $obj $hash
+        add-member -InputObject $obj $hash
         $obj.Name | Should -Be 'Name'
         $obj.TestInt | Should -Be 1
         $obj.TestNull | Should -BeNullOrEmpty
     }
 
     It "Add Multiple Note With TypeName" {
-        $obj=New-Object psobject
+        $obj=new-object psobject
         $hash=@{Name='Name';TestInt=1;TestNull=$null}
-        $obj = Add-Member -InputObject $obj $hash -TypeName MyType -PassThru
+        $obj = add-member -InputObject $obj $hash -TypeName MyType -Passthru
         $obj.PSTypeNames[0] | Should -Be MyType
     }
 
     It "Add Multiple Members With Force" {
-        $obj=New-Object psobject
+        $obj=new-object psobject
         $hash=@{TestNote='hello'}
         $obj | Add-Member -MemberType NoteProperty -Name TestNote -Value 1
-        $obj | Add-Member $hash -Force
+        $obj | add-member $hash -force
         $obj.TestNote | Should -Be 'hello'
     }
 
     It "Simplified Add-Member should support using 'Property' as the NoteProperty member name" {
-        $results = Add-Member -InputObject a property Any -PassThru
+        $results = add-member -InputObject a property Any -passthru
         $results.property | Should -BeExactly 'Any'
 
-        $results = Add-Member -InputObject a Method Any -PassThru
+        $results = add-member -InputObject a Method Any -passthru
         $results.Method | Should -BeExactly 'Any'
 
-        $results = Add-Member -InputObject a 23 Any -PassThru
+        $results = add-member -InputObject a 23 Any -passthru
         $results.23 | Should -BeExactly 'Any'
 
-        $results = Add-Member -InputObject a 8 np Any -PassThru
+        $results = add-member -InputObject a 8 np Any -passthru
         $results.np | Should -BeExactly 'Any'
 
-        $results = Add-Member -InputObject a 16 sp {1+1} -PassThru
+        $results = add-member -InputObject a 16 sp {1+1} -passthru
         $results.sp | Should -Be 2
     }
 
@@ -178,7 +178,7 @@ Describe "Add-Member DRT Unit Tests" -Tags "CI" {
         $object = @(1,2)
         Add-Member -InputObject $object "ABC" "Value1"
         Add-Member -InputObject $object "ABC" "Value2" -ErrorVariable errorVar -ErrorAction SilentlyContinue
-        $errorVar.Exception | Should -BeOfType System.InvalidOperationException
+        $errorVar.Exception | Should -BeOfType "System.InvalidOperationException"
         $errorVar.Exception.Message | Should -Not -BeNullOrEmpty
     }
 }

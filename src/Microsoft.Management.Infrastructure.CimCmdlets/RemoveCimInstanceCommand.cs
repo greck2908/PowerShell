@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -15,11 +15,10 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     /// <summary>
     /// Enables the user to remove a CimInstance.
     /// </summary>
-    [Alias("rcim")]
     [Cmdlet(
         VerbsCommon.Remove,
         "CimInstance",
-        SupportsShouldProcess = true,
+        SupportsShouldProcess=true,
         DefaultParameterSetName = CimBaseCommand.CimInstanceComputerSet,
         HelpUri = "https://go.microsoft.com/fwlink/?LinkId=227964")]
     public class RemoveCimInstanceCommand : CimBaseCommand
@@ -27,7 +26,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         #region constructor
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RemoveCimInstanceCommand"/> class.
+        /// Constructor.
         /// </summary>
         public RemoveCimInstanceCommand()
             : base(parameters, parameterSets)
@@ -142,7 +141,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Alias(AliasOT)]
         [Parameter]
-        public UInt32 OperationTimeoutSec { get; set; }
+        public UInt32 OperationTimeoutSec
+        {
+            get { return operationTimeout;}
+
+            set { operationTimeout = value; }
+        }
+
+        private UInt32 operationTimeout;
 
         /// <summary>
         /// The following is the definition of the input parameter "InputObject".
@@ -161,11 +167,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         [Alias(CimBaseCommand.AliasCimInstance)]
         public CimInstance InputObject
         {
-            get { return CimInstance; }
+            get { return cimInstance; }
 
             set
             {
-                CimInstance = value;
+                cimInstance = value;
                 base.SetParameter(value, nameCimInstance);
             }
         }
@@ -173,7 +179,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Property for internal usage purpose.
         /// </summary>
-        internal CimInstance CimInstance { get; private set; }
+        internal CimInstance CimInstance
+        {
+            get { return cimInstance; }
+        }
+
+        private CimInstance cimInstance;
 
         /// <summary>
         /// The following is the definition of the input parameter "Query".
@@ -190,7 +201,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             ParameterSetName = CimBaseCommand.QuerySessionSet)]
         public string Query
         {
-            get { return query; }
+            get { return query;}
 
             set
             {
@@ -212,7 +223,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                    ParameterSetName = CimBaseCommand.QueryComputerSet)]
         public string QueryDialect
         {
-            get { return querydialect; }
+            get { return querydialect;}
 
             set
             {
@@ -232,7 +243,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         protected override void BeginProcessing()
         {
-            CimRemoveCimInstance cimRemoveInstance = this.GetOperationAgent() ?? CreateOperationAgent();
+            CimRemoveCimInstance cimRemoveInstance = this.GetOperationAgent();
+            if (cimRemoveInstance == null)
+            {
+                cimRemoveInstance = CreateOperationAgent();
+            }
 
             this.CmdletOperation = new CmdletOperationRemoveCimInstance(this, cimRemoveInstance);
             this.AtBeginProcess = false;
@@ -271,7 +286,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// used to delegate all Remove-CimInstance operations.
         /// </para>
         /// </summary>
-        private CimRemoveCimInstance GetOperationAgent()
+        CimRemoveCimInstance GetOperationAgent()
         {
             return (this.AsyncOperation as CimRemoveCimInstance);
         }
@@ -283,9 +298,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </para>
         /// </summary>
         /// <returns></returns>
-        private CimRemoveCimInstance CreateOperationAgent()
+        CimRemoveCimInstance CreateOperationAgent()
         {
-            CimRemoveCimInstance cimRemoveInstance = new();
+            CimRemoveCimInstance cimRemoveInstance = new CimRemoveCimInstance();
             this.AsyncOperation = cimRemoveInstance;
             return cimRemoveInstance;
         }
@@ -307,7 +322,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter definition entries.
         /// </summary>
-        private static readonly Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new()
+        static Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new Dictionary<string, HashSet<ParameterDefinitionEntry>>
         {
             {
                 nameCimSession, new HashSet<ParameterDefinitionEntry> {
@@ -356,7 +371,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter set entries.
         /// </summary>
-        private static readonly Dictionary<string, ParameterSetEntry> parameterSets = new()
+        static Dictionary<string, ParameterSetEntry> parameterSets = new Dictionary<string, ParameterSetEntry>
         {
             {   CimBaseCommand.CimInstanceComputerSet, new ParameterSetEntry(1, true)     },
             {   CimBaseCommand.CimInstanceSessionSet, new ParameterSetEntry(2)     },

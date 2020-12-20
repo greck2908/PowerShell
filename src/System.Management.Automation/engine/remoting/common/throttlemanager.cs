@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -204,17 +204,17 @@ namespace System.Management.Automation.Remoting
         /// </summary>
         internal int ThrottleLimit
         {
-            get
-            {
-                return _throttleLimit;
-            }
-
             set
             {
                 if (value > 0 && value <= s_THROTTLE_LIMIT_MAX)
                 {
                     _throttleLimit = value;
                 }
+            }
+
+            get
+            {
+                return _throttleLimit;
             }
         }
 
@@ -442,7 +442,7 @@ namespace System.Management.Automation.Remoting
             _operationsQueue = new List<IThrottleOperation>();
             _startOperationQueue = new List<IThrottleOperation>();
             _stopOperationQueue = new List<IThrottleOperation>();
-            _syncObject = new object();
+            _syncObject = new Object();
         }
 
         #endregion Constructors
@@ -527,7 +527,8 @@ namespace System.Management.Automation.Remoting
                 {
                     operation = _operationsQueue[0];
                     _operationsQueue.RemoveAt(0);
-                    operation.OperationComplete += OperationCompleteHandler;
+                    operation.OperationComplete +=
+                        new EventHandler<OperationStateEventArgs>(OperationCompleteHandler);
                     _startOperationQueue.Add(operation);
                 }
             }
@@ -599,34 +600,34 @@ namespace System.Management.Automation.Remoting
         /// Default throttle limit - the maximum number of operations
         /// to be processed at a time.
         /// </summary>
-        private static readonly int s_DEFAULT_THROTTLE_LIMIT = 32;
+        private static int s_DEFAULT_THROTTLE_LIMIT = 32;
 
         /// <summary>
         /// Maximum value that the throttle limit can be set to.
         /// </summary>
-        private static readonly int s_THROTTLE_LIMIT_MAX = int.MaxValue;
+        private static int s_THROTTLE_LIMIT_MAX = int.MaxValue;
 
         /// <summary>
         /// All pending operations.
         /// </summary>
-        private readonly List<IThrottleOperation> _operationsQueue;
+        private List<IThrottleOperation> _operationsQueue;
 
         /// <summary>
         /// List of items on which a StartOperation has
         /// been called.
         /// </summary>
-        private readonly List<IThrottleOperation> _startOperationQueue;
+        private List<IThrottleOperation> _startOperationQueue;
 
         /// <summary>
         /// List of items on which a StopOperation has
         /// been called.
         /// </summary>
-        private readonly List<IThrottleOperation> _stopOperationQueue;
+        private List<IThrottleOperation> _stopOperationQueue;
 
         /// <summary>
         /// Object used to synchronize access to the queues.
         /// </summary>
-        private readonly object _syncObject;
+        private object _syncObject;
 
         private bool _submitComplete = false;                    // to check if operations have been submitComplete
         private bool _stopping = false;                      // if stop is in process
@@ -675,9 +676,9 @@ namespace System.Management.Automation.Remoting
         private Thread workerThreadStart;
         private Thread workerThreadStop;
 
-        public bool Done { get; set; }
+        public bool Done { set; get; }
 
-        public int SleepTime { get; set; } = 100;
+        public int SleepTime { set; get; } = 100;
 
         private void WorkerThreadMethodStart()
         {

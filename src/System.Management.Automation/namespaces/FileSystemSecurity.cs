@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -46,12 +46,12 @@ namespace Microsoft.PowerShell.Commands
 
             if (string.IsNullOrEmpty(path))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             if ((sections & ~AccessControlSections.All) != 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(sections));
+                throw PSTraceSource.NewArgumentException("sections");
             }
 
             var currentPrivilegeState = new PlatformInvokes.TOKEN_PRIVILEGE();
@@ -103,14 +103,14 @@ namespace Microsoft.PowerShell.Commands
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw PSTraceSource.NewArgumentException(nameof(path));
+                throw PSTraceSource.NewArgumentException("path");
             }
 
             path = NormalizePath(path);
 
             if (securityDescriptor == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(securityDescriptor));
+                throw PSTraceSource.NewArgumentNullException("securityDescriptor");
             }
 
             if (!File.Exists(path) && !Directory.Exists(path))
@@ -123,7 +123,7 @@ namespace Microsoft.PowerShell.Commands
 
             if (sd == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(securityDescriptor));
+                throw PSTraceSource.NewArgumentException("securityDescriptor");
             }
             else
             {
@@ -340,3 +340,4 @@ namespace Microsoft.PowerShell.Commands
         #endregion ISecurityDescriptorCmdletProvider members
     }
 }
+

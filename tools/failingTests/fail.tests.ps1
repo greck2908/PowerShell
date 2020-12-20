@@ -1,7 +1,7 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Failing test used to test CI Scripts" -Tags 'CI' {
     It "Should fail" {
-        1 | Should -Be 2
+        1 | should be 2
     }
 }

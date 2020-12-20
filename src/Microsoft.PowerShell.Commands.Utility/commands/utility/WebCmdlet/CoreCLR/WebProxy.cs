@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -9,13 +9,13 @@ namespace Microsoft.PowerShell.Commands
     internal class WebProxy : IWebProxy
     {
         private ICredentials _credentials;
-        private readonly Uri _proxyAddress;
+        private Uri _proxyAddress;
 
         internal WebProxy(Uri address)
         {
             if (address == null)
             {
-                throw new ArgumentNullException(nameof(address));
+                throw new ArgumentNullException("address");
             }
 
             _proxyAddress = address;
@@ -50,7 +50,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (destination == null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                throw new ArgumentNullException("destination");
             }
 
             if (destination.IsLoopback)

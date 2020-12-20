@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -15,7 +15,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     /// This cmdlet enables the user to invoke a static method on a CIM class using
     /// the arguments passed as a list of name value pair dictionary.
     /// </summary>
-    [Alias("icim")]
+
     [Cmdlet(
         "Invoke",
         "CimMethod",
@@ -27,7 +27,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         #region constructor
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InvokeCimMethodCommand"/> class.
+        /// Constructor.
         /// </summary>
         public InvokeCimMethodCommand()
             : base(parameters, parameterSets)
@@ -182,11 +182,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         [Alias(CimBaseCommand.AliasCimInstance)]
         public CimInstance InputObject
         {
-            get { return CimInstance; }
+            get { return cimInstance; }
 
             set
             {
-                CimInstance = value;
+                cimInstance = value;
                 base.SetParameter(value, nameCimInstance);
             }
         }
@@ -194,7 +194,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Property for internal usage purpose.
         /// </summary>
-        internal CimInstance CimInstance { get; private set; }
+        internal CimInstance CimInstance
+        {
+            get { return cimInstance; }
+        }
+
+        private CimInstance cimInstance;
 
         /// <summary>
         /// <para>The following is the definition of the input parameter "ComputerName".
@@ -282,7 +287,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Parameter(Position = 1, ValueFromPipelineByPropertyName = true)]
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public IDictionary Arguments { get; set; }
+        public IDictionary Arguments
+        {
+            get { return arguments; }
+
+            set { arguments = value; }
+        }
+
+        private IDictionary arguments;
 
         /// <summary>
         /// The following is the definition of the input parameter "MethodName".
@@ -343,7 +355,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Alias(AliasOT)]
         [Parameter]
-        public UInt32 OperationTimeoutSec { get; set; }
+        public UInt32 OperationTimeoutSec
+        {
+            get { return operationTimeout; }
+
+            set { operationTimeout = value; }
+        }
+
+        private UInt32 operationTimeout;
 
         #endregion
 
@@ -354,7 +373,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         protected override void BeginProcessing()
         {
-            CimInvokeCimMethod cimInvokeMethod = this.GetOperationAgent() ?? CreateOperationAgent();
+            CimInvokeCimMethod cimInvokeMethod = this.GetOperationAgent();
+            if (cimInvokeMethod == null)
+            {
+                cimInvokeMethod = CreateOperationAgent();
+            }
 
             this.CmdletOperation = new CmdletOperationInvokeCimMethod(this, cimInvokeMethod);
             this.AtBeginProcess = false;
@@ -394,7 +417,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// used to delegate all Invoke-CimMethod operations.
         /// </para>
         /// </summary>
-        private CimInvokeCimMethod GetOperationAgent()
+        CimInvokeCimMethod GetOperationAgent()
         {
             return this.AsyncOperation as CimInvokeCimMethod;
         }
@@ -406,9 +429,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </para>
         /// </summary>
         /// <returns></returns>
-        private CimInvokeCimMethod CreateOperationAgent()
+        CimInvokeCimMethod CreateOperationAgent()
         {
-            CimInvokeCimMethod cimInvokeMethod = new();
+            CimInvokeCimMethod cimInvokeMethod = new CimInvokeCimMethod();
             this.AsyncOperation = cimInvokeMethod;
             return cimInvokeMethod;
         }
@@ -450,7 +473,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter definition entries.
         /// </summary>
-        private static readonly Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new()
+        static Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new Dictionary<string, HashSet<ParameterDefinitionEntry>>
         {
             {
                 nameClassName, new HashSet<ParameterDefinitionEntry> {
@@ -537,7 +560,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter set entries.
         /// </summary>
-        private static readonly Dictionary<string, ParameterSetEntry> parameterSets = new()
+        static Dictionary<string, ParameterSetEntry> parameterSets = new Dictionary<string, ParameterSetEntry>
         {
             {   CimBaseCommand.ClassNameComputerSet, new ParameterSetEntry(2, true)     },
             {   CimBaseCommand.ResourceUriSessionSet, new ParameterSetEntry(3)     },

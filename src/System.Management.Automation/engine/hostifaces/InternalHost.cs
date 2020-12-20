@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -39,7 +39,7 @@ namespace System.Management.Automation.Internal.Host
         internal InternalHost(PSHost externalHost, ExecutionContext executionContext)
         {
             Dbg.Assert(externalHost != null, "must supply an PSHost");
-            Dbg.Assert(externalHost is not InternalHost, "try to create an InternalHost from another InternalHost");
+            Dbg.Assert(!(externalHost is InternalHost), "try to create an InternalHost from another InternalHost");
 
             Dbg.Assert(executionContext != null, "must supply an ExecutionContext");
 
@@ -448,7 +448,8 @@ namespace System.Management.Automation.Internal.Host
         /// </summary>
         private IHostSupportsInteractiveSession GetIHostSupportsInteractiveSession()
         {
-            if (!(_externalHostRef.Value is IHostSupportsInteractiveSession host))
+            IHostSupportsInteractiveSession host = _externalHostRef.Value as IHostSupportsInteractiveSession;
+            if (host == null)
             {
                 throw new PSNotImplementedException();
             }
@@ -564,14 +565,14 @@ namespace System.Management.Automation.Internal.Host
         internal int NestedPromptCount { get; private set; }
 
         // Masked variables.
-        private readonly ObjectRef<PSHost> _externalHostRef;
-        private readonly ObjectRef<InternalHostUserInterface> _internalUIRef;
+        private ObjectRef<PSHost> _externalHostRef;
+        private ObjectRef<InternalHostUserInterface> _internalUIRef;
 
         // Private variables.
         private string _nameResult;
         private Version _versionResult;
         private Guid _idResult;
-        private readonly Stack<PromptContextData> _contextStack = new Stack<PromptContextData>();
+        private Stack<PromptContextData> _contextStack = new Stack<PromptContextData>();
 
         private readonly Guid _zeroGuid;
     }

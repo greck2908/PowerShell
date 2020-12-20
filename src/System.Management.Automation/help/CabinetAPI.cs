@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
@@ -80,8 +80,8 @@ namespace System.Management.Automation.Internal
     /// </summary>
     internal class CabinetExtractorFactory
     {
-        private static readonly ICabinetExtractorLoader s_cabinetLoader;
-        internal static readonly ICabinetExtractor EmptyExtractor = new EmptyCabinetExtractor();
+        private static ICabinetExtractorLoader s_cabinetLoader;
+        internal static ICabinetExtractor EmptyExtractor = new EmptyCabinetExtractor();
 
         /// <summary>
         /// Static constructor.
@@ -137,3 +137,4 @@ namespace System.Management.Automation.Internal
         }
     }
 }
+

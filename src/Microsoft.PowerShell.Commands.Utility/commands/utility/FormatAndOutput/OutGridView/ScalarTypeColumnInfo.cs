@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -8,7 +8,7 @@ namespace Microsoft.PowerShell.Commands
 {
     internal class ScalarTypeColumnInfo : ColumnInfo
     {
-        private readonly Type _type;
+        private Type _type;
 
         internal ScalarTypeColumnInfo(Type type)
             : base(type.Name, type.Name)
@@ -45,7 +45,7 @@ namespace Microsoft.PowerShell.Commands
 
     internal class ToStringColumnInfo : ColumnInfo
     {
-        private readonly OutGridViewCommand _parentCmdlet;
+        private OutGridViewCommand _parentCmdlet;
 
         internal ToStringColumnInfo(string staleObjectPropertyName, string displayName, OutGridViewCommand parentCmdlet)
             : base(staleObjectPropertyName, displayName)

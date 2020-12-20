@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Server method executor.
         /// </summary>
-        private readonly ServerMethodExecutor _serverMethodExecutor;
+        private ServerMethodExecutor _serverMethodExecutor;
 
         /// <summary>
         /// Constructor for ServerRemoteHostUserInterface.

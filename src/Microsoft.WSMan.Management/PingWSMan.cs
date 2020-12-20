@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -22,7 +22,8 @@ namespace Microsoft.WSMan.Management
     /// Issues an operation against the remote machine to ensure that the wsman
     /// service is running.
     /// </summary>
-    [Cmdlet(VerbsDiagnostic.Test, "WSMan", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2097114")]
+
+    [Cmdlet(VerbsDiagnostic.Test, "WSMan", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=141464")]
     public class TestWSManCommand : AuthenticatingWSManCommand, IDisposable
     {
         /// <summary>

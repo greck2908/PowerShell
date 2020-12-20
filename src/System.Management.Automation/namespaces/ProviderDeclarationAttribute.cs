@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation.Provider
@@ -37,13 +37,13 @@ namespace System.Management.Automation.Provider
 
             if (string.IsNullOrEmpty(providerName))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(providerName));
+                throw PSTraceSource.NewArgumentNullException("providerName");
             }
 
             if (providerName.IndexOfAny(_illegalCharacters) != -1)
             {
                 throw PSTraceSource.NewArgumentException(
-                    nameof(providerName),
+                    "providerName",
                     SessionStateStrings.ProviderNameNotValid,
                     providerName);
             }
@@ -52,7 +52,7 @@ namespace System.Management.Automation.Provider
             ProviderCapabilities = providerCapabilities;
         }
 
-        private readonly char[] _illegalCharacters = new char[] { ':', '\\', '[', ']', '?', '*' };
+        private char[] _illegalCharacters = new char[] { ':', '\\', '[', ']', '?', '*' };
 
         /// <summary>
         /// Gets the name of the provider.

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Remoting.Server;
@@ -12,9 +12,9 @@ namespace System.Management.Automation.Remoting
     /// </summary>
     internal class ServerRemoteSessionDSHandlerImpl : ServerRemoteSessionDataStructureHandler
     {
-        private readonly AbstractServerSessionTransportManager _transportManager;
-        private readonly ServerRemoteSessionDSHandlerStateMachine _stateMachine;
-        private readonly ServerRemoteSession _session;
+        private AbstractServerSessionTransportManager _transportManager;
+        private ServerRemoteSessionDSHandlerStateMachine _stateMachine;
+        private ServerRemoteSession _session;
 
         internal override AbstractServerSessionTransportManager TransportManager
         {
@@ -172,7 +172,7 @@ namespace System.Management.Automation.Remoting
         {
             if (dataArg == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataArg));
+                throw PSTraceSource.NewArgumentNullException("dataArg");
             }
 
             RemoteDataObject<PSObject> rcvdData = dataArg.ReceivedData;
@@ -242,3 +242,4 @@ namespace System.Management.Automation.Remoting
         #endregion Overrides
     }
 }
+

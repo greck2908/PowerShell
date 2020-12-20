@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -10,13 +10,15 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements the stop-transcript cmdlet.
     /// </summary>
-    [Cmdlet(VerbsLifecycle.Stop, "Transcript", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096798")]
+
+    [Cmdlet(VerbsLifecycle.Stop, "Transcript", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113415")]
     [OutputType(typeof(string))]
     public sealed class StopTranscriptCommand : PSCmdlet
     {
         /// <summary>
         /// Starts the transcription.
         /// </summary>
+
         protected override
         void
         BeginProcessing()

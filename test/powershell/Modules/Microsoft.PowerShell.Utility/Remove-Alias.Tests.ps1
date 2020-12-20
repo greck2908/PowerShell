@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Remove-Alias" -Tags "CI" {
 
@@ -39,7 +39,7 @@ Describe "Remove-Alias" -Tags "CI" {
 
     It "Remove-Alias should throw if alias does not exist"{
         {
-            Get-Alias -Name $testAliasName -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+            Get-Alias -Name $testAliasName -ErrorAction SilentlyContinue | Should -BeNullorEmpty
             Remove-Alias -Name $testAliasName -ErrorAction Stop
         } | Should -Throw -ErrorId 'ItemNotFoundException,Microsoft.PowerShell.Commands.RemoveAliasCommand'
     }

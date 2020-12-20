@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Update-FormatData" -Tags "CI" {
 
@@ -9,12 +9,12 @@ Describe "Update-FormatData" -Tags "CI" {
     Context "Validate Update-FormatData update correctly" {
 
         It "Should not throw upon reloading previous formatting file" {
-            { Update-FormatData } | Should -Not -Throw
+            { Update-FormatData } | Should -Not -throw
         }
 
         It "Should validly load formatting data" {
             $path = Join-Path -Path $TestDrive -ChildPath "outputfile.ps1xml"
-            Get-FormatData -TypeName System.Diagnostics.Process | Export-FormatData -Path $path
+            Get-FormatData -typename System.Diagnostics.Process | Export-FormatData -Path $path
             $null = $ps.AddScript("Update-FormatData -prependPath $path")
             $ps.Invoke()
             $ps.HadErrors | Should -BeFalse

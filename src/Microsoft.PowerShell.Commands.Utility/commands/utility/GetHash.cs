@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -83,7 +83,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            List<string> pathsToProcess = new();
+            List<string> pathsToProcess = new List<string>();
             ProviderInfo provider = null;
 
             switch (ParameterSetName)
@@ -104,7 +104,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             if (!WildcardPattern.ContainsWildcardCharacters(path))
                             {
-                                ErrorRecord errorRecord = new(e,
+                                ErrorRecord errorRecord = new ErrorRecord(e,
                                     "FileNotFound",
                                     ErrorCategory.ObjectNotFound,
                                     path);
@@ -126,9 +126,29 @@ namespace Microsoft.PowerShell.Commands
 
             foreach (string path in pathsToProcess)
             {
-                if (ComputeFileHash(path, out string hash))
+                byte[] bytehash = null;
+                string hash = null;
+                Stream openfilestream = null;
+
+                try
                 {
+                    openfilestream = File.OpenRead(path);
+                    bytehash = hasher.ComputeHash(openfilestream);
+
+                    hash = BitConverter.ToString(bytehash).Replace("-", string.Empty);
                     WriteHashResult(Algorithm, hash, path);
+                }
+                catch (FileNotFoundException ex)
+                {
+                    ErrorRecord errorRecord = new ErrorRecord(ex,
+                        "FileNotFound",
+                        ErrorCategory.ObjectNotFound,
+                        path);
+                    WriteError(errorRecord);
+                }
+                finally
+                {
+                    openfilestream?.Dispose();
                 }
             }
         }
@@ -152,66 +172,11 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Read the file and calculate the hash.
-        /// </summary>
-        /// <param name="path">Path to file which will be hashed.</param>
-        /// <param name="hash">Will contain the hash of the file content.</param>
-        /// <returns>Boolean value indicating whether the hash calculation succeeded or failed.</returns>
-        private bool ComputeFileHash(string path, out string hash)
-        {
-            byte[] bytehash = null;
-            Stream openfilestream = null;
-
-            hash = null;
-
-            try
-            {
-                openfilestream = File.OpenRead(path);
-
-                bytehash = hasher.ComputeHash(openfilestream);
-                hash = BitConverter.ToString(bytehash).Replace("-", string.Empty);
-            }
-            catch (FileNotFoundException ex)
-            {
-                var errorRecord = new ErrorRecord(
-                    ex,
-                    "FileNotFound",
-                    ErrorCategory.ObjectNotFound,
-                    path);
-                WriteError(errorRecord);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                var errorRecord = new ErrorRecord(
-                    ex,
-                    "UnauthorizedAccessError",
-                    ErrorCategory.InvalidData,
-                    path);
-                WriteError(errorRecord);
-            }
-            catch (IOException ioException)
-            {
-                var errorRecord = new ErrorRecord(
-                    ioException,
-                    "FileReadError",
-                    ErrorCategory.ReadError,
-                    path);
-                WriteError(errorRecord);
-            }
-            finally
-            {
-                openfilestream?.Dispose();
-            }
-
-            return hash != null;
-        }
-
-        /// <summary>
         /// Create FileHashInfo object and output it.
         /// </summary>
         private void WriteHashResult(string Algorithm, string hash, string path)
         {
-            FileHashInfo result = new();
+            FileHashInfo result = new FileHashInfo();
             result.Algorithm = Algorithm;
             result.Hash = hash;
             result.Path = path;
@@ -279,7 +244,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Init a hash algorithm.
         /// </summary>
-        protected void InitHasher(string Algorithm)
+        protected void InitHasher(String Algorithm)
         {
             try
             {

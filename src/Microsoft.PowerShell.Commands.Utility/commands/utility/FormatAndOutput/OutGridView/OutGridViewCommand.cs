@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -36,14 +36,13 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implementation for the Out-GridView command.
     /// </summary>
-    [Cmdlet(VerbsData.Out, "GridView", DefaultParameterSetName = "PassThru", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2109378")]
+    [Cmdlet(VerbsData.Out, "GridView", DefaultParameterSetName = "PassThru", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113364")]
     public class OutGridViewCommand : PSCmdlet, IDisposable
     {
         #region Properties
 
         private const string DataNotQualifiedForGridView = "DataNotQualifiedForGridView";
         private const string RemotingNotSupported = "RemotingNotSupported";
-
         private TypeInfoDataBase _typeInfoDataBase;
         private PSPropertyExpressionFactory _expressionFactory;
         private OutWindowProxy _windowProxy;
@@ -54,7 +53,7 @@ namespace Microsoft.PowerShell.Commands
         #region Constructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OutGridViewCommand"/> class.
+        /// Constructor for OutGridView.
         /// </summary>
         public OutGridViewCommand()
         {
@@ -88,7 +87,7 @@ namespace Microsoft.PowerShell.Commands
         /// and if it should be possible to select multiple or single list items.
         /// </summary>
         [Parameter(ParameterSetName = "OutputMode")]
-        public OutputModeOption OutputMode { get; set; }
+        public OutputModeOption OutputMode { set; get; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the selected items should be written to the pipeline.
@@ -97,9 +96,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = "PassThru")]
         public SwitchParameter PassThru
         {
-            get { return OutputMode == OutputModeOption.Multiple ? new SwitchParameter(true) : new SwitchParameter(false); }
-
             set { this.OutputMode = value.IsPresent ? OutputModeOption.Multiple : OutputModeOption.None; }
+
+            get { return OutputMode == OutputModeOption.Multiple ? new SwitchParameter(true) : new SwitchParameter(false); }
         }
 
         #endregion Input Parameters
@@ -212,7 +211,7 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="liveObject">PSObject to be converted to a string.</param>
         internal string ConvertToString(PSObject liveObject)
         {
-            StringFormatError formatErrorObject = new();
+            StringFormatError formatErrorObject = new StringFormatError();
             string smartToString = PSObjectHelper.SmartToString(liveObject,
                                                                 _expressionFactory,
                                                                 InnerFormatShapeCommand.FormatEnumerationLimit(),
@@ -265,7 +264,7 @@ namespace Microsoft.PowerShell.Commands
                 baseObject is FormatInfoData ||
                 baseObject is PSObject)
             {
-                ErrorRecord error = new(
+                ErrorRecord error = new ErrorRecord(
                     new FormatException(StringUtil.Format(FormatAndOut_out_gridview.DataNotQualifiedForGridView)),
                     DataNotQualifiedForGridView,
                     ErrorCategory.InvalidType,
@@ -289,7 +288,7 @@ namespace Microsoft.PowerShell.Commands
             Exception exception = _windowProxy.GetLastException();
             if (exception != null)
             {
-                ErrorRecord error = new(
+                ErrorRecord error = new ErrorRecord(
                     exception,
                     "ManagementListInvocationException",
                     ErrorCategory.OperationStopped,
@@ -313,7 +312,7 @@ namespace Microsoft.PowerShell.Commands
             internal static GridHeader ConstructGridHeader(PSObject input, OutGridViewCommand parentCmd)
             {
                 if (DefaultScalarTypes.IsTypeInList(input.TypeNames) ||
-                    !OutOfBandFormatViewManager.HasNonRemotingProperties(input))
+                    OutOfBandFormatViewManager.IsPropertyLessObject(input))
                 {
                     return new ScalarTypeHeader(parentCmd, input);
                 }
@@ -326,7 +325,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal class ScalarTypeHeader : GridHeader
         {
-            private readonly Type _originalScalarType;
+            private Type _originalScalarType;
 
             internal ScalarTypeHeader(OutGridViewCommand parentCmd, PSObject input) : base(parentCmd)
             {
@@ -352,12 +351,12 @@ namespace Microsoft.PowerShell.Commands
 
         internal class NonscalarTypeHeader : GridHeader
         {
-            private readonly AppliesTo _appliesTo = null;
+            private AppliesTo _appliesTo = null;
 
             internal NonscalarTypeHeader(OutGridViewCommand parentCmd, PSObject input) : base(parentCmd)
             {
                 // Prepare a table view.
-                TableView tableView = new();
+                TableView tableView = new TableView();
                 tableView.Initialize(parentCmd._expressionFactory, parentCmd._typeInfoDataBase);
 
                 // Request a view definition from the type database.
@@ -381,7 +380,7 @@ namespace Microsoft.PowerShell.Commands
                     int index = 0;
                     foreach (string typeName in input.TypeNames)
                     {
-                        if (index > 0 && (typeName.Equals(typeof(object).FullName, StringComparison.OrdinalIgnoreCase) ||
+                        if (index > 0 && (typeName.Equals(typeof(Object).FullName, StringComparison.OrdinalIgnoreCase) ||
                             typeName.Equals(typeof(MarshalByRefObject).FullName, StringComparison.OrdinalIgnoreCase)))
                         {
                             break;
@@ -491,6 +490,14 @@ namespace Microsoft.PowerShell.Commands
         {
             this.Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Finalizer.
+        /// </summary>
+        ~OutGridViewCommand()
+        {
+            Dispose(false);
         }
     }
 }

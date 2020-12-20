@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -233,12 +233,12 @@ namespace System.Management.Automation.Help
     /// </summary>
     internal class UpdatableHelpSystem : IDisposable
     {
-        private readonly TimeSpan _defaultTimeout;
-        private readonly Collection<UpdatableHelpProgressEventArgs> _progressEvents;
+        private TimeSpan _defaultTimeout;
+        private Collection<UpdatableHelpProgressEventArgs> _progressEvents;
         private bool _stopping;
-        private readonly object _syncObject;
-        private readonly UpdatableHelpCommandBase _cmdlet;
-        private readonly CancellationTokenSource _cancelTokenSource;
+        private object _syncObject;
+        private UpdatableHelpCommandBase _cmdlet;
+        private CancellationTokenSource _cancelTokenSource;
 
         internal WebClient WebClient { get; }
 
@@ -510,12 +510,8 @@ namespace System.Management.Automation.Help
                     </xs:complexType>
                 </xs:element>
             </xs:schema>";
-
         private const string HelpInfoXmlNamespace = "http://schemas.microsoft.com/powershell/help/2010/05";
         private const string HelpInfoXmlValidationFailure = "HelpInfoXmlValidationFailure";
-        private const string MamlXmlNamespace = "http://schemas.microsoft.com/maml/2004/10";
-        private const string CommandXmlNamespace = "http://schemas.microsoft.com/maml/dev/command/2004/10";
-        private const string DscResourceXmlNamespace = "http://schemas.microsoft.com/maml/dev/dscResource/2004/10";
 
         /// <summary>
         /// Creates a HelpInfo object.
@@ -589,9 +585,8 @@ namespace System.Management.Automation.Help
 
             if (!string.IsNullOrEmpty(currentCulture))
             {
-                IEnumerable<WildcardPattern> patternList = SessionStateUtilities.CreateWildcardsFromStrings(
-                    globPatterns: new[] { currentCulture },
-                    options: WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant);
+                WildcardOptions wildcardOptions = WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant;
+                IEnumerable<WildcardPattern> patternList = SessionStateUtilities.CreateWildcardsFromStrings(new string[1] { currentCulture }, wildcardOptions);
 
                 for (int i = 0; i < updatableHelpItem.Length; i++)
                 {
@@ -621,7 +616,7 @@ namespace System.Management.Automation.Help
         /// <param name="schema">Xml schema.</param>
         /// <param name="handler">Validation event handler.</param>
         /// <param name="helpInfo">HelpInfo or HelpContent?</param>
-        private static XmlDocument CreateValidXmlDocument(string xml, string ns, string schema, ValidationEventHandler handler,
+        private XmlDocument CreateValidXmlDocument(string xml, string ns, string schema, ValidationEventHandler handler,
             bool helpInfo)
         {
             XmlReaderSettings settings = new XmlReaderSettings();
@@ -998,7 +993,7 @@ namespace System.Management.Automation.Help
         /// Removes the read only attribute.
         /// </summary>
         /// <param name="path"></param>
-        private static void RemoveReadOnly(string path)
+        private void RemoveReadOnly(string path)
         {
             if (File.Exists(path))
             {
@@ -1006,7 +1001,7 @@ namespace System.Management.Automation.Help
 
                 if ((attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
                 {
-                    attributes &= ~FileAttributes.ReadOnly;
+                    attributes = (attributes & ~FileAttributes.ReadOnly);
                     File.SetAttributes(path, attributes);
                 }
             }
@@ -1093,7 +1088,7 @@ namespace System.Management.Automation.Help
         }
 
 #if UNIX
-        private static bool ExpandArchive(string source, string destination)
+        private bool ExpandArchive(string source, string destination)
         {
             bool sucessfulDecompression = false;
 
@@ -1125,7 +1120,7 @@ namespace System.Management.Automation.Help
         /// <param name="srcPath">Source path.</param>
         /// <param name="destPath">Destination path.</param>
         /// <param name="needToCopy">Is set to false if we find a single file placeholder.txt in cab. This means we no longer need to install help files.</param>
-        private static void UnzipHelpContent(ExecutionContext context, string srcPath, string destPath, out bool needToCopy)
+        private void UnzipHelpContent(ExecutionContext context, string srcPath, string destPath, out bool needToCopy)
         {
             needToCopy = true;
 
@@ -1309,6 +1304,8 @@ namespace System.Management.Automation.Help
 
                         Debug.Assert(helpItemsNode != null, "helpItemsNode must not be null");
 
+                        string targetNamespace = "http://schemas.microsoft.com/maml/2004/10";
+
                         foreach (XmlNode node in helpItemsNode.ChildNodes)
                         {
                             if (node.NodeType == XmlNodeType.Element)
@@ -1317,11 +1314,11 @@ namespace System.Management.Automation.Help
                                 {
                                     if (node.LocalName.Equals("para", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        if (!node.NamespaceURI.Equals(MamlXmlNamespace, StringComparison.OrdinalIgnoreCase))
+                                        if (!node.NamespaceURI.Equals("http://schemas.microsoft.com/maml/2004/10", StringComparison.OrdinalIgnoreCase))
                                         {
                                             throw new UpdatableHelpSystemException("HelpContentXmlValidationFailure",
                                                 StringUtil.Format(HelpDisplayStrings.HelpContentXmlValidationFailure,
-                                                StringUtil.Format(HelpDisplayStrings.HelpContentMustBeInTargetNamespace, MamlXmlNamespace)), ErrorCategory.InvalidData, null, null);
+                                                StringUtil.Format(HelpDisplayStrings.HelpContentMustBeInTargetNamespace, targetNamespace)), ErrorCategory.InvalidData, null, null);
                                         }
                                         else
                                         {
@@ -1329,16 +1326,16 @@ namespace System.Management.Automation.Help
                                         }
                                     }
 
-                                    if (!node.NamespaceURI.Equals(CommandXmlNamespace, StringComparison.OrdinalIgnoreCase) &&
-                                        !node.NamespaceURI.Equals(DscResourceXmlNamespace, StringComparison.OrdinalIgnoreCase))
+                                    if (!node.NamespaceURI.Equals("http://schemas.microsoft.com/maml/dev/command/2004/10", StringComparison.OrdinalIgnoreCase) &&
+                                        !node.NamespaceURI.Equals("http://schemas.microsoft.com/maml/dev/dscResource/2004/10", StringComparison.OrdinalIgnoreCase))
                                     {
                                         throw new UpdatableHelpSystemException("HelpContentXmlValidationFailure",
                                             StringUtil.Format(HelpDisplayStrings.HelpContentXmlValidationFailure,
-                                            StringUtil.Format(HelpDisplayStrings.HelpContentMustBeInTargetNamespace, MamlXmlNamespace)), ErrorCategory.InvalidData, null, null);
+                                            StringUtil.Format(HelpDisplayStrings.HelpContentMustBeInTargetNamespace, targetNamespace)), ErrorCategory.InvalidData, null, null);
                                     }
                                 }
 
-                                CreateValidXmlDocument(node.OuterXml, MamlXmlNamespace, xsd,
+                                CreateValidXmlDocument(node.OuterXml, targetNamespace, xsd,
                                     new ValidationEventHandler(HelpContentValidationHandler),
                                     false);
                             }
@@ -1503,6 +1500,52 @@ namespace System.Management.Automation.Help
             return string.IsNullOrEmpty(defaultSourcePath) ? null : defaultSourcePath;
         }
 
+        /// <summary>
+        /// Sets the DisablePromptToUpdatableHelp regkey.
+        /// </summary>
+        internal static void SetDisablePromptToUpdateHelp()
+        {
+            try
+            {
+                PowerShellConfig.Instance.SetDisablePromptToUpdateHelp(true);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignore AccessDenied related exceptions
+            }
+            catch (SecurityException)
+            {
+                // Ignore AccessDenied related exceptions
+            }
+        }
+
+        /// <summary>
+        /// Checks if it is necessary to prompt to update help.
+        /// </summary>
+        /// <returns></returns>
+        internal static bool ShouldPromptToUpdateHelp()
+        {
+#if UNIX
+            // TODO: This workaround needs to be removed once updatable help
+            //       works on Linux.
+            return false;
+#else
+            try
+            {
+                if (!Utils.IsAdministrator())
+                {
+                    return false;
+                }
+
+                return PowerShellConfig.Instance.GetDisablePromptToUpdateHelp();
+            }
+            catch (SecurityException)
+            {
+                return false;
+            }
+#endif
+        }
+
         #endregion
 
         #region Events
@@ -1581,8 +1624,8 @@ namespace System.Management.Automation.Help
     /// </summary>
     internal class UpdatableHelpSystemDrive : IDisposable
     {
-        private readonly string _driveName;
-        private readonly PSCmdlet _cmdlet;
+        private string _driveName;
+        private PSCmdlet _cmdlet;
 
         /// <summary>
         /// Gets the drive name.

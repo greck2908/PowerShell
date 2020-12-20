@@ -1,7 +1,9 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
+using System.Globalization;
+using System.IO;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -33,7 +35,7 @@ namespace Microsoft.PowerShell.Commands
         //
         // name of this command
         //
-        private readonly string _commandName;
+        private string _commandName;
 
         /// <summary>
         /// Initializes a new instance of the SecureStringCommandBase
@@ -111,7 +113,7 @@ namespace Microsoft.PowerShell.Commands
     /// uses the DPAPI to encrypt the string. When a key is specified, the
     /// command uses the AES algorithm to encrypt the string.
     /// </summary>
-    [Cmdlet(VerbsData.ConvertFrom, "SecureString", DefaultParameterSetName = "Secure", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096497")]
+    [Cmdlet(VerbsData.ConvertFrom, "SecureString", DefaultParameterSetName = "Secure", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113287")]
     [OutputType(typeof(string))]
     public sealed class ConvertFromSecureStringCommand : ConvertFromToSecureStringCommandBase
     {
@@ -138,12 +140,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Gets or sets a switch to get the secure string as plain text.
-        /// </summary>
-        [Parameter(ParameterSetName = "AsPlainText")]
-        public SwitchParameter AsPlainText { get; set; }
-
-        /// <summary>
         /// Processes records from the input pipeline.
         /// For each input object, the command encrypts
         /// and exports the object.
@@ -168,19 +164,6 @@ namespace Microsoft.PowerShell.Commands
             else if (Key != null)
             {
                 encryptionResult = SecureStringHelper.Encrypt(SecureString, Key);
-            }
-            else if (AsPlainText)
-            {
-                IntPtr valuePtr = IntPtr.Zero;
-                try
-                {
-                    valuePtr = Marshal.SecureStringToGlobalAllocUnicode(SecureString);
-                    exportedString = Marshal.PtrToStringUni(valuePtr);
-                }
-                finally
-                {
-                    Marshal.ZeroFreeGlobalAllocUnicode(valuePtr);
-                }
             }
             else
             {
@@ -226,7 +209,7 @@ namespace Microsoft.PowerShell.Commands
     /// When a key is specified, the command uses the AES algorithm
     /// to decrypt the data.
     /// </summary>
-    [Cmdlet(VerbsData.ConvertTo, "SecureString", DefaultParameterSetName = "Secure", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096916")]
+    [Cmdlet(VerbsData.ConvertTo, "SecureString", DefaultParameterSetName = "Secure", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113291")]
     [OutputType(typeof(SecureString))]
     public sealed class ConvertToSecureStringCommand : ConvertFromToSecureStringCommandBase
     {
@@ -359,8 +342,22 @@ namespace Microsoft.PowerShell.Commands
                 }
                 else
                 {
-                    importedString = new SecureString();
-                    foreach (char currentChar in String) { importedString.AppendChar(currentChar); }
+                    if (!Force)
+                    {
+                        String error =
+                            SecureStringCommands.ForceRequired;
+                        Exception e = new ArgumentException(error);
+                        WriteError(new ErrorRecord(e, "ImportSecureString_ForceRequired", ErrorCategory.InvalidArgument, null));
+                    }
+                    else
+                    {
+                        // The entire purpose of the SecureString is to prevent a secret from being
+                        // permanently stored in memory as a .Net string.  If they use the
+                        // -AsPlainText and -Force flags, they consciously have made the decision to be OK
+                        // with that.
+                        importedString = new SecureString();
+                        foreach (char currentChar in String) { importedString.AppendChar(currentChar); }
+                    }
                 }
             }
             catch (ArgumentException e)
@@ -389,3 +386,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Get-Location" -Tags "CI" {
     $currentDirectory=[System.IO.Directory]::GetCurrentDirectory()
@@ -7,7 +7,7 @@ Describe "Get-Location" -Tags "CI" {
     }
 
     AfterEach {
-	Pop-Location
+	Pop-location
     }
 
     It "Should list the output of the current working directory" {

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -12,8 +12,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
     public class ShowCommandModuleInfo
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShowCommandModuleInfo"/> class
-        /// with the specified <see cref="CommandInfo"/>.
+        /// Creates an instance of the ShowCommandModuleInfo class based on a CommandInfo object.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -22,15 +21,14 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException(nameof(other));
+                throw new ArgumentNullException("other");
             }
 
             this.Name = other.Name;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShowCommandModuleInfo"/> class
-        /// with the specified <see cref="PSObject"/>.
+        /// Creates an instance of the ShowCommandModuleInfo class based on a PSObject object.
         /// </summary>
         /// <param name="other">
         /// The object to wrap.
@@ -39,7 +37,7 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         {
             if (other == null)
             {
-                throw new ArgumentNullException(nameof(other));
+                throw new ArgumentNullException("other");
             }
 
             this.Name = other.Members["Name"].Value as string;
@@ -48,6 +46,6 @@ namespace Microsoft.PowerShell.Commands.ShowCommandExtension
         /// <summary>
         /// Gets the name of this module.
         /// </summary>
-        public string Name { get; }
+        public string Name { get; private set; }
     }
 }

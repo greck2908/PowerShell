@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -48,7 +48,8 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>The source string limited in the number of lines.</returns>
         internal static object LimitString(object src)
         {
-            if (!(src is string srcString))
+            string srcString = src as string;
+            if (srcString == null)
             {
                 return src;
             }

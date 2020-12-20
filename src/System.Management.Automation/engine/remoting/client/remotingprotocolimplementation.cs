@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Internal;
@@ -16,22 +16,21 @@ namespace System.Management.Automation.Remoting
     internal class ClientRemoteSessionDSHandlerImpl : ClientRemoteSessionDataStructureHandler, IDisposable
     {
         [TraceSourceAttribute("CRSDSHdlerImpl", "ClientRemoteSessionDSHandlerImpl")]
-        private static readonly PSTraceSource s_trace = PSTraceSource.GetTracer("CRSDSHdlerImpl", "ClientRemoteSessionDSHandlerImpl");
-
+        private static PSTraceSource s_trace = PSTraceSource.GetTracer("CRSDSHdlerImpl", "ClientRemoteSessionDSHandlerImpl");
         private const string resBaseName = "remotingerroridstrings";
 
-        private readonly BaseClientSessionTransportManager _transportManager;
-        private readonly ClientRemoteSessionDSHandlerStateMachine _stateMachine;
-        private readonly ClientRemoteSession _session;
-        private readonly RunspaceConnectionInfo _connectionInfo;
+        private BaseClientSessionTransportManager _transportManager;
+        private ClientRemoteSessionDSHandlerStateMachine _stateMachine;
+        private ClientRemoteSession _session;
+        private RunspaceConnectionInfo _connectionInfo;
         // used for connection redirection.
         private Uri _redirectUri;
         private int _maxUriRedirectionCount;
         private bool _isCloseCalled;
-        private readonly object _syncObject = new object();
-        private readonly PSRemotingCryptoHelper _cryptoHelper;
+        private object _syncObject = new object();
+        private PSRemotingCryptoHelper _cryptoHelper;
 
-        private readonly ClientRemoteSession.URIDirectionReported _uriRedirectionHandler;
+        private ClientRemoteSession.URIDirectionReported _uriRedirectionHandler;
 
         internal override BaseClientSessionTransportManager TransportManager
         {
@@ -67,7 +66,7 @@ namespace System.Management.Automation.Remoting
 
             if (session == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(session));
+                throw PSTraceSource.NewArgumentNullException("session");
             }
 
             _session = session;
@@ -91,7 +90,7 @@ namespace System.Management.Automation.Remoting
             _transportManager.DisconnectCompleted += HandleDisconnectComplete;
             _transportManager.ReconnectCompleted += HandleReconnectComplete;
 
-            _transportManager.RobustConnectionNotification += HandleRobustConnectionNotification;
+            _transportManager.RobustConnectionNotification += new EventHandler<ConnectionStatusEventArgs>(HandleRobustConnectionNotification);
 
             WSManConnectionInfo wsmanConnectionInfo = _connectionInfo as WSManConnectionInfo;
             if (wsmanConnectionInfo != null)
@@ -279,7 +278,7 @@ namespace System.Management.Automation.Remoting
         {
             if (arg == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arg));
+                throw PSTraceSource.NewArgumentNullException("arg");
             }
 
             // Enqueue session related negotiation packets first
@@ -444,7 +443,10 @@ namespace System.Management.Automation.Remoting
                 }
 
                 // raise warning to report the redirection
-                _uriRedirectionHandler?.Invoke(newURI);
+                if (_uriRedirectionHandler != null)
+                {
+                    _uriRedirectionHandler(newURI);
+                }
 
                 // start a new connection
                 _transportManager.Redirect(newURI, _connectionInfo);
@@ -538,14 +540,14 @@ namespace System.Management.Automation.Remoting
         {
             if (dataArg == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataArg));
+                throw PSTraceSource.NewArgumentNullException("dataArg");
             }
 
             RemoteDataObject<PSObject> rcvdData = dataArg.ReceivedData;
 
             if (rcvdData == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(dataArg));
+                throw PSTraceSource.NewArgumentException("dataArg");
             }
 
             RemotingDestination destination = rcvdData.Destination;
@@ -608,7 +610,7 @@ namespace System.Management.Automation.Remoting
         {
             if (arg == null || arg.ReceivedData == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arg));
+                throw PSTraceSource.NewArgumentNullException("arg");
             }
 
             RemoteDataObject<PSObject> rcvdData = arg.ReceivedData;
@@ -682,7 +684,7 @@ namespace System.Management.Automation.Remoting
             // TODO: Consider changing to Dbg.Assert()
             if (rcvdData == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(rcvdData));
+                throw PSTraceSource.NewArgumentNullException("rcvdData");
             }
 
             RemotingTargetInterface targetInterface = rcvdData.TargetInterface;

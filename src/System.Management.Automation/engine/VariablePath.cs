@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics;
@@ -83,7 +83,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw PSTraceSource.NewArgumentException(nameof(path));
+                throw PSTraceSource.NewArgumentException("path");
             }
 
             _userPath = path;
@@ -222,48 +222,48 @@ namespace System.Management.Automation
         /// <summary>
         /// Returns true if the path explicitly specifies 'global:'.
         /// </summary>
-        public bool IsGlobal { get { return (_flags & VariablePathFlags.Global) != 0; } }
+        public bool IsGlobal { get { return 0 != (_flags & VariablePathFlags.Global); } }
 
         /// <summary>
         /// Returns true if the path explicitly specifies 'local:'.
         /// </summary>
-        public bool IsLocal { get { return (_flags & VariablePathFlags.Local) != 0; } }
+        public bool IsLocal { get { return 0 != (_flags & VariablePathFlags.Local); } }
 
         /// <summary>
         /// Returns true if the path explicitly specifies 'private:'.
         /// </summary>
-        public bool IsPrivate { get { return (_flags & VariablePathFlags.Private) != 0; } }
+        public bool IsPrivate { get { return 0 != (_flags & VariablePathFlags.Private); } }
 
         /// <summary>
         /// Returns true if the path explicitly specifies 'script:'.
         /// </summary>
-        public bool IsScript { get { return (_flags & VariablePathFlags.Script) != 0; } }
+        public bool IsScript { get { return 0 != (_flags & VariablePathFlags.Script); } }
 
         /// <summary>
         /// Returns true if the path specifies no drive or scope qualifiers.
         /// </summary>
-        public bool IsUnqualified { get { return (_flags & VariablePathFlags.Unqualified) != 0; } }
+        public bool IsUnqualified { get { return 0 != (_flags & VariablePathFlags.Unqualified); } }
 
         /// <summary>
         /// Returns true if the path specifies a variable path with no scope qualifiers.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Unscoped")]
-        public bool IsUnscopedVariable { get { return ((_flags & VariablePathFlags.UnscopedVariableMask) == 0); } }
+        public bool IsUnscopedVariable { get { return (0 == (_flags & VariablePathFlags.UnscopedVariableMask)); } }
 
         /// <summary>
         /// Returns true if the path defines a variable.
         /// </summary>
-        public bool IsVariable { get { return (_flags & VariablePathFlags.Variable) != 0; } }
+        public bool IsVariable { get { return 0 != (_flags & VariablePathFlags.Variable); } }
 
         /// <summary>
         /// Returns true if the path defines a function.
         /// </summary>
-        internal bool IsFunction { get { return (_flags & VariablePathFlags.Function) != 0; } }
+        internal bool IsFunction { get { return 0 != (_flags & VariablePathFlags.Function); } }
 
         /// <summary>
         /// Returns true if the path specifies a drive other than the variable drive.
         /// </summary>
-        public bool IsDriveQualified { get { return (_flags & VariablePathFlags.DriveQualified) != 0; } }
+        public bool IsDriveQualified { get { return 0 != (_flags & VariablePathFlags.DriveQualified); } }
 
         /// <summary>
         /// The drive name, or null if the path is for a variable.

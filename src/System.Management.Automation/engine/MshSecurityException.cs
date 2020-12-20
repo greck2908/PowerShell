@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Runtime.Serialization;
@@ -118,6 +118,7 @@ namespace System.Management.Automation
             get { return _message; }
         }
 
-        private readonly string _message;
+        private string _message;
     }
 }
+

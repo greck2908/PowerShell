@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe 'Testing of MyInvocation' -Tags "CI" {
     It 'MyInvocation works in Function' {

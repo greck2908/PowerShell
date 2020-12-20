@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -32,7 +32,6 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     internal class NameEntryDefinition : HashtableEntryDefinition
     {
         internal const string NameEntryKey = "name";
-
         internal NameEntryDefinition()
             : base(NameEntryKey, new string[] { FormatParameterDefinitionKeys.LabelEntryKey }, new Type[] { typeof(string) }, false)
         {
@@ -141,7 +140,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         internal HashtableEntryDefinition MatchEntry(string keyName, TerminatingErrorContext invocationContext)
         {
             if (string.IsNullOrEmpty(keyName))
-                PSTraceSource.NewArgumentNullException(nameof(keyName));
+                PSTraceSource.NewArgumentNullException("keyName");
 
             HashtableEntryDefinition matchingEntry = null;
             for (int k = 0; k < this.hashEntries.Count; k++)
@@ -178,7 +177,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             if (key.Length < normalizedKey.Length)
             {
                 // shorter, could be an abbreviation
-                if (key.AsSpan().Equals(normalizedKey.AsSpan(0, key.Length), StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(key, normalizedKey.Substring(0, key.Length), StringComparison.OrdinalIgnoreCase))
                 {
                     // found abbreviation
                     return true;
@@ -228,7 +227,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         #region tracer
         [TraceSource("ParameterProcessor", "ParameterProcessor")]
-        internal static readonly PSTraceSource tracer = PSTraceSource.GetTracer("ParameterProcessor", "ParameterProcessor");
+        internal static PSTraceSource tracer = PSTraceSource.GetTracer("ParameterProcessor", "ParameterProcessor");
         #endregion tracer
 
         internal static void ThrowParameterBindingException(TerminatingErrorContext invocationContext,
@@ -507,7 +506,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         internal static string CatenateStringArray(string[] arr)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append('{');
+            sb.Append("{");
             for (int k = 0; k < arr.Length; k++)
             {
                 if (k > 0)
@@ -518,12 +517,13 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 sb.Append(arr[k]);
             }
 
-            sb.Append('}');
+            sb.Append("}");
             return sb.ToString();
         }
 
         #endregion
 
-        private readonly CommandParameterDefinition _paramDef = null;
+        private CommandParameterDefinition _paramDef = null;
     }
 }
+

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -162,7 +162,7 @@ namespace Microsoft.PowerShell.Commands
             }
 
             thread.IsBackground = true;
-            thread.SetApartmentState(ApartmentState.STA);
+            // thread.SetApartmentState( ApartmentState.STA);
             thread.Start();
         }
 

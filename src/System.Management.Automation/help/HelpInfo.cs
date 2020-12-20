@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -203,7 +203,7 @@ namespace System.Management.Automation
 
             if (this.FullHelp.Properties["Name"] == null)
             {
-                this.FullHelp.Properties.Add(new PSNoteProperty("Name", this.Name));
+                this.FullHelp.Properties.Add(new PSNoteProperty("Name", this.Name.ToString()));
             }
 
             if (this.FullHelp.Properties["Category"] == null)
@@ -213,7 +213,7 @@ namespace System.Management.Automation
 
             if (this.FullHelp.Properties["Synopsis"] == null)
             {
-                this.FullHelp.Properties.Add(new PSNoteProperty("Synopsis", this.Synopsis));
+                this.FullHelp.Properties.Add(new PSNoteProperty("Synopsis", this.Synopsis.ToString()));
             }
 
             if (this.FullHelp.Properties["Component"] == null)

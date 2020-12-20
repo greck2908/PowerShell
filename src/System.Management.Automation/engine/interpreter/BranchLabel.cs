@@ -19,7 +19,7 @@ using System.Globalization;
 
 namespace System.Management.Automation.Interpreter
 {
-    internal readonly struct RuntimeLabel
+    internal struct RuntimeLabel
     {
         public readonly int Index;
         public readonly int StackDepth;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -164,28 +164,28 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Queue to store the currently cached objects.
         /// </summary>
-        private readonly Queue<PacketInfoData> _queue = new Queue<PacketInfoData>();
+        private Queue<PacketInfoData> _queue = new Queue<PacketInfoData>();
 
         /// <summary>
         /// Number of objects to compute the best fit.
         /// Zero: all the objects
         /// a positive number N: use the first N.
         /// </summary>
-        private readonly int _objectCount = 0;
+        private int _objectCount = 0;
 
         /// <summary>
         /// Maximum amount of time for record processing to compute the best fit.
         /// MaxValue: all the objects.
         /// A positive timespan: use all objects that have been processed within the timeframe.
         /// </summary>
-        private readonly TimeSpan _groupingDuration = TimeSpan.MinValue;
+        private TimeSpan _groupingDuration = TimeSpan.MinValue;
         private Stopwatch _groupingTimer = null;
 
         /// <summary>
         /// Notification callback to be called when we have accumulated enough
         /// data to compute a hint.
         /// </summary>
-        private readonly FormattedObjectsCache.ProcessCachedGroupNotification _notificationCallBack = null;
+        private FormattedObjectsCache.ProcessCachedGroupNotification _notificationCallBack = null;
 
         /// <summary>
         /// Reference kept to be used during notification.
@@ -327,7 +327,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Front end queue (if present, cache ALL, if not, bypass)
         /// </summary>
-        private readonly Queue<PacketInfoData> _frontEndQueue;
+        private Queue<PacketInfoData> _frontEndQueue;
 
         /// <summary>
         /// Back end grouping queue.
@@ -335,3 +335,4 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         private OutputGroupQueue _groupQueue = null;
     }
 }
+

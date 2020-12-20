@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 //
@@ -29,14 +29,10 @@ namespace System.Management.Automation.Language
     using System.Runtime.CompilerServices;
     using System.Reflection.Emit;
 
-#nullable enable
-
     internal interface ISupportsAssignment
     {
         IAssignableValue GetAssignableValue();
     }
-
-#nullable restore
 
     internal interface IAssignableValue
     {
@@ -57,15 +53,11 @@ namespace System.Management.Automation.Language
     internal interface IParameterMetadataProvider
     {
         bool HasAnyScriptBlockAttributes();
-
         RuntimeDefinedParameterDictionary GetParameterMetadata(bool automaticPositions, ref bool usesCmdletBinding);
-
         IEnumerable<Attribute> GetScriptBlockAttributes();
-
         IEnumerable<ExperimentalAttribute> GetExperimentalAttributes();
 
         bool UsesCmdletBinding();
-
         ReadOnlyCollection<ParameterAst> Parameters { get; }
 
         ScriptBlockAst Body { get; }
@@ -74,7 +66,6 @@ namespace System.Management.Automation.Language
 
         PowerShell GetPowerShell(ExecutionContext context, Dictionary<string, object> variables, bool isTrustedInput,
             bool filterNonUsingVariables, bool? createLocalScope, params object[] args);
-
         string GetWithInputHandlingForInvokeCommand();
 
         /// <summary>
@@ -102,7 +93,7 @@ namespace System.Management.Automation.Language
         {
             if (extent == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(extent));
+                throw PSTraceSource.NewArgumentNullException("extent");
             }
 
             this.Extent = extent;
@@ -111,7 +102,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The extent in the source this ast represents.
         /// </summary>
-        public IScriptExtent Extent { get; }
+        public IScriptExtent Extent { get; private set; }
 
         /// <summary>
         /// The parent tree for this node.
@@ -128,7 +119,7 @@ namespace System.Management.Automation.Language
         {
             if (astVisitor == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(astVisitor));
+                throw PSTraceSource.NewArgumentNullException("astVisitor");
             }
 
             return this.Accept(astVisitor);
@@ -142,7 +133,7 @@ namespace System.Management.Automation.Language
         {
             if (astVisitor == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(astVisitor));
+                throw PSTraceSource.NewArgumentNullException("astVisitor");
             }
 
             this.InternalVisit(astVisitor);
@@ -158,7 +149,7 @@ namespace System.Management.Automation.Language
         {
             if (predicate == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(predicate));
+                throw PSTraceSource.NewArgumentNullException("predicate");
             }
 
             return AstSearcher.FindAll(this, predicate, searchNestedScriptBlocks);
@@ -174,7 +165,7 @@ namespace System.Management.Automation.Language
         {
             if (predicate == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(predicate));
+                throw PSTraceSource.NewArgumentNullException("predicate");
             }
 
             return AstSearcher.FindFirst(this, predicate, searchNestedScriptBlocks);
@@ -203,19 +194,6 @@ namespace System.Management.Automation.Language
         /// </exception>
         public object SafeGetValue()
         {
-            return SafeGetValue(skipHashtableSizeCheck: false);
-        }
-
-        /// <summary>
-        /// Constructs the resultant object from the AST and returns it if it is safe.
-        /// </summary>
-        /// <param name="skipHashtableSizeCheck">Set to skip hashtable limit validation.</param>
-        /// <returns>The object represented by the AST as a safe object.</returns>
-        /// <exception cref="InvalidOperationException">
-        /// If <paramref name="extent"/> is deemed unsafe.
-        /// </exception>
-        public object SafeGetValue(bool skipHashtableSizeCheck)
-        {
             try
             {
                 ExecutionContext context = null;
@@ -224,7 +202,7 @@ namespace System.Management.Automation.Language
                     context = System.Management.Automation.Runspaces.Runspace.DefaultRunspace.ExecutionContext;
                 }
 
-                return GetSafeValueVisitor.GetSafeValue(this, context, skipHashtableSizeCheck ? GetSafeValueVisitor.SafeValueContext.SkipHashtableSizeCheck : GetSafeValueVisitor.SafeValueContext.Default);
+                return GetSafeValueVisitor.GetSafeValue(this, context, GetSafeValueVisitor.SafeValueContext.Default);
             }
             catch
             {
@@ -243,7 +221,7 @@ namespace System.Management.Automation.Language
             if (elements == null || elements.Count == 0) { return null; }
 
             var result = new T[elements.Count];
-            for (int i = 0; i < result.Length; i++)
+            for (int i = 0; i < result.Count(); i++)
             {
                 result[i] = (T)elements[i].Copy();
             }
@@ -306,10 +284,9 @@ namespace System.Management.Automation.Language
         }
 
         internal abstract object Accept(ICustomAstVisitor visitor);
-
         internal abstract AstVisitAction InternalVisit(AstVisitor visitor);
 
-        internal static readonly PSTypeName[] EmptyPSTypeNameArray = Array.Empty<PSTypeName>();
+        internal static PSTypeName[] EmptyPSTypeNameArray = Array.Empty<PSTypeName>();
 
         internal bool IsInWorkflow()
         {
@@ -390,7 +367,7 @@ namespace System.Management.Automation.Language
                 // Nested function isn't really a member of the type so stop looking
                 // Anonymous script blocks are though
                 var functionDefinitionAst = ast as FunctionDefinitionAst;
-                if (functionDefinitionAst != null && functionDefinitionAst.Parent is not FunctionMemberAst)
+                if (functionDefinitionAst != null && !(functionDefinitionAst.Parent is FunctionMemberAst))
                     break;
                 ast = ast.Parent;
             }
@@ -472,7 +449,7 @@ namespace System.Management.Automation.Language
         {
             if (kind == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(kind));
+                throw PSTraceSource.NewArgumentNullException("kind");
             }
 
             Kind = kind;
@@ -488,7 +465,7 @@ namespace System.Management.Automation.Language
         {
             if (kind == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(kind));
+                throw PSTraceSource.NewArgumentNullException("kind");
             }
 
             Kind = kind;
@@ -525,7 +502,7 @@ namespace System.Management.Automation.Language
         /// Indicate the kind of the ErrorStatement. e.g. Kind == Switch means that this error statment is generated
         /// when parsing a switch statement.
         /// </summary>
-        public Token Kind { get; }
+        public Token Kind { get; private set; }
 
         /// <summary>
         /// The flags specified and their value. The value is null if it's not specified.
@@ -535,24 +512,24 @@ namespace System.Management.Automation.Language
         /// TODO, Changing this to an IDictionary because ReadOnlyDictionary is available only in .NET 4.5
         /// This is a temporary workaround and will be fixed later. Tracked by Win8: 354135
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public Dictionary<string, Tuple<Token, Ast>> Flags { get; }
+        public Dictionary<string, Tuple<Token, Ast>> Flags { get; private set; }
 
         /// <summary>
         /// The conditions specified.
         /// </summary>
-        public ReadOnlyCollection<Ast> Conditions { get; }
+        public ReadOnlyCollection<Ast> Conditions { get; private set; }
 
         /// <summary>
         /// The bodies specified.
         /// </summary>
-        public ReadOnlyCollection<Ast> Bodies { get; }
+        public ReadOnlyCollection<Ast> Bodies { get; private set; }
 
         /// <summary>
         /// Sometimes a valid ast is parsed successfully within the extent that this error statement represents.  Those
         /// asts are contained in this collection.  This collection may contain other error asts.  This collection may
         /// be null when no asts were successfully constructed within the extent of this error ast.
         /// </summary>
-        public ReadOnlyCollection<Ast> NestedAst { get; }
+        public ReadOnlyCollection<Ast> NestedAst { get; private set; }
 
         /// <summary>
         /// Copy the ErrorStatementAst instance.
@@ -669,7 +646,7 @@ namespace System.Management.Automation.Language
         /// asts are contained in this collection.  This collection may contain other error asts.  This collection may
         /// be null when no asts were successfully constructed within the extent of this error ast.
         /// </summary>
-        public ReadOnlyCollection<Ast> NestedAst { get; }
+        public ReadOnlyCollection<Ast> NestedAst { get; private set; }
 
         /// <summary>
         /// Copy the ErrorExpressionAst instance.
@@ -716,13 +693,10 @@ namespace System.Management.Automation.Language
     {
         internal static readonly ReadOnlyCollection<PSSnapInSpecification> EmptySnapinCollection =
             Utils.EmptyReadOnlyCollection<PSSnapInSpecification>();
-
         internal static readonly ReadOnlyCollection<string> EmptyAssemblyCollection =
             Utils.EmptyReadOnlyCollection<string>();
-
         internal static readonly ReadOnlyCollection<ModuleSpecification> EmptyModuleCollection =
             Utils.EmptyReadOnlyCollection<ModuleSpecification>();
-
         internal static readonly ReadOnlyCollection<string> EmptyEditionCollection =
             Utils.EmptyReadOnlyCollection<string>();
 
@@ -786,12 +760,10 @@ namespace System.Management.Automation.Language
     {
         private static readonly ReadOnlyCollection<AttributeAst> s_emptyAttributeList =
             Utils.EmptyReadOnlyCollection<AttributeAst>();
-
         private static readonly ReadOnlyCollection<UsingStatementAst> s_emptyUsingStatementList =
             Utils.EmptyReadOnlyCollection<UsingStatementAst>();
 
         internal bool HadErrors { get; set; }
-
         internal bool IsConfiguration { get; private set; }
 
         internal bool PostParseChecksPerformed { get; set; }
@@ -1047,7 +1019,7 @@ namespace System.Management.Automation.Language
 
             if (statements == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(statements));
+                throw PSTraceSource.NewArgumentNullException("statements");
             }
 
             if (paramBlock != null)
@@ -1086,7 +1058,7 @@ namespace System.Management.Automation.Language
         /// The asts for attributes (such as [DscLocalConfigurationManager()]) used before the scriptblock.
         /// This property is never null.
         /// </summary>
-        public ReadOnlyCollection<AttributeAst> Attributes { get; }
+        public ReadOnlyCollection<AttributeAst> Attributes { get; private set; }
 
         /// <summary>
         /// The asts for any using statements.  This property is never null.
@@ -1099,28 +1071,28 @@ namespace System.Management.Automation.Language
         /// The ast representing the parameters for a script block, or null if no param block was specified.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Param")]
-        public ParamBlockAst ParamBlock { get; }
+        public ParamBlockAst ParamBlock { get; private set; }
 
         /// <summary>
         /// The ast representing the begin block for a script block, or null if no begin block was specified.
         /// </summary>
-        public NamedBlockAst BeginBlock { get; }
+        public NamedBlockAst BeginBlock { get; private set; }
 
         /// <summary>
         /// The ast representing the process block for a script block, or null if no process block was specified.
         /// </summary>
-        public NamedBlockAst ProcessBlock { get; }
+        public NamedBlockAst ProcessBlock { get; private set; }
 
         /// <summary>
         /// The ast representing the end block for a script block, or null if no end block was specified.
         /// </summary>
-        public NamedBlockAst EndBlock { get; }
+        public NamedBlockAst EndBlock { get; private set; }
 
         /// <summary>
         /// The ast representing the dynamicparam block for a script block, or null if no dynamicparam block was specified.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Param")]
-        public NamedBlockAst DynamicParamBlock { get; }
+        public NamedBlockAst DynamicParamBlock { get; private set; }
 
         /// <summary>
         /// All of the parsed information from any #requires in the script, or null if #requires was not used.
@@ -1160,7 +1132,7 @@ namespace System.Management.Automation.Language
                 // It's ok to report an error from a different part of AST in this case.
                 var root = GetRootScriptBlockAst();
                 root.PerformPostParseChecks(parser);
-                if (parser.ErrorList.Count > 0)
+                if (parser.ErrorList.Any())
                 {
                     throw new ParseException(parser.ErrorList.ToArray());
                 }
@@ -1266,7 +1238,7 @@ namespace System.Management.Automation.Language
                     string varSign = varAst.Splatted ? "@" : "$";
                     string newVarName = varSign + UsingExpressionAst.UsingPrefix + varName;
 
-                    newScript.Append(script.AsSpan(startOffset, astStartOffset - startOffset));
+                    newScript.Append(script.Substring(startOffset, astStartOffset - startOffset));
                     newScript.Append(newVarName);
                     startOffset = astEndOffset;
                 }
@@ -1287,13 +1259,13 @@ namespace System.Management.Automation.Language
                         newParams += ",\n";
                     }
 
-                    newScript.Append(script.AsSpan(startOffset, currentOffset - startOffset));
+                    newScript.Append(script.Substring(startOffset, currentOffset - startOffset));
                     newScript.Append(newParams);
                     startOffset = currentOffset;
                 }
             }
 
-            newScript.Append(script.AsSpan(startOffset, endOffset - startOffset));
+            newScript.Append(script.Substring(startOffset, endOffset - startOffset));
             string result = newScript.ToString();
 
             if (Parent != null && initialStartOffset == this.Extent.StartOffset && initialEndOffset == this.Extent.EndOffset)
@@ -1436,7 +1408,7 @@ namespace System.Management.Automation.Language
                 }
             }
 
-            static ExperimentalAttribute GetExpAttributeHelper(AttributeAst attributeAst)
+            ExperimentalAttribute GetExpAttributeHelper(AttributeAst attributeAst)
             {
                 AttributeAst potentialExpAttr = null;
                 string expAttrTypeName = typeof(ExperimentalAttribute).FullName;
@@ -1595,7 +1567,7 @@ namespace System.Management.Automation.Language
                 return null;
             }
 
-            if (EndBlock.Traps != null && EndBlock.Traps.Count > 0)
+            if (EndBlock.Traps != null && EndBlock.Traps.Any())
             {
                 errorId = "CantConvertScriptBlockWithTrap";
                 errorMsg = AutomationExceptions.CantConvertScriptBlockWithTrap;
@@ -1603,7 +1575,7 @@ namespace System.Management.Automation.Language
             }
 
             // Make sure all statements are pipelines.
-            if (EndBlock.Statements.Any(ast => ast is not PipelineAst))
+            if (EndBlock.Statements.Any(ast => !(ast is PipelineAst)))
             {
                 errorId = "CanOnlyConvertOnePipeline";
                 errorMsg = AutomationExceptions.CanOnlyConvertOnePipeline;
@@ -1631,7 +1603,6 @@ namespace System.Management.Automation.Language
     {
         private static readonly ReadOnlyCollection<AttributeAst> s_emptyAttributeList =
             Utils.EmptyReadOnlyCollection<AttributeAst>();
-
         private static readonly ReadOnlyCollection<ParameterAst> s_emptyParameterList =
             Utils.EmptyReadOnlyCollection<ParameterAst>();
 
@@ -1671,12 +1642,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The asts for attributes (such as [cmdletbinding()]) used before the param keyword.
         /// </summary>
-        public ReadOnlyCollection<AttributeAst> Attributes { get; }
+        public ReadOnlyCollection<AttributeAst> Attributes { get; private set; }
 
         /// <summary>
         /// The asts for the parameters of the param statement.
         /// </summary>
-        public ReadOnlyCollection<ParameterAst> Parameters { get; }
+        public ReadOnlyCollection<ParameterAst> Parameters { get; private set; }
 
         /// <summary>
         /// Copy the ParamBlockAst instance.
@@ -1771,7 +1742,7 @@ namespace System.Management.Automation.Language
         /// </exception>
         /// <exception cref="PSArgumentException">
         /// If <paramref name="blockName"/> is not one of the valid kinds for a named block,
-        /// or if <paramref name="unnamed"/> is <see langword="true"/> and <paramref name="blockName"/> is neither
+        /// or if <paramref name="unnamed"/> is <c>true</c> and <paramref name="blockName"/> is neither
         /// <see cref="TokenKind.Process"/> nor <see cref="TokenKind.End"/>.
         /// </exception>
         public NamedBlockAst(IScriptExtent extent, TokenKind blockName, StatementBlockAst statementBlock, bool unnamed)
@@ -1782,12 +1753,12 @@ namespace System.Management.Automation.Language
             if (!blockName.HasTrait(TokenFlags.ScriptBlockBlockName)
                 || (unnamed && (blockName == TokenKind.Begin || blockName == TokenKind.Dynamicparam)))
             {
-                throw PSTraceSource.NewArgumentException(nameof(blockName));
+                throw PSTraceSource.NewArgumentException("blockName");
             }
 
             if (statementBlock == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(statementBlock));
+                throw PSTraceSource.NewArgumentNullException("statementBlock");
             }
 
             this.Unnamed = unnamed;
@@ -1803,7 +1774,7 @@ namespace System.Management.Automation.Language
             SetParents(statements);
 
             var traps = statementBlock.Traps;
-            if (traps != null && traps.Count > 0)
+            if (traps != null && traps.Any())
             {
                 this.Traps = traps;
                 for (int index = 0; index < traps.Count; index++)
@@ -1830,7 +1801,7 @@ namespace System.Management.Automation.Language
         /// For a function/filter that did not explicitly name the end/process block (which is quite common),
         /// this property will return true.
         /// </summary>
-        public bool Unnamed { get; }
+        public bool Unnamed { get; private set; }
 
         /// <summary>
         /// The kind of block, always one of:
@@ -1841,18 +1812,18 @@ namespace System.Management.Automation.Language
         /// <item><see cref="TokenKind.Dynamicparam"/></item>
         /// </list>
         /// </summary>
-        public TokenKind BlockKind { get; }
+        public TokenKind BlockKind { get; private set; }
 
         /// <summary>
         /// The asts for all of the statements represented by this statement block.  This property is never null.
         /// </summary>
-        public ReadOnlyCollection<StatementAst> Statements { get; }
+        public ReadOnlyCollection<StatementAst> Statements { get; private set; }
 
         /// <summary>
         /// The asts for all of the trap statements specified by this statement block, or null if no trap statements were
         /// specified in this block.
         /// </summary>
-        public ReadOnlyCollection<TrapStatementAst> Traps { get; }
+        public ReadOnlyCollection<TrapStatementAst> Traps { get; private set; }
 
         /// <summary>
         /// Copy the NamedBlockAst instance.
@@ -1878,9 +1849,9 @@ namespace System.Management.Automation.Language
         }
 
         // Used by the debugger for command breakpoints
-        internal IScriptExtent OpenCurlyExtent { get; }
+        internal IScriptExtent OpenCurlyExtent { get; private set; }
 
-        internal IScriptExtent CloseCurlyExtent { get; }
+        internal IScriptExtent CloseCurlyExtent { get; private set; }
 
         #region Visitors
 
@@ -1930,12 +1901,12 @@ namespace System.Management.Automation.Language
         {
             if (string.IsNullOrEmpty(argumentName))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(argumentName));
+                throw PSTraceSource.NewArgumentNullException("argumentName");
             }
 
             if (argument == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(argument));
+                throw PSTraceSource.NewArgumentNullException("argument");
             }
 
             this.Argument = argument;
@@ -1947,18 +1918,18 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The named argument specified by this ast, is never null or empty.
         /// </summary>
-        public string ArgumentName { get; }
+        public string ArgumentName { get; private set; }
 
         /// <summary>
         /// The ast of the value of the argument specified by this ast.  This property is never null.
         /// </summary>
-        public ExpressionAst Argument { get; }
+        public ExpressionAst Argument { get; private set; }
 
         /// <summary>
         /// If the source omitted an expression, this returns true, otherwise false.  This allows a caller to distinguish
         /// the difference between <c>[Parameter(Mandatory)]</c> and <c>[Parameter(Mandatory=$true)]</c>
         /// </summary>
-        public bool ExpressionOmitted { get; }
+        public bool ExpressionOmitted { get; private set; }
 
         /// <summary>
         /// Copy the NamedAttributeArgumentAst instance.
@@ -2008,7 +1979,7 @@ namespace System.Management.Automation.Language
         {
             if (typeName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(typeName));
+                throw PSTraceSource.NewArgumentNullException("typeName");
             }
 
             this.TypeName = typeName;
@@ -2017,7 +1988,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The type name for the attribute.  This property is never null.
         /// </summary>
-        public ITypeName TypeName { get; }
+        public ITypeName TypeName { get; private set; }
 
         internal abstract Attribute GetAttribute();
     }
@@ -2029,7 +2000,6 @@ namespace System.Management.Automation.Language
     {
         private static readonly ReadOnlyCollection<ExpressionAst> s_emptyPositionalArguments =
             Utils.EmptyReadOnlyCollection<ExpressionAst>();
-
         private static readonly ReadOnlyCollection<NamedAttributeArgumentAst> s_emptyNamedAttributeArguments =
             Utils.EmptyReadOnlyCollection<NamedAttributeArgumentAst>();
 
@@ -2073,12 +2043,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The asts for the attribute arguments specified positionally.
         /// </summary>
-        public ReadOnlyCollection<ExpressionAst> PositionalArguments { get; }
+        public ReadOnlyCollection<ExpressionAst> PositionalArguments { get; private set; }
 
         /// <summary>
         /// The asts for the named attribute arguments.
         /// </summary>
-        public ReadOnlyCollection<NamedAttributeArgumentAst> NamedArguments { get; }
+        public ReadOnlyCollection<NamedAttributeArgumentAst> NamedArguments { get; private set; }
 
         /// <summary>
         /// Copy the AttributeAst instance.
@@ -2220,7 +2190,7 @@ namespace System.Management.Automation.Language
         {
             if (name == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             if (attributes != null)
@@ -2245,17 +2215,17 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The asts for any attributes or type constraints specified on the parameter.
         /// </summary>
-        public ReadOnlyCollection<AttributeBaseAst> Attributes { get; }
+        public ReadOnlyCollection<AttributeBaseAst> Attributes { get; private set; }
 
         /// <summary>
         /// The variable path for the parameter.  This property is never null.
         /// </summary>
-        public VariableExpressionAst Name { get; }
+        public VariableExpressionAst Name { get; private set; }
 
         /// <summary>
         /// The ast for the default value of the parameter, or null if no default value was specified.
         /// </summary>
-        public ExpressionAst DefaultValue { get; }
+        public ExpressionAst DefaultValue { get; private set; }
 
         /// <summary>
         /// Returns the type of the parameter.  If the parameter is constrained to be a specific type, that type is returned,
@@ -2334,7 +2304,7 @@ namespace System.Management.Automation.Language
                 string varSign = varAst.Splatted ? "@" : "$";
                 string newVarName = varSign + UsingExpressionAst.UsingPrefix + varName;
 
-                newParamText.Append(paramText.AsSpan(startOffset, astStartOffset - startOffset));
+                newParamText.Append(paramText.Substring(startOffset, astStartOffset - startOffset));
                 newParamText.Append(newVarName);
                 startOffset = astEndOffset;
             } while (orderedUsingVar.MoveNext());
@@ -2345,7 +2315,7 @@ namespace System.Management.Automation.Language
                 return paramText;
             }
 
-            newParamText.Append(paramText.AsSpan(startOffset, endOffset - startOffset));
+            newParamText.Append(paramText.Substring(startOffset, endOffset - startOffset));
             return newParamText.ToString();
         }
 
@@ -2397,7 +2367,7 @@ namespace System.Management.Automation.Language
     /// </summary>
     public class StatementBlockAst : Ast
     {
-        private static readonly ReadOnlyCollection<StatementAst> s_emptyStatementCollection = Utils.EmptyReadOnlyCollection<StatementAst>();
+        private static ReadOnlyCollection<StatementAst> s_emptyStatementCollection = Utils.EmptyReadOnlyCollection<StatementAst>();
 
         /// <summary>
         /// Construct a statement block.
@@ -2433,13 +2403,13 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The asts for all of the statements represented by this statement block.  This property is never null.
         /// </summary>
-        public ReadOnlyCollection<StatementAst> Statements { get; }
+        public ReadOnlyCollection<StatementAst> Statements { get; private set; }
 
         /// <summary>
         /// The asts for all of the trap statements specified by this statement block, or null if no trap statements were
         /// specified in this block.
         /// </summary>
-        public ReadOnlyCollection<TrapStatementAst> Traps { get; }
+        public ReadOnlyCollection<TrapStatementAst> Traps { get; private set; }
 
         /// <summary>
         /// Copy the StatementBlockAst instance.
@@ -2544,10 +2514,8 @@ namespace System.Management.Automation.Language
     {
         private static readonly ReadOnlyCollection<AttributeAst> s_emptyAttributeList =
             Utils.EmptyReadOnlyCollection<AttributeAst>();
-
         private static readonly ReadOnlyCollection<MemberAst> s_emptyMembersCollection =
             Utils.EmptyReadOnlyCollection<MemberAst>();
-
         private static readonly ReadOnlyCollection<TypeConstraintAst> s_emptyBaseTypesCollection =
             Utils.EmptyReadOnlyCollection<TypeConstraintAst>();
 
@@ -2565,7 +2533,7 @@ namespace System.Management.Automation.Language
         {
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             if (attributes != null && attributes.Any())
@@ -2605,27 +2573,27 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The name of the type.
         /// </summary>
-        public string Name { get; }
+        public string Name { get; private set; }
 
         /// <summary>
         /// The asts for the custom attributes specified on the type.  This property is never null.
         /// </summary>
-        public ReadOnlyCollection<AttributeAst> Attributes { get; }
+        public ReadOnlyCollection<AttributeAst> Attributes { get; private set; }
 
         /// <summary>
         /// The asts for the base types. This property is never null.
         /// </summary>
-        public ReadOnlyCollection<TypeConstraintAst> BaseTypes { get; }
+        public ReadOnlyCollection<TypeConstraintAst> BaseTypes { get; private set; }
 
         /// <summary>
         /// The asts for the members of the type.  This property is never null.
         /// </summary>
-        public ReadOnlyCollection<MemberAst> Members { get; }
+        public ReadOnlyCollection<MemberAst> Members { get; private set; }
 
         /// <summary>
         /// The type attributes (like class or interface) of the type.
         /// </summary>
-        public TypeAttributes TypeAttributes { get; }
+        public TypeAttributes TypeAttributes { get; private set; }
 
         /// <summary>
         /// Returns true if the type defines an enum.
@@ -2678,7 +2646,7 @@ namespace System.Management.Automation.Language
         internal override object Accept(ICustomAstVisitor visitor)
         {
             var visitor2 = visitor as ICustomAstVisitor2;
-            return visitor2?.VisitTypeDefinition(this);
+            return visitor2 != null ? visitor2.VisitTypeDefinition(this) : null;
         }
 
         internal override AstVisitAction InternalVisit(AstVisitor visitor)
@@ -2791,12 +2759,12 @@ namespace System.Management.Automation.Language
         {
             if (name == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             if (kind == UsingStatementKind.Command || kind == UsingStatementKind.Type)
             {
-                throw PSTraceSource.NewArgumentException(nameof(kind));
+                throw PSTraceSource.NewArgumentException("kind");
             }
 
             UsingStatementKind = kind;
@@ -2815,7 +2783,7 @@ namespace System.Management.Automation.Language
         {
             if (moduleSpecification == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(moduleSpecification));
+                throw PSTraceSource.NewArgumentNullException("moduleSpecification");
             }
 
             UsingStatementKind = UsingStatementKind.Module;
@@ -2839,17 +2807,17 @@ namespace System.Management.Automation.Language
         {
             if (aliasName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(aliasName));
+                throw PSTraceSource.NewArgumentNullException("aliasName");
             }
 
             if (resolvedAliasAst == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(resolvedAliasAst));
+                throw PSTraceSource.NewArgumentNullException("resolvedAliasAst");
             }
 
             if (kind == UsingStatementKind.Assembly)
             {
-                throw PSTraceSource.NewArgumentException(nameof(kind));
+                throw PSTraceSource.NewArgumentException("kind");
             }
 
             UsingStatementKind = kind;
@@ -2871,7 +2839,7 @@ namespace System.Management.Automation.Language
         {
             if (moduleSpecification == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(moduleSpecification));
+                throw PSTraceSource.NewArgumentNullException("moduleSpecification");
             }
 
             UsingStatementKind = UsingStatementKind.Module;
@@ -2884,24 +2852,24 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The kind of using statement.
         /// </summary>
-        public UsingStatementKind UsingStatementKind { get; }
+        public UsingStatementKind UsingStatementKind { get; private set; }
 
         /// <summary>
         /// When <see cref="Alias"/> is null or <see cref="ModuleSpecification"/> is null, the item being used, otherwise the alias name.
         /// </summary>
-        public StringConstantExpressionAst Name { get; }
+        public StringConstantExpressionAst Name { get; private set; }
 
         /// <summary>
         /// The name of the item being aliased.
         /// This property is mutually exclusive with <see cref="ModuleSpecification"/> property.
         /// </summary>
-        public StringConstantExpressionAst Alias { get; }
+        public StringConstantExpressionAst Alias { get; private set; }
 
         /// <summary>
         /// Hashtable that can be converted to <see cref="Microsoft.PowerShell.Commands.ModuleSpecification"/>. Only for 'using module' case, otherwise null.
         /// This property is mutually exclusive with <see cref="Alias"/> property.
         /// </summary>
-        public HashtableAst ModuleSpecification { get; }
+        public HashtableAst ModuleSpecification { get; private set; }
 
         /// <summary>
         /// ModuleInfo about used module. Only for 'using module' case, otherwise null.
@@ -2926,7 +2894,7 @@ namespace System.Management.Automation.Language
         internal override object Accept(ICustomAstVisitor visitor)
         {
             var visitor2 = visitor as ICustomAstVisitor2;
-            return visitor2?.VisitUsingStatement(this);
+            return visitor2 != null ? visitor2.VisitUsingStatement(this) : null;
         }
 
         internal override AstVisitAction InternalVisit(AstVisitor visitor)
@@ -3050,13 +3018,13 @@ namespace System.Management.Automation.Language
         {
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             if ((propertyAttributes & (PropertyAttributes.Private | PropertyAttributes.Public)) ==
                 (PropertyAttributes.Private | PropertyAttributes.Public))
             {
-                throw PSTraceSource.NewArgumentException(nameof(propertyAttributes));
+                throw PSTraceSource.NewArgumentException("propertyAttributes");
             }
 
             Name = name;
@@ -3093,22 +3061,22 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the type of the property.  This property may be null if no type was specified.
         /// </summary>
-        public TypeConstraintAst PropertyType { get; }
+        public TypeConstraintAst PropertyType { get; private set; }
 
         /// <summary>
         /// The custom attributes of the property.  This property is never null.
         /// </summary>
-        public ReadOnlyCollection<AttributeAst> Attributes { get; }
+        public ReadOnlyCollection<AttributeAst> Attributes { get; private set; }
 
         /// <summary>
         /// The attributes (like public or static) of the property.
         /// </summary>
-        public PropertyAttributes PropertyAttributes { get; }
+        public PropertyAttributes PropertyAttributes { get; private set; }
 
         /// <summary>
         /// The ast for the initial value of the property.  This property may be null if no initial value was specified.
         /// </summary>
-        public ExpressionAst InitialValue { get; }
+        public ExpressionAst InitialValue { get; private set; }
 
         /// <summary>
         /// Return true if the property is public.
@@ -3154,7 +3122,7 @@ namespace System.Management.Automation.Language
         internal override object Accept(ICustomAstVisitor visitor)
         {
             var visitor2 = visitor as ICustomAstVisitor2;
-            return visitor2?.VisitPropertyMember(this);
+            return visitor2 != null ? visitor2.VisitPropertyMember(this) : null;
         }
 
         internal override AstVisitAction InternalVisit(AstVisitor visitor)
@@ -3219,7 +3187,6 @@ namespace System.Management.Automation.Language
     {
         private static readonly ReadOnlyCollection<AttributeAst> s_emptyAttributeList =
             Utils.EmptyReadOnlyCollection<AttributeAst>();
-
         private static readonly ReadOnlyCollection<ParameterAst> s_emptyParameterList =
             Utils.EmptyReadOnlyCollection<ParameterAst>();
 
@@ -3238,13 +3205,13 @@ namespace System.Management.Automation.Language
         {
             if (functionDefinitionAst == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(functionDefinitionAst));
+                throw PSTraceSource.NewArgumentNullException("functionDefinitionAst");
             }
 
             if ((methodAttributes & (MethodAttributes.Private | MethodAttributes.Public)) ==
                 (MethodAttributes.Private | MethodAttributes.Public))
             {
-                throw PSTraceSource.NewArgumentException(nameof(methodAttributes));
+                throw PSTraceSource.NewArgumentException("methodAttributes");
             }
 
             if (returnType != null)
@@ -3276,12 +3243,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The attributes specified on the method.  This property is never null.
         /// </summary>
-        public ReadOnlyCollection<AttributeAst> Attributes { get; }
+        public ReadOnlyCollection<AttributeAst> Attributes { get; private set; }
 
         /// <summary>
         /// The ast representing the return type for the method.  This property may be null if no return type was specified.
         /// </summary>
-        public TypeConstraintAst ReturnType { get; }
+        public TypeConstraintAst ReturnType { get; private set; }
 
         /// <summary>
         /// The parameters specified immediately after the function name.  This property is never null.
@@ -3299,7 +3266,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// Method attribute flags.
         /// </summary>
-        public MethodAttributes MethodAttributes { get; }
+        public MethodAttributes MethodAttributes { get; private set; }
 
         /// <summary>
         /// Returns true if the method is public.
@@ -3374,7 +3341,7 @@ namespace System.Management.Automation.Language
         internal override object Accept(ICustomAstVisitor visitor)
         {
             var visitor2 = visitor as ICustomAstVisitor2;
-            return visitor2?.VisitFunctionMember(this);
+            return visitor2 != null ? visitor2.VisitFunctionMember(this) : null;
         }
 
         internal override AstVisitAction InternalVisit(AstVisitor visitor)
@@ -3466,7 +3433,7 @@ namespace System.Management.Automation.Language
             if (ReturnType == null)
                 return true;
             var typeName = ReturnType.TypeName as TypeName;
-            return typeName != null && typeName.IsType(typeof(void));
+            return typeName == null ? false : typeName.IsType(typeof(void));
         }
 
         internal Type GetReturnType()
@@ -3508,9 +3475,9 @@ namespace System.Management.Automation.Language
             get { return DefiningType.Name; }
         }
 
-        internal TypeDefinitionAst DefiningType { get; }
+        internal TypeDefinitionAst DefiningType { get; private set; }
 
-        internal SpecialMemberFunctionType Type { get; }
+        internal SpecialMemberFunctionType Type { get; private set; }
 
         internal override string GetTooltip()
         {
@@ -3561,7 +3528,7 @@ namespace System.Management.Automation.Language
 
         public ReadOnlyCollection<ParameterAst> Parameters { get { return null; } }
 
-        public ScriptBlockAst Body { get; }
+        public ScriptBlockAst Body { get; private set; }
 
         public PowerShell GetPowerShell(ExecutionContext context, Dictionary<string, object> variables, bool isTrustedInput,
             bool filterNonUsingVariables, bool? createLocalScope, params object[] args)
@@ -3615,17 +3582,17 @@ namespace System.Management.Automation.Language
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             if (body == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(body));
+                throw PSTraceSource.NewArgumentNullException("body");
             }
 
             if (isFilter && isWorkflow)
             {
-                throw PSTraceSource.NewArgumentException(nameof(isFilter));
+                throw PSTraceSource.NewArgumentException("isFilter");
             }
 
             this.IsFilter = isFilter;
@@ -3661,17 +3628,17 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// If true, the filter keyword was used.
         /// </summary>
-        public bool IsFilter { get; }
+        public bool IsFilter { get; private set; }
 
         /// <summary>
         /// If true, the workflow keyword was used.
         /// </summary>
-        public bool IsWorkflow { get; }
+        public bool IsWorkflow { get; private set; }
 
         /// <summary>
         /// The name of the function or filter.  This property is never null or empty.
         /// </summary>
-        public string Name { get; }
+        public string Name { get; private set; }
 
         /// <summary>
         /// The parameters specified immediately after the function name, or null if no parameters were specified.
@@ -3682,12 +3649,12 @@ namespace System.Management.Automation.Language
         /// In this example, the parameters specified after the function name must be empty or the script is not valid.
         /// </para>
         /// </summary>
-        public ReadOnlyCollection<ParameterAst> Parameters { get; }
+        public ReadOnlyCollection<ParameterAst> Parameters { get; private set; }
 
         /// <summary>
         /// The body of the function.  This property is never null.
         /// </summary>
-        public ScriptBlockAst Body { get; }
+        public ScriptBlockAst Body { get; private set; }
 
         internal IScriptExtent NameExtent { get; private set; }
 
@@ -3720,7 +3687,7 @@ namespace System.Management.Automation.Language
         {
             if (scriptBlockTokenCache == null)
             {
-                throw new ArgumentNullException(nameof(scriptBlockTokenCache));
+                throw new ArgumentNullException("scriptBlockTokenCache");
             }
 
             var commentTokens = HelpCommentsParser.GetHelpCommentTokens(this, scriptBlockTokenCache);
@@ -3778,7 +3745,7 @@ namespace System.Management.Automation.Language
                 separator = ", ";
             }
 
-            sb.Append(')');
+            sb.Append(")");
             sb.Append(Environment.NewLine);
 
             return sb.ToString();
@@ -3851,7 +3818,7 @@ namespace System.Management.Automation.Language
 
         ReadOnlyCollection<ParameterAst> IParameterMetadataProvider.Parameters
         {
-            get { return Parameters ?? (Body.ParamBlock?.Parameters); }
+            get { return Parameters ?? (Body.ParamBlock != null ? Body.ParamBlock.Parameters : null); }
         }
 
         PowerShell IParameterMetadataProvider.GetPowerShell(ExecutionContext context, Dictionary<string, object> variables, bool isTrustedInput,
@@ -3923,7 +3890,7 @@ namespace System.Management.Automation.Language
         {
             if (clauses == null || !clauses.Any())
             {
-                throw PSTraceSource.NewArgumentException(nameof(clauses));
+                throw PSTraceSource.NewArgumentException("clauses");
             }
 
             this.Clauses = new ReadOnlyCollection<IfClause>(clauses.ToArray());
@@ -3942,12 +3909,12 @@ namespace System.Management.Automation.Language
         /// executed.  This property is never null and always has at least 1 value.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ReadOnlyCollection<IfClause> Clauses { get; }
+        public ReadOnlyCollection<IfClause> Clauses { get; private set; }
 
         /// <summary>
         /// The ast for the else clause, or null if no else clause is specified.
         /// </summary>
-        public StatementBlockAst ElseClause { get; }
+        public StatementBlockAst ElseClause { get; private set; }
 
         /// <summary>
         /// Copy the IfStatementAst instance.
@@ -4028,7 +3995,7 @@ namespace System.Management.Automation.Language
         {
             if (body == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(body));
+                throw PSTraceSource.NewArgumentNullException("body");
             }
 
             if (string.IsNullOrWhiteSpace(variableName))
@@ -4041,7 +4008,7 @@ namespace System.Management.Automation.Language
             {
                 this.CommandsAllowed = new ReadOnlyCollection<ExpressionAst>(commandsAllowed.ToArray());
                 SetParents(CommandsAllowed);
-                this.HasNonConstantAllowedCommand = CommandsAllowed.Any(ast => ast is not StringConstantExpressionAst);
+                this.HasNonConstantAllowedCommand = CommandsAllowed.Any(ast => !(ast is StringConstantExpressionAst));
             }
             else
             {
@@ -4055,17 +4022,17 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The name of the variable this data statement sets, or null if no variable name was specified.
         /// </summary>
-        public string Variable { get; }
+        public string Variable { get; private set; }
 
         /// <summary>
         /// The asts naming the commands allowed to execute in this data statement.
         /// </summary>
-        public ReadOnlyCollection<ExpressionAst> CommandsAllowed { get; }
+        public ReadOnlyCollection<ExpressionAst> CommandsAllowed { get; private set; }
 
         /// <summary>
         /// The ast for the body of the data statement.  This property is never null.
         /// </summary>
-        public StatementBlockAst Body { get; }
+        public StatementBlockAst Body { get; private set; }
 
         /// <summary>
         /// Copy the DataStatementAst instance.
@@ -4077,7 +4044,7 @@ namespace System.Management.Automation.Language
             return new DataStatementAst(this.Extent, this.Variable, newCommandsAllowed, newBody);
         }
 
-        internal bool HasNonConstantAllowedCommand { get; }
+        internal bool HasNonConstantAllowedCommand { get; private set; }
 
         #region Visitors
 
@@ -4140,13 +4107,13 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The label name if specified, otherwise null.
         /// </summary>
-        public string Label { get; }
+        public string Label { get; private set; }
 
         /// <summary>
         /// The ast for the condition that is tested on each iteration of the loop, or the condition tested on a switch.
         /// This property may be null if the statement is a <see cref="ForStatementAst"/>, otherwise it is never null.
         /// </summary>
-        public PipelineBaseAst Condition { get; }
+        public PipelineBaseAst Condition { get; private set; }
     }
 
     /// <summary>
@@ -4170,7 +4137,7 @@ namespace System.Management.Automation.Language
         {
             if (body == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(body));
+                throw PSTraceSource.NewArgumentNullException("body");
             }
 
             this.Body = body;
@@ -4180,7 +4147,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The body of a loop statement.  This property is never null.
         /// </summary>
-        public StatementBlockAst Body { get; }
+        public StatementBlockAst Body { get; private set; }
     }
 
     /// <summary>
@@ -4275,17 +4242,17 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The name of the variable set for each item as the loop iterates.  This property is never null.
         /// </summary>
-        public VariableExpressionAst Variable { get; }
+        public VariableExpressionAst Variable { get; private set; }
 
         /// <summary>
         /// The limit to be obeyed during parallel processing, if any.
         /// </summary>
-        public ExpressionAst ThrottleLimit { get; }
+        public ExpressionAst ThrottleLimit { get; private set; }
 
         /// <summary>
         /// The flags, if any specified on the foreach statement.
         /// </summary>
-        public ForEachFlags Flags { get; }
+        public ForEachFlags Flags { get; private set; }
 
         /// <summary>
         /// Copy the ForEachStatementAst instance.
@@ -4371,12 +4338,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the initialization expression of a for statement, or null if none was specified.
         /// </summary>
-        public PipelineBaseAst Initializer { get; }
+        public PipelineBaseAst Initializer { get; private set; }
 
         /// <summary>
         /// The ast for the iteration expression of a for statement, or null if none was specified.
         /// </summary>
-        public PipelineBaseAst Iterator { get; }
+        public PipelineBaseAst Iterator { get; private set; }
 
         /// <summary>
         /// Copy the ForStatementAst instance.
@@ -4437,7 +4404,7 @@ namespace System.Management.Automation.Language
         {
             if (condition == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(condition));
+                throw PSTraceSource.NewArgumentNullException("condition");
             }
         }
 
@@ -4493,7 +4460,7 @@ namespace System.Management.Automation.Language
         {
             if (condition == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(condition));
+                throw PSTraceSource.NewArgumentNullException("condition");
             }
         }
 
@@ -4549,7 +4516,7 @@ namespace System.Management.Automation.Language
         {
             if (condition == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(condition));
+                throw PSTraceSource.NewArgumentNullException("condition");
             }
         }
 
@@ -4669,7 +4636,7 @@ namespace System.Management.Automation.Language
             {
                 // Must specify either clauses or default.  If neither, just complain about clauses as that's the most likely
                 // invalid argument.
-                throw PSTraceSource.NewArgumentException(nameof(clauses));
+                throw PSTraceSource.NewArgumentException("clauses");
             }
 
             this.Flags = flags;
@@ -4686,19 +4653,19 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The flags, if any specified on the switch statement.
         /// </summary>
-        public SwitchFlags Flags { get; }
+        public SwitchFlags Flags { get; private set; }
 
         /// <summary>
         /// A possibly empty collection of conditions and statement blocks representing the cases of the switch statement.
         /// If the collection is empty, the default clause is not null.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ReadOnlyCollection<SwitchClause> Clauses { get; }
+        public ReadOnlyCollection<SwitchClause> Clauses { get; private set; }
 
         /// <summary>
         /// The ast for the default of the switch statement, or null if no default block was specified.
         /// </summary>
-        public StatementBlockAst Default { get; }
+        public StatementBlockAst Default { get; private set; }
 
         /// <summary>
         /// Copy the SwitchStatementAst instance.
@@ -4785,7 +4752,7 @@ namespace System.Management.Automation.Language
         {
             if (body == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(body));
+                throw PSTraceSource.NewArgumentNullException("body");
             }
 
             if (catchTypes != null)
@@ -4806,7 +4773,7 @@ namespace System.Management.Automation.Language
         /// A possibly empty collection of types caught by this catch block.  If the collection is empty, the catch handler
         /// catches all exceptions.
         /// </summary>
-        public ReadOnlyCollection<TypeConstraintAst> CatchTypes { get; }
+        public ReadOnlyCollection<TypeConstraintAst> CatchTypes { get; private set; }
 
         /// <summary>
         /// Returns true if this handler handles any kind of exception.
@@ -4817,7 +4784,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The body of the catch block.  This property is never null.
         /// </summary>
-        public StatementBlockAst Body { get; }
+        public StatementBlockAst Body { get; private set; }
 
         /// <summary>
         /// Copy the CatchClauseAst instance.
@@ -4888,13 +4855,13 @@ namespace System.Management.Automation.Language
         {
             if (body == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(body));
+                throw PSTraceSource.NewArgumentNullException("body");
             }
 
             if ((catchClauses == null || !catchClauses.Any()) && @finally == null)
             {
                 // If no catches and no finally, just complain about catchClauses as that's the most likely invalid argument.
-                throw PSTraceSource.NewArgumentException(nameof(catchClauses));
+                throw PSTraceSource.NewArgumentException("catchClauses");
             }
 
             this.Body = body;
@@ -4919,18 +4886,18 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The body of the try statement.  This property is never null.
         /// </summary>
-        public StatementBlockAst Body { get; }
+        public StatementBlockAst Body { get; private set; }
 
         /// <summary>
         /// A collection of catch clauses, which is empty if there are no catches.
         /// </summary>
-        public ReadOnlyCollection<CatchClauseAst> CatchClauses { get; }
+        public ReadOnlyCollection<CatchClauseAst> CatchClauses { get; private set; }
 
         /// <summary>
         /// The ast for the finally block, or null if no finally block was specified, in which case <see cref="CatchClauses"/>
         /// is a non-null, non-empty collection.
         /// </summary>
-        public StatementBlockAst Finally { get; }
+        public StatementBlockAst Finally { get; private set; }
 
         /// <summary>
         /// Copy the TryStatementAst instance.
@@ -4997,7 +4964,7 @@ namespace System.Management.Automation.Language
         {
             if (body == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(body));
+                throw PSTraceSource.NewArgumentNullException("body");
             }
 
             if (trapType != null)
@@ -5013,12 +4980,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the type trapped by this trap block, or null if no type was specified.
         /// </summary>
-        public TypeConstraintAst TrapType { get; }
+        public TypeConstraintAst TrapType { get; private set; }
 
         /// <summary>
         /// The body for the trap block.  This property is never null.
         /// </summary>
-        public StatementBlockAst Body { get; }
+        public StatementBlockAst Body { get; private set; }
 
         /// <summary>
         /// Copy the TrapStatementAst instance.
@@ -5082,7 +5049,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The expression or label to break to, or null if no label was specified.
         /// </summary>
-        public ExpressionAst Label { get; }
+        public ExpressionAst Label { get; private set; }
 
         /// <summary>
         /// Copy the BreakStatementAst instance.
@@ -5139,7 +5106,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The expression or label to continue to, or null if no label was specified.
         /// </summary>
-        public ExpressionAst Label { get; }
+        public ExpressionAst Label { get; private set; }
 
         /// <summary>
         /// Copy the ContinueStatementAst instance.
@@ -5196,7 +5163,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The pipeline specified in the return statement, or null if none was specified.
         /// </summary>
-        public PipelineBaseAst Pipeline { get; }
+        public PipelineBaseAst Pipeline { get; private set; }
 
         /// <summary>
         /// Copy the ReturnStatementAst instance.
@@ -5253,7 +5220,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The pipeline specified in the exit statement, or null if none was specified.
         /// </summary>
-        public PipelineBaseAst Pipeline { get; }
+        public PipelineBaseAst Pipeline { get; private set; }
 
         /// <summary>
         /// Copy the ExitStatementAst instance.
@@ -5310,7 +5277,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The pipeline specified in the throw statement, or null if none was specified.
         /// </summary>
-        public PipelineBaseAst Pipeline { get; }
+        public PipelineBaseAst Pipeline { get; private set; }
 
         /// <summary>
         /// If the throw statement is a rethrow.  In PowerShell, a throw statement need not throw anything.  Such
@@ -5375,130 +5342,6 @@ namespace System.Management.Automation.Language
         #endregion Visitors
     }
 
-    /// <summary>
-    /// An AST representing a syntax element chainable with '&amp;&amp;' or '||'.
-    /// </summary>
-    public abstract class ChainableAst : PipelineBaseAst
-    {
-        /// <summary>
-        /// Initializes a new instance of the new chainable AST with the given extent.
-        /// </summary>
-        /// <param name="extent">The script extent of the AST.</param>
-        protected ChainableAst(IScriptExtent extent) : base(extent)
-        {
-        }
-    }
-
-    /// <summary>
-    /// A command-oriented flow-controlled pipeline chain.
-    /// E.g. <c>npm build &amp;&amp; npm test</c> or <c>Get-Content -Raw ./file.txt || "default"</c>.
-    /// </summary>
-    public class PipelineChainAst : ChainableAst
-    {
-        /// <summary>
-        /// Initializes a new instance of the new statement chain AST from two statements and an operator.
-        /// </summary>
-        /// <param name="extent">The extent of the chained statement.</param>
-        /// <param name="lhsChain">The pipeline or pipeline chain to the left of the operator.</param>
-        /// <param name="rhsPipeline">The pipeline to the right of the operator.</param>
-        /// <param name="chainOperator">The operator used.</param>
-        /// <param name="background">True when this chain has been invoked with the background operator, false otherwise.</param>
-        public PipelineChainAst(
-            IScriptExtent extent,
-            ChainableAst lhsChain,
-            PipelineAst rhsPipeline,
-            TokenKind chainOperator,
-            bool background = false)
-            : base(extent)
-        {
-            if (lhsChain == null)
-            {
-                throw new ArgumentNullException(nameof(lhsChain));
-            }
-
-            if (rhsPipeline == null)
-            {
-                throw new ArgumentNullException(nameof(rhsPipeline));
-            }
-
-            if (chainOperator != TokenKind.AndAnd && chainOperator != TokenKind.OrOr)
-            {
-                throw new ArgumentException(nameof(chainOperator));
-            }
-
-            LhsPipelineChain = lhsChain;
-            RhsPipeline = rhsPipeline;
-            Operator = chainOperator;
-            Background = background;
-
-            SetParent(LhsPipelineChain);
-            SetParent(RhsPipeline);
-        }
-
-        /// <summary>
-        /// Gets the left hand pipeline in the chain.
-        /// </summary>
-        public ChainableAst LhsPipelineChain { get; }
-
-        /// <summary>
-        /// Gets the right hand pipeline in the chain.
-        /// </summary>
-        public PipelineAst RhsPipeline { get; }
-
-        /// <summary>
-        /// Gets the chaining operator used.
-        /// </summary>
-        public TokenKind Operator { get; }
-
-        /// <summary>
-        /// Gets a flag that indicates whether this chain has been invoked with the background operator.
-        /// </summary>
-        public bool Background { get; }
-
-        /// <summary>
-        /// Create a copy of this Ast.
-        /// </summary>
-        /// <returns>
-        /// A fresh copy of this PipelineChainAst instance.
-        /// </returns>
-        public override Ast Copy()
-        {
-            return new PipelineChainAst(Extent, CopyElement(LhsPipelineChain), CopyElement(RhsPipeline), Operator, Background);
-        }
-
-        internal override object Accept(ICustomAstVisitor visitor)
-        {
-            return (visitor as ICustomAstVisitor2)?.VisitPipelineChain(this);
-        }
-
-        internal override AstVisitAction InternalVisit(AstVisitor visitor)
-        {
-            AstVisitAction action = AstVisitAction.Continue;
-
-            // Can only visit new AST type if using AstVisitor2
-            if (visitor is AstVisitor2 visitor2)
-            {
-                action = visitor2.VisitPipelineChain(this);
-                if (action == AstVisitAction.SkipChildren)
-                {
-                    return visitor.CheckForPostAction(this, AstVisitAction.Continue);
-                }
-            }
-
-            if (action == AstVisitAction.Continue)
-            {
-                action = LhsPipelineChain.InternalVisit(visitor);
-            }
-
-            if (action == AstVisitAction.Continue)
-            {
-                action = RhsPipeline.InternalVisit(visitor);
-            }
-
-            return visitor.CheckForPostAction(this, action);
-        }
-    }
-
     #endregion Flow Control Statements
 
     #region Pipelines
@@ -5534,7 +5377,7 @@ namespace System.Management.Automation.Language
     /// The ast that represents a PowerShell pipeline, e.g. <c>gci -re . *.cs | select-string Foo</c> or <c> 65..90 | % { [char]$_ }</c>.
     /// A pipeline must have at least 1 command.  The first command may be an expression or a command invocation.
     /// </summary>
-    public class PipelineAst : ChainableAst
+    public class PipelineAst : PipelineBaseAst
     {
         /// <summary>
         /// Construct a pipeline from a collection of commands.
@@ -5553,7 +5396,7 @@ namespace System.Management.Automation.Language
         {
             if (pipelineElements == null || !pipelineElements.Any())
             {
-                throw PSTraceSource.NewArgumentException(nameof(pipelineElements));
+                throw PSTraceSource.NewArgumentException("pipelineElements");
             }
 
             this.Background = background;
@@ -5590,7 +5433,7 @@ namespace System.Management.Automation.Language
         {
             if (commandAst == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(commandAst));
+                throw PSTraceSource.NewArgumentNullException("commandAst");
             }
 
             this.Background = background;
@@ -5613,12 +5456,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// A non-null, non-empty collection of commands that represent the pipeline.
         /// </summary>
-        public ReadOnlyCollection<CommandBaseAst> PipelineElements { get; }
+        public ReadOnlyCollection<CommandBaseAst> PipelineElements { get; private set; }
 
         /// <summary>
         /// Indicates that this pipeline should be run in the background.
         /// </summary>
-        public bool Background { get; internal set; }
+        public bool Background { get; private set; }
 
         /// <summary>
         /// If the pipeline represents a pure expression, the expression is returned, otherwise null is returned.
@@ -5631,7 +5474,7 @@ namespace System.Management.Automation.Language
             }
 
             CommandExpressionAst expr = PipelineElements[0] as CommandExpressionAst;
-            if (expr != null && expr.Redirections.Count == 0)
+            if (expr != null && !expr.Redirections.Any())
             {
                 return expr.Expression;
             }
@@ -5642,7 +5485,6 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// Copy the PipelineAst instance.
         /// </summary>
-        /// <returns>A fresh copy of this PipelineAst instance.</returns>
         public override Ast Copy()
         {
             var newPipelineElements = CopyElements(this.PipelineElements);
@@ -5750,19 +5592,19 @@ namespace System.Management.Automation.Language
         /// The name of the parameter.  This value does not include a leading dash, and in the case that an argument
         /// is specified, no trailing colon is included either.  This property is never null or empty.
         /// </summary>
-        public string ParameterName { get; }
+        public string ParameterName { get; private set; }
 
         /// <summary>
         /// The ast for the argument if specified (e.g. -Path:-abc, then the argument is the ast for '-ast'), otherwise null
         /// if no argument was specified.
         /// </summary>
-        public ExpressionAst Argument { get; }
+        public ExpressionAst Argument { get; private set; }
 
         /// <summary>
         /// The error position to use when parameter binding fails.  This extent does not include the argument if one was
         /// specified, which means this extent is often the same as <see cref="Ast.Extent"/>.
         /// </summary>
-        public IScriptExtent ErrorPosition { get; }
+        public IScriptExtent ErrorPosition { get; private set; }
 
         /// <summary>
         /// Copy the CommandParameterAst instance.
@@ -5831,7 +5673,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The possibly empty collection of redirections for this command.
         /// </summary>
-        public ReadOnlyCollection<RedirectionAst> Redirections { get; }
+        public ReadOnlyCollection<RedirectionAst> Redirections { get; private set; }
     }
 
     /// <summary>
@@ -5863,12 +5705,12 @@ namespace System.Management.Automation.Language
         {
             if (commandElements == null || !commandElements.Any())
             {
-                throw PSTraceSource.NewArgumentException(nameof(commandElements));
+                throw PSTraceSource.NewArgumentException("commandElements");
             }
 
             if (invocationOperator != TokenKind.Dot && invocationOperator != TokenKind.Ampersand && invocationOperator != TokenKind.Unknown)
             {
-                throw PSTraceSource.NewArgumentException(nameof(invocationOperator));
+                throw PSTraceSource.NewArgumentException("invocationOperator");
             }
 
             this.CommandElements = new ReadOnlyCollection<CommandElementAst>(commandElements.ToArray());
@@ -5879,13 +5721,13 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// A non-empty collection of command elements.  This property is never null.
         /// </summary>
-        public ReadOnlyCollection<CommandElementAst> CommandElements { get; }
+        public ReadOnlyCollection<CommandElementAst> CommandElements { get; private set; }
 
         /// <summary>
         /// The invocation operator (either <see cref="TokenKind.Dot"/> or <see cref="TokenKind.Ampersand"/>) if one was specified,
         /// otherwise the value is <see cref="TokenKind.Unknown"/>.
         /// </summary>
-        public TokenKind InvocationOperator { get; }
+        public TokenKind InvocationOperator { get; private set; }
 
         /// <summary>
         /// <para>Returns the name of the command invoked by this ast.</para>
@@ -5901,7 +5743,7 @@ namespace System.Management.Automation.Language
         public string GetCommandName()
         {
             var name = CommandElements[0] as StringConstantExpressionAst;
-            return name?.Value;
+            return name != null ? name.Value : null;
         }
 
         /// <summary>
@@ -5984,7 +5826,7 @@ namespace System.Management.Automation.Language
         {
             if (expression == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(expression));
+                throw PSTraceSource.NewArgumentNullException("expression");
             }
 
             this.Expression = expression;
@@ -5994,7 +5836,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the expression that is or starts a pipeline.  This property is never null.
         /// </summary>
-        public ExpressionAst Expression { get; }
+        public ExpressionAst Expression { get; private set; }
 
         /// <summary>
         /// Copy the CommandExpressionAst instance.
@@ -6057,7 +5899,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The stream to read objects from.  Objects are either merged with another stream, or written to a file.
         /// </summary>
-        public RedirectionStream FromStream { get; }
+        public RedirectionStream FromStream { get; private set; }
     }
 
     /// <summary>
@@ -6123,7 +5965,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The stream that results will be written to.
         /// </summary>
-        public RedirectionStream ToStream { get; }
+        public RedirectionStream ToStream { get; private set; }
 
         /// <summary>
         /// Copy the MergingRedirectionAst instance.
@@ -6177,7 +6019,7 @@ namespace System.Management.Automation.Language
         {
             if (file == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(file));
+                throw PSTraceSource.NewArgumentNullException("file");
             }
 
             this.Location = file;
@@ -6188,12 +6030,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the location to redirect to.
         /// </summary>
-        public ExpressionAst Location { get; }
+        public ExpressionAst Location { get; private set; }
 
         /// <summary>
         /// True if the file is appended, false otherwise.
         /// </summary>
-        public bool Append { get; }
+        public bool Append { get; private set; }
 
         /// <summary>
         /// Copy the FileRedirectionAst instance.
@@ -6253,7 +6095,7 @@ namespace System.Management.Automation.Language
 
             if ((@operator.GetTraits() & TokenFlags.AssignmentOperator) == 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(@operator));
+                throw PSTraceSource.NewArgumentException("operator");
             }
 
             // If the assignment is just an expression and the expression is not backgrounded then
@@ -6284,22 +6126,22 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the location being assigned.  This property is never null.
         /// </summary>
-        public ExpressionAst Left { get; }
+        public ExpressionAst Left { get; private set; }
 
         /// <summary>
         /// The operator for token assignment (such as =, +=, -=, etc.).  The value is always some assignment operator.
         /// </summary>
-        public TokenKind Operator { get; }
+        public TokenKind Operator { get; private set; }
 
         /// <summary>
         /// The ast for the value to assign.  This property is never null.
         /// </summary>
-        public StatementAst Right { get; }
+        public StatementAst Right { get; private set; }
 
         /// <summary>
         /// The position to report at runtime if there is an error during assignment.  This property is never null.
         /// </summary>
-        public IScriptExtent ErrorPosition { get; }
+        public IScriptExtent ErrorPosition { get; private set; }
 
         /// <summary>
         /// Copy the AssignmentStatementAst instance.
@@ -6394,17 +6236,17 @@ namespace System.Management.Automation.Language
         {
             if (extent == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(extent));
+                throw PSTraceSource.NewArgumentNullException("extent");
             }
 
             if (body == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(body));
+                throw PSTraceSource.NewArgumentNullException("body");
             }
 
             if (instanceName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(instanceName));
+                throw PSTraceSource.NewArgumentNullException("instanceName");
             }
 
             this.Body = body;
@@ -6418,19 +6260,19 @@ namespace System.Management.Automation.Language
         /// This ast represents configuration body script block.
         /// This property is never null.
         /// </summary>
-        public ScriptBlockExpressionAst Body { get; }
+        public ScriptBlockExpressionAst Body { get; private set; }
 
         /// <summary>
         /// The configuration type.
         /// </summary>
-        public ConfigurationType ConfigurationType { get; }
+        public ConfigurationType ConfigurationType { get; private set; }
 
         /// <summary>
         /// The name of the configuration instance,
         /// For example, Instance name of 'configuration test { ...... }' is 'test'
         /// This property is never null.
         /// </summary>
-        public ExpressionAst InstanceName { get; }
+        public ExpressionAst InstanceName { get; private set; }
 
         /// <summary>
         /// Duplicates the <see cref="ConfigurationDefinitionAst"/>, allowing it to be composed into other ASTs.
@@ -6444,7 +6286,7 @@ namespace System.Management.Automation.Language
             {
                 LCurlyToken = this.LCurlyToken,
                 ConfigurationToken = this.ConfigurationToken,
-                CustomAttributes = this.CustomAttributes?.Select(e => (AttributeAst)e.Copy())
+                CustomAttributes = this.CustomAttributes == null ? null : this.CustomAttributes.Select(e => (AttributeAst)e.Copy())
             };
         }
 
@@ -6453,7 +6295,7 @@ namespace System.Management.Automation.Language
         internal override object Accept(ICustomAstVisitor visitor)
         {
             var visitor2 = visitor as ICustomAstVisitor2;
-            return visitor2?.VisitConfigurationDefinition(this);
+            return visitor2 != null ? visitor2.VisitConfigurationDefinition(this) : null;
         }
 
         internal override AstVisitAction InternalVisit(AstVisitor visitor)
@@ -6485,9 +6327,7 @@ namespace System.Management.Automation.Language
         #region Internal methods/properties
 
         internal Token LCurlyToken { get; set; }
-
         internal Token ConfigurationToken { get; set; }
-
         internal IEnumerable<AttributeAst> CustomAttributes { get; set; }
 
         /// <summary>
@@ -6545,7 +6385,7 @@ namespace System.Management.Automation.Language
             cea.Add(new CommandParameterAst(PositionUtilities.EmptyExtent, "ResourceModuleTuplesToImport", new ConstantExpressionAst(PositionUtilities.EmptyExtent, resourceModulePairsToImport), PositionUtilities.EmptyExtent));
 
             var scriptBlockBody = new ScriptBlockAst(Body.Extent,
-                CustomAttributes?.Select(att => (AttributeAst)att.Copy()).ToList(),
+                CustomAttributes == null ? null : CustomAttributes.Select(att => (AttributeAst)att.Copy()).ToList(),
                 null,
                 new StatementBlockAst(Body.Extent, resourceBody, null),
                 false, false);
@@ -6604,7 +6444,7 @@ namespace System.Management.Automation.Language
             var statmentBlockAst = new StatementBlockAst(this.Extent, funcStatements, null);
 
             var funcBody = new ScriptBlockAst(Body.Extent,
-                CustomAttributes?.Select(att => (AttributeAst)att.Copy()).ToList(),
+                CustomAttributes == null ? null : CustomAttributes.Select(att => (AttributeAst)att.Copy()).ToList(),
                 paramBlockAst, statmentBlockAst, false, true);
             var funcBodyExp = new ScriptBlockExpressionAst(this.Extent, funcBody);
 
@@ -6678,17 +6518,17 @@ namespace System.Management.Automation.Language
                 string paramName = entry.Key;
                 var paramValue = entry.Value;
 
-                if ((paramName.Length <= nameParam.Length) && (paramName.AsSpan().Equals(nameParam.AsSpan(0, paramName.Length), StringComparison.OrdinalIgnoreCase)))
+                if ((paramName.Length <= nameParam.Length) && (paramName.Equals(nameParam.Substring(0, paramName.Length), StringComparison.OrdinalIgnoreCase)))
                 {
                     resourceNames = paramValue;
                 }
                 // Since both parameters -ModuleName and -ModuleVersion has same start string i.e. Module so we will try to resolve it to -ModuleName
                 // if user specifies like -Module
-                if ((paramName.Length <= moduleNameParam.Length) && (paramName.AsSpan().Equals(moduleNameParam.AsSpan(0, paramName.Length), StringComparison.OrdinalIgnoreCase)))
+                if ((paramName.Length <= moduleNameParam.Length) && (paramName.Equals(moduleNameParam.Substring(0, paramName.Length), StringComparison.OrdinalIgnoreCase)))
                 {
                     moduleNames = paramValue;
                 }
-                else if ((paramName.Length <= moduleVersionParam.Length) && (paramName.AsSpan().Equals(moduleVersionParam.AsSpan(0, paramName.Length), StringComparison.OrdinalIgnoreCase)))
+                else if ((paramName.Length <= moduleVersionParam.Length) && (paramName.Equals(moduleVersionParam.Substring(0, paramName.Length), StringComparison.OrdinalIgnoreCase)))
                 {
                     moduleVersion = paramValue;
                 }
@@ -6786,7 +6626,6 @@ namespace System.Management.Automation.Language
         }
 
         private static List<ParameterAst> s_configurationBuildInParameters;
-
         private static IEnumerable<AttributeAst> ConfigurationBuildInParameterAttribAsts
         {
             get
@@ -6876,9 +6715,9 @@ namespace System.Management.Automation.Language
         public DynamicKeywordStatementAst(IScriptExtent extent,
             IEnumerable<CommandElementAst> commandElements) : base(extent)
         {
-            if (commandElements == null || !commandElements.Any())
+            if (commandElements == null || commandElements.Count() <= 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(commandElements));
+                throw PSTraceSource.NewArgumentException("commandElements");
             }
 
             this.CommandElements = new ReadOnlyCollection<CommandElementAst>(commandElements.ToArray());
@@ -6896,7 +6735,7 @@ namespace System.Management.Automation.Language
         ///
         /// This property is never null and never empty.
         /// </summary>
-        public ReadOnlyCollection<CommandElementAst> CommandElements { get; }
+        public ReadOnlyCollection<CommandElementAst> CommandElements { get; private set; }
 
         /// <summary>
         /// Duplicates the <see cref="DynamicKeywordStatementAst"/>, allowing it to be composed into other ASTs.
@@ -6922,7 +6761,7 @@ namespace System.Management.Automation.Language
         internal override object Accept(ICustomAstVisitor visitor)
         {
             var visitor2 = visitor as ICustomAstVisitor2;
-            return visitor2?.VisitDynamicKeywordStatement(this);
+            return visitor2 != null ? visitor2.VisitDynamicKeywordStatement(this) : null;
         }
 
         internal override AstVisitAction InternalVisit(AstVisitor visitor)
@@ -6967,21 +6806,14 @@ namespace System.Management.Automation.Language
         }
 
         private DynamicKeyword _keyword;
-
         internal Token LCurly { get; set; }
-
         internal Token FunctionName { get; set; }
-
         internal ExpressionAst InstanceName { get; set; }
-
         internal ExpressionAst OriginalInstanceName { get; set; }
-
         internal ExpressionAst BodyExpression { get; set; }
-
         internal string ElementName { get; set; }
 
         private PipelineAst _commandCallPipelineAst;
-
         internal PipelineAst GenerateCommandCallPipelineAst()
         {
             if (_commandCallPipelineAst != null)
@@ -7242,7 +7074,8 @@ namespace System.Management.Automation.Language
                 PSTraceSource.NewInvalidOperationException();
             }
 
-            if (!(this.Parent is CommandExpressionAst commandExpr))
+            var commandExpr = this.Parent as CommandExpressionAst;
+            if (commandExpr == null)
             {
                 return false;
             }
@@ -7266,110 +7099,12 @@ namespace System.Management.Automation.Language
     }
 
     /// <summary>
-    /// The ast representing a ternary expression, e.g. <c>$a ? 1 : 2</c>.
-    /// </summary>
-    public class TernaryExpressionAst : ExpressionAst
-    {
-        /// <summary>
-        /// Initializes a new instance of the a ternary expression.
-        /// </summary>
-        /// <param name="extent">The extent of the expression.</param>
-        /// <param name="condition">The condition operand.</param>
-        /// <param name="ifTrue">The if clause.</param>
-        /// <param name="ifFalse">The else clause.</param>
-        public TernaryExpressionAst(IScriptExtent extent, ExpressionAst condition, ExpressionAst ifTrue, ExpressionAst ifFalse)
-            : base(extent)
-        {
-            Condition = condition ?? throw PSTraceSource.NewArgumentNullException(nameof(condition));
-            IfTrue = ifTrue ?? throw PSTraceSource.NewArgumentNullException(nameof(ifTrue));
-            IfFalse = ifFalse ?? throw PSTraceSource.NewArgumentNullException(nameof(ifFalse));
-
-            SetParent(Condition);
-            SetParent(IfTrue);
-            SetParent(IfFalse);
-        }
-
-        /// <summary>
-        /// Gets the ast for the condition of the ternary expression. The property is never null.
-        /// </summary>
-        public ExpressionAst Condition { get; }
-
-        /// <summary>
-        /// Gets the ast for the if-operand of the ternary expression. The property is never null.
-        /// </summary>
-        public ExpressionAst IfTrue { get; }
-
-        /// <summary>
-        /// Gets the ast for the else-operand of the ternary expression. The property is never null.
-        /// </summary>
-        public ExpressionAst IfFalse { get; }
-
-        /// <summary>
-        /// Copy the TernaryExpressionAst instance.
-        /// </summary>
-        /// <return>
-        /// Retirns a copy of the ast.
-        /// </return>
-        public override Ast Copy()
-        {
-            ExpressionAst newCondition = CopyElement(this.Condition);
-            ExpressionAst newIfTrue = CopyElement(this.IfTrue);
-            ExpressionAst newIfFalse = CopyElement(this.IfFalse);
-            return new TernaryExpressionAst(this.Extent, newCondition, newIfTrue, newIfFalse);
-        }
-
-        #region Visitors
-
-        internal override object Accept(ICustomAstVisitor visitor)
-        {
-            if (visitor is ICustomAstVisitor2 visitor2)
-            {
-                return visitor2.VisitTernaryExpression(this);
-            }
-
-            return null;
-        }
-
-        internal override AstVisitAction InternalVisit(AstVisitor visitor)
-        {
-            var action = AstVisitAction.Continue;
-            if (visitor is AstVisitor2 visitor2)
-            {
-                action = visitor2.VisitTernaryExpression(this);
-                if (action == AstVisitAction.SkipChildren)
-                {
-                    return visitor.CheckForPostAction(this, AstVisitAction.Continue);
-                }
-            }
-
-            if (action == AstVisitAction.Continue)
-            {
-                action = Condition.InternalVisit(visitor);
-            }
-
-            if (action == AstVisitAction.Continue)
-            {
-                action = IfTrue.InternalVisit(visitor);
-            }
-
-            if (action == AstVisitAction.Continue)
-            {
-                action = IfFalse.InternalVisit(visitor);
-            }
-
-            return visitor.CheckForPostAction(this, action);
-        }
-
-        #endregion Visitors
-    }
-
-    /// <summary>
     /// The ast representing a binary expression, e.g. <c>$a + $b</c>.
     /// </summary>
     public class BinaryExpressionAst : ExpressionAst
     {
         /// <summary>
-        /// Initializes a new instance of the binary expression.
+        /// Construct a binary expression.
         /// </summary>
         /// <param name="extent">The extent of the expression.</param>
         /// <param name="left">The left hand operand.</param>
@@ -7390,7 +7125,7 @@ namespace System.Management.Automation.Language
         {
             if ((@operator.GetTraits() & TokenFlags.BinaryOperator) == 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(@operator));
+                throw PSTraceSource.NewArgumentException("operator");
             }
 
             if (left == null || right == null || errorPosition == null)
@@ -7409,22 +7144,22 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The operator token kind.  The value returned is always a binary operator.
         /// </summary>
-        public TokenKind Operator { get; }
+        public TokenKind Operator { get; private set; }
 
         /// <summary>
         /// The ast for the left hand side of the binary expression.  The property is never null.
         /// </summary>
-        public ExpressionAst Left { get; }
+        public ExpressionAst Left { get; private set; }
 
         /// <summary>
         /// The ast for the right hand side of the binary expression.  The property is never null.
         /// </summary>
-        public ExpressionAst Right { get; }
+        public ExpressionAst Right { get; private set; }
 
         /// <summary>
         /// The position to report an error if an error occurs at runtime.  The property is never null.
         /// </summary>
-        public IScriptExtent ErrorPosition { get; }
+        public IScriptExtent ErrorPosition { get; private set; }
 
         /// <summary>
         /// Copy the BinaryExpressionAst instance.
@@ -7503,12 +7238,12 @@ namespace System.Management.Automation.Language
         {
             if ((tokenKind.GetTraits() & TokenFlags.UnaryOperator) == 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(tokenKind));
+                throw PSTraceSource.NewArgumentException("tokenKind");
             }
 
             if (child == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(child));
+                throw PSTraceSource.NewArgumentNullException("child");
             }
 
             this.TokenKind = tokenKind;
@@ -7519,12 +7254,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The operator token for the unary expression.  The value returned is always a unary operator.
         /// </summary>
-        public TokenKind TokenKind { get; }
+        public TokenKind TokenKind { get; private set; }
 
         /// <summary>
         /// The child expression the unary operator is applied to.  The property is never null.
         /// </summary>
-        public ExpressionAst Child { get; }
+        public ExpressionAst Child { get; private set; }
 
         /// <summary>
         /// Copy the UnaryExpressionAst instance.
@@ -7590,7 +7325,7 @@ namespace System.Management.Automation.Language
 
             if (kind.Kind != TokenKind.Sequence && kind.Kind != TokenKind.Parallel)
             {
-                throw PSTraceSource.NewArgumentException(nameof(kind));
+                throw PSTraceSource.NewArgumentException("kind");
             }
 
             this.Kind = kind;
@@ -7601,12 +7336,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The scriptblockexpression that has a keyword applied to it. This property is nerver null.
         /// </summary>
-        public StatementBlockAst Body { get; }
+        public StatementBlockAst Body { get; private set; }
 
         /// <summary>
         /// The keyword name.
         /// </summary>
-        public Token Kind { get; }
+        public Token Kind { get; private set; }
 
         /// <summary>
         /// Copy the BlockStatementAst instance.
@@ -7671,12 +7406,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The expression that has an attribute or type constraint applied to it.  This property is never null.
         /// </summary>
-        public ExpressionAst Child { get; }
+        public ExpressionAst Child { get; private set; }
 
         /// <summary>
         /// The attribute or type constraint for this expression.  This property is never null.
         /// </summary>
-        public AttributeBaseAst Attribute { get; }
+        public AttributeBaseAst Attribute { get; private set; }
 
         /// <summary>
         /// Copy the AttributedExpressionAst instance.
@@ -7754,7 +7489,8 @@ namespace System.Management.Automation.Language
             var attributes = GetAttributes();
             var assignableValue = GetActualAssignableAst().GetAssignableValue();
 
-            if (!(assignableValue is VariableExpressionAst variableExpr))
+            var variableExpr = assignableValue as VariableExpressionAst;
+            if (variableExpr == null)
             {
                 return assignableValue.SetValue(compiler, Compiler.ConvertValue(rhs, attributes));
             }
@@ -7893,44 +7629,19 @@ namespace System.Management.Automation.Language
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MemberExpressionAst"/> class.
-        /// </summary>
-        /// <param name="extent">
-        /// The extent of the expression, starting with the expression before the operator '.', '::' or '?.' and ending after
-        /// membername or expression naming the member.
-        /// </param>
-        /// <param name="expression">The expression before the member access operator '.', '::' or '?.'.</param>
-        /// <param name="member">The name or expression naming the member to access.</param>
-        /// <param name="static">True if the '::' operator was used, false if '.' or '?.' is used.</param>
-        /// <param name="nullConditional">True if '?.' used.</param>
-        /// <exception cref="PSArgumentNullException">
-        /// If <paramref name="extent"/>, <paramref name="expression"/>, or <paramref name="member"/> is null.
-        /// </exception>
-        public MemberExpressionAst(IScriptExtent extent, ExpressionAst expression, CommandElementAst member, bool @static, bool nullConditional)
-            : this(extent, expression, member, @static)
-        {
-            this.NullConditional = nullConditional;
-        }
-
-        /// <summary>
         /// The expression that produces the value to retrieve the member from.  This property is never null.
         /// </summary>
-        public ExpressionAst Expression { get; }
+        public ExpressionAst Expression { get; private set; }
 
         /// <summary>
         /// The name of the member to retrieve.  This property is never null.
         /// </summary>
-        public CommandElementAst Member { get; }
+        public CommandElementAst Member { get; private set; }
 
         /// <summary>
         /// True if the member to return is static, false if the member is an instance member.
         /// </summary>
-        public bool Static { get; }
-
-        /// <summary>
-        /// Gets a value indicating true if the operator used is ?. or ?[].
-        /// </summary>
-        public bool NullConditional { get; protected set; }
+        public bool Static { get; private set; }
 
         /// <summary>
         /// Copy the MemberExpressionAst instance.
@@ -7939,7 +7650,7 @@ namespace System.Management.Automation.Language
         {
             var newExpression = CopyElement(this.Expression);
             var newMember = CopyElement(this.Member);
-            return new MemberExpressionAst(this.Extent, newExpression, newMember, this.Static, this.NullConditional);
+            return new MemberExpressionAst(this.Extent, newExpression, newMember, this.Static);
         }
 
         #region Visitors
@@ -7981,7 +7692,7 @@ namespace System.Management.Automation.Language
         /// The extent of the expression, starting with the expression before the invocation operator and ending with the
         /// closing paren after the arguments.
         /// </param>
-        /// <param name="expression">The expression before the invocation operator ('.', '::').</param>
+        /// <param name="expression">The expression before the invocation operator ('.' or '::').</param>
         /// <param name="method">The method to invoke.</param>
         /// <param name="arguments">The arguments to pass to the method.</param>
         /// <param name="static">
@@ -8001,32 +7712,9 @@ namespace System.Management.Automation.Language
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InvokeMemberExpressionAst"/> class.
-        /// </summary>
-        /// <param name="extent">
-        /// The extent of the expression, starting with the expression before the invocation operator and ending with the
-        /// closing paren after the arguments.
-        /// </param>
-        /// <param name="expression">The expression before the invocation operator ('.', '::' or '?.').</param>
-        /// <param name="method">The method to invoke.</param>
-        /// <param name="arguments">The arguments to pass to the method.</param>
-        /// <param name="static">
-        /// True if the invocation is for a static method, using '::', false if invoking a method on an instance using '.' or '?.'.
-        /// </param>
-        /// <param name="nullConditional">True if the operator used is '?.'.</param>
-        /// <exception cref="PSArgumentNullException">
-        /// If <paramref name="extent"/> is null.
-        /// </exception>
-        public InvokeMemberExpressionAst(IScriptExtent extent, ExpressionAst expression, CommandElementAst method, IEnumerable<ExpressionAst> arguments, bool @static, bool nullConditional)
-            : this(extent, expression, method, arguments, @static)
-        {
-            this.NullConditional = nullConditional;
-        }
-
-        /// <summary>
         /// The non-empty collection of arguments to pass when invoking the method, or null if no arguments were specified.
         /// </summary>
-        public ReadOnlyCollection<ExpressionAst> Arguments { get; }
+        public ReadOnlyCollection<ExpressionAst> Arguments { get; private set; }
 
         /// <summary>
         /// Copy the InvokeMemberExpressionAst instance.
@@ -8036,7 +7724,7 @@ namespace System.Management.Automation.Language
             var newExpression = CopyElement(this.Expression);
             var newMethod = CopyElement(this.Member);
             var newArguments = CopyElements(this.Arguments);
-            return new InvokeMemberExpressionAst(this.Extent, newExpression, newMethod, newArguments, this.Static, this.NullConditional);
+            return new InvokeMemberExpressionAst(this.Extent, newExpression, newMethod, newArguments, this.Static);
         }
 
         #region Visitors
@@ -8132,7 +7820,7 @@ namespace System.Management.Automation.Language
         internal override object Accept(ICustomAstVisitor visitor)
         {
             var visitor2 = visitor as ICustomAstVisitor2;
-            return visitor2?.VisitBaseCtorInvokeMemberExpression(this);
+            return visitor2 != null ? visitor2.VisitBaseCtorInvokeMemberExpression(this) : null;
         }
     }
 
@@ -8220,7 +7908,7 @@ namespace System.Management.Automation.Language
             var c = name[0];
             if (c == '[' || c == ']' || c == ',')
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             int backtick = name.IndexOf('`');
@@ -8250,7 +7938,7 @@ namespace System.Management.Automation.Language
         {
             if (string.IsNullOrEmpty(assembly))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(assembly));
+                throw PSTraceSource.NewArgumentNullException("assembly");
             }
 
             AssemblyName = assembly;
@@ -8309,7 +7997,7 @@ namespace System.Management.Automation.Language
                     if (function.IsConstructor)
                     {
                         // TODO: add check for default values, once default values for parameters supported
-                        if (function.Parameters.Count == 0)
+                        if (!function.Parameters.Any())
                         {
                             return true;
                         }
@@ -8398,7 +8086,8 @@ namespace System.Management.Automation.Language
         /// <summary/>
         public override bool Equals(object obj)
         {
-            if (!(obj is TypeName other))
+            var other = obj as TypeName;
+            if (other == null)
                 return false;
 
             if (!_name.Equals(other._name, StringComparison.OrdinalIgnoreCase))
@@ -8441,7 +8130,7 @@ namespace System.Management.Automation.Language
             int lastDotIndex = fullTypeName.LastIndexOf('.');
             if (lastDotIndex >= 0)
             {
-                return fullTypeName.AsSpan(lastDotIndex + 1).Equals(Name, StringComparison.OrdinalIgnoreCase);
+                return fullTypeName.Substring(lastDotIndex + 1).Equals(Name, StringComparison.OrdinalIgnoreCase);
             }
 
             return false;
@@ -8489,7 +8178,7 @@ namespace System.Management.Automation.Language
 
             if (genericArguments == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(genericArguments));
+                throw PSTraceSource.NewArgumentException("genericArguments");
             }
 
             Extent = extent;
@@ -8498,7 +8187,7 @@ namespace System.Management.Automation.Language
 
             if (this.GenericArguments.Count == 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(genericArguments));
+                throw PSTraceSource.NewArgumentException("genericArguments");
             }
         }
 
@@ -8588,12 +8277,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The typename that specifies the generic class.
         /// </summary>
-        public ITypeName TypeName { get; }
+        public ITypeName TypeName { get; private set; }
 
         /// <summary>
         /// The generic arguments for this typename.
         /// </summary>
-        public ReadOnlyCollection<ITypeName> GenericArguments { get; }
+        public ReadOnlyCollection<ITypeName> GenericArguments { get; private set; }
 
         /// <summary>
         /// The extent of the typename.
@@ -8716,7 +8405,8 @@ namespace System.Management.Automation.Language
         /// <summary/>
         public override bool Equals(object obj)
         {
-            if (!(obj is GenericTypeName other))
+            var other = obj as GenericTypeName;
+            if (other == null)
                 return false;
 
             if (!TypeName.Equals(other.TypeName))
@@ -8785,7 +8475,7 @@ namespace System.Management.Automation.Language
 
             if (rank <= 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(rank));
+                throw PSTraceSource.NewArgumentException("rank");
             }
 
             Extent = extent;
@@ -8868,12 +8558,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The element type of the array.
         /// </summary>
-        public ITypeName ElementType { get; }
+        public ITypeName ElementType { get; private set; }
 
         /// <summary>
         /// The rank of the array.
         /// </summary>
-        public int Rank { get; }
+        public int Rank { get; private set; }
 
         /// <summary>
         /// The extent of the typename.
@@ -8941,7 +8631,8 @@ namespace System.Management.Automation.Language
         /// <summary/>
         public override bool Equals(object obj)
         {
-            if (!(obj is ArrayTypeName other))
+            var other = obj as ArrayTypeName;
+            if (other == null)
                 return false;
 
             return ElementType.Equals(other.ElementType) && Rank == other.Rank;
@@ -8979,7 +8670,7 @@ namespace System.Management.Automation.Language
         {
             if (type == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(type));
+                throw PSTraceSource.NewArgumentNullException("type");
             }
 
             _type = type;
@@ -9042,7 +8733,8 @@ namespace System.Management.Automation.Language
         /// <summary/>
         public override bool Equals(object obj)
         {
-            if (!(obj is ReflectionTypeName other))
+            var other = obj as ReflectionTypeName;
+            if (other == null)
                 return false;
             return _type == other._type;
         }
@@ -9079,7 +8771,7 @@ namespace System.Management.Automation.Language
         {
             if (typeName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(typeName));
+                throw PSTraceSource.NewArgumentNullException("typeName");
             }
 
             this.TypeName = typeName;
@@ -9088,7 +8780,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The name of the type.  This property is never null.
         /// </summary>
-        public ITypeName TypeName { get; }
+        public ITypeName TypeName { get; private set; }
 
         /// <summary>
         /// Copy the TypeExpressionAst instance.
@@ -9144,7 +8836,7 @@ namespace System.Management.Automation.Language
         {
             if (string.IsNullOrEmpty(variableName))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(variableName));
+                throw PSTraceSource.NewArgumentNullException("variableName");
             }
 
             this.VariablePath = new VariablePath(variableName);
@@ -9171,7 +8863,7 @@ namespace System.Management.Automation.Language
         {
             if (variablePath == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(variablePath));
+                throw PSTraceSource.NewArgumentNullException("variablePath");
             }
 
             this.VariablePath = variablePath;
@@ -9181,13 +8873,13 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The name of the variable.  This property is never null.
         /// </summary>
-        public VariablePath VariablePath { get; }
+        public VariablePath VariablePath { get; private set; }
 
         /// <summary>
         /// True if splatting syntax was used, false otherwise.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public bool Splatted { get; }
+        public bool Splatted { get; private set; }
 
         /// <summary>
         /// Check if the variable is one of $true, $false and $null.
@@ -9262,7 +8954,6 @@ namespace System.Management.Automation.Language
         internal int TupleIndex { get; set; } = VariableAnalysis.Unanalyzed;
 
         internal bool Automatic { get; set; }
-
         internal bool Assigned { get; set; }
 
         IAssignableValue ISupportsAssignment.GetAssignableValue()
@@ -9375,7 +9066,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The value of the constant.  This property is null only if the expression represents the null constant.
         /// </summary>
-        public object Value { get; }
+        public object Value { get; private set; }
 
         /// <summary>
         /// Copy the ConstantExpressionAst instance.
@@ -9467,7 +9158,7 @@ namespace System.Management.Automation.Language
         {
             if (value == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(value));
+                throw PSTraceSource.NewArgumentNullException("value");
             }
 
             this.StringConstantType = stringConstantType;
@@ -9482,7 +9173,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The type of string.
         /// </summary>
-        public StringConstantType StringConstantType { get; }
+        public StringConstantType StringConstantType { get; private set; }
 
         /// <summary>
         /// The value of the string, not including the quotes used.
@@ -9567,13 +9258,13 @@ namespace System.Management.Automation.Language
         {
             if (value == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(value));
+                throw PSTraceSource.NewArgumentNullException("value");
             }
 
             if (type != StringConstantType.DoubleQuoted && type != StringConstantType.DoubleQuotedHereString
                 && type != StringConstantType.BareWord)
             {
-                throw PSTraceSource.NewArgumentException(nameof(type));
+                throw PSTraceSource.NewArgumentException("type");
             }
 
             var ast = Language.Parser.ScanString(value);
@@ -9633,18 +9324,18 @@ namespace System.Management.Automation.Language
         /// The value of string, not including the quote characters and without any variables replaced.
         /// This property is never null.
         /// </summary>
-        public string Value { get; }
+        public string Value { get; private set; }
 
         /// <summary>
         /// The type of string.
         /// </summary>
-        public StringConstantType StringConstantType { get; }
+        public StringConstantType StringConstantType { get; private set; }
 
         /// <summary>
         /// A non-empty collection of expressions contained within the string.  The nested expressions are always either
         /// instances of <see cref="VariableExpressionAst"/> or <see cref="SubExpressionAst"/>.
         /// </summary>
-        public ReadOnlyCollection<ExpressionAst> NestedExpressions { get; }
+        public ReadOnlyCollection<ExpressionAst> NestedExpressions { get; private set; }
 
         /// <summary>
         /// Copy the ExpandableStringExpressionAst instance.
@@ -9666,7 +9357,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The format expression needed to execute this ast.  It is generated by the scanner, it is not provided by clients.
         /// </summary>
-        internal string FormatExpression { get; }
+        internal string FormatExpression { get; private set; }
 
         #region Visitors
 
@@ -9714,7 +9405,7 @@ namespace System.Management.Automation.Language
         {
             if (scriptBlock == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(scriptBlock));
+                throw PSTraceSource.NewArgumentNullException("scriptBlock");
             }
 
             this.ScriptBlock = scriptBlock;
@@ -9724,7 +9415,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the scriptblock that this ast represent.  This property is never null.
         /// </summary>
-        public ScriptBlockAst ScriptBlock { get; }
+        public ScriptBlockAst ScriptBlock { get; private set; }
 
         /// <summary>
         /// Copy the ScriptBlockExpressionAst instance.
@@ -9784,9 +9475,9 @@ namespace System.Management.Automation.Language
         public ArrayLiteralAst(IScriptExtent extent, IList<ExpressionAst> elements)
             : base(extent)
         {
-            if (elements == null || elements.Count == 0)
+            if (elements == null || !elements.Any())
             {
-                throw PSTraceSource.NewArgumentException(nameof(elements));
+                throw PSTraceSource.NewArgumentException("elements");
             }
 
             this.Elements = new ReadOnlyCollection<ExpressionAst>(elements);
@@ -9796,7 +9487,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The non-empty collection of asts of the elements of the array.
         /// </summary>
-        public ReadOnlyCollection<ExpressionAst> Elements { get; }
+        public ReadOnlyCollection<ExpressionAst> Elements { get; private set; }
 
         /// <summary>
         /// Copy the ArrayLiteralAst instance.
@@ -9879,7 +9570,7 @@ namespace System.Management.Automation.Language
         /// The pairs of key names and asts for values used to construct the hash table.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ReadOnlyCollection<KeyValuePair> KeyValuePairs { get; }
+        public ReadOnlyCollection<KeyValuePair> KeyValuePairs { get; private set; }
 
         /// <summary>
         /// Copy the HashtableAst instance.
@@ -9959,7 +9650,7 @@ namespace System.Management.Automation.Language
         {
             if (statementBlock == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(statementBlock));
+                throw PSTraceSource.NewArgumentNullException("statementBlock");
             }
 
             this.SubExpression = statementBlock;
@@ -9970,7 +9661,7 @@ namespace System.Management.Automation.Language
         /// The expression/statements represented by this sub-expression.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly")]
-        public StatementBlockAst SubExpression { get; }
+        public StatementBlockAst SubExpression { get; private set; }
 
         /// <summary>
         /// Copy the ArrayExpressionAst instance.
@@ -10025,7 +9716,7 @@ namespace System.Management.Automation.Language
         {
             if (pipeline == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(pipeline));
+                throw PSTraceSource.NewArgumentNullException("pipeline");
             }
 
             this.Pipeline = pipeline;
@@ -10036,7 +9727,7 @@ namespace System.Management.Automation.Language
         /// The pipeline (which is frequently but not always an expression) for this parenthesized expression.
         /// This property is never null.
         /// </summary>
-        public PipelineBaseAst Pipeline { get; }
+        public PipelineBaseAst Pipeline { get; private set; }
 
         /// <summary>
         /// Copy the ParenExpressionAst instance.
@@ -10091,7 +9782,7 @@ namespace System.Management.Automation.Language
         {
             if (statementBlock == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(statementBlock));
+                throw PSTraceSource.NewArgumentNullException("statementBlock");
             }
 
             this.SubExpression = statementBlock;
@@ -10102,7 +9793,7 @@ namespace System.Management.Automation.Language
         /// The expression/statements represented by this sub-expression.  This property is never null.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly")]
-        public StatementBlockAst SubExpression { get; }
+        public StatementBlockAst SubExpression { get; private set; }
 
         /// <summary>
         /// Copy the SubExpressionAst instance.
@@ -10151,7 +9842,7 @@ namespace System.Management.Automation.Language
         {
             if (expressionAst == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(expressionAst));
+                throw PSTraceSource.NewArgumentNullException("expressionAst");
             }
 
             RuntimeUsingIndex = -1;
@@ -10163,7 +9854,7 @@ namespace System.Management.Automation.Language
         /// The expression represented by this using expression.  This property is never null.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly")]
-        public ExpressionAst SubExpression { get; }
+        public ExpressionAst SubExpression { get; private set; }
 
         // Used from code gen to get the value from a well known location.
         internal int RuntimeUsingIndex
@@ -10201,7 +9892,7 @@ namespace System.Management.Automation.Language
         {
             if (usingExpressionAst == null)
             {
-                throw new ArgumentNullException(nameof(usingExpressionAst));
+                throw new ArgumentNullException("usingExpressionAst");
             }
 
             return ExtractUsingVariableImpl(usingExpressionAst);
@@ -10307,35 +9998,14 @@ namespace System.Management.Automation.Language
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexExpressionAst"/> class.
-        /// </summary>
-        /// <param name="extent">The extent of the expression.</param>
-        /// <param name="target">The expression being indexed.</param>
-        /// <param name="index">The index expression.</param>
-        /// <param name="nullConditional">Access the index only if the target is not null.</param>
-        /// <exception cref="PSArgumentNullException">
-        /// If <paramref name="extent"/>, <paramref name="target"/>, or <paramref name="index"/> is null.
-        /// </exception>
-        public IndexExpressionAst(IScriptExtent extent, ExpressionAst target, ExpressionAst index, bool nullConditional)
-            : this(extent, target, index)
-        {
-            this.NullConditional = nullConditional;
-        }
-
-        /// <summary>
         /// Return the ast for the expression being indexed.  This value is never null.
         /// </summary>
-        public ExpressionAst Target { get; }
+        public ExpressionAst Target { get; private set; }
 
         /// <summary>
         /// Return the ast for the index expression.  This value is never null.
         /// </summary>
-        public ExpressionAst Index { get; }
-
-        /// <summary>
-        /// Gets a value indicating whether ?[] operator is being used.
-        /// </summary>
-        public bool NullConditional { get; }
+        public ExpressionAst Index { get; private set; }
 
         /// <summary>
         /// Copy the IndexExpressionAst instance.
@@ -10344,7 +10014,7 @@ namespace System.Management.Automation.Language
         {
             var newTarget = CopyElement(this.Target);
             var newIndex = CopyElement(this.Index);
-            return new IndexExpressionAst(this.Extent, newTarget, newIndex, this.NullConditional);
+            return new IndexExpressionAst(this.Extent, newTarget, newIndex);
         }
 
         #region Visitors

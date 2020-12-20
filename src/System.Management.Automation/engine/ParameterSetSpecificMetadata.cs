@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation
@@ -21,7 +21,7 @@ namespace System.Management.Automation
         {
             if (attribute == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(attribute));
+                throw PSTraceSource.NewArgumentNullException("attribute");
             }
 
             _attribute = attribute;
@@ -209,6 +209,7 @@ namespace System.Management.Automation
             return helpInfo;
         }
 
-        private readonly ParameterAttribute _attribute;
+        private ParameterAttribute _attribute;
     }
 }
+

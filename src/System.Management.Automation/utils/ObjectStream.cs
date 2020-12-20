@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation.Internal
@@ -287,7 +287,7 @@ namespace System.Management.Automation.Internal
         /// </exception>
         /// <remarks>
         /// If the enumeration contains elements equal to
-        /// AutomationNull.Value, they are ignored.
+        /// AutomationNull.Value, they are are ignored.
         /// This can cause the return value to be less than the size of
         /// the collection.
         /// </remarks>
@@ -401,7 +401,7 @@ namespace System.Management.Automation.Internal
         // PERF-2003/08/22-JonN We should probably use Queue instead
         // PERF-2004/06/30-JonN Probably more efficient to use type
         //  Collection<object> as the underlying store
-        private readonly List<object> _objects;
+        private List<object> _objects;
 
         /// <summary>
         /// Is the stream open or closed for writing?
@@ -420,7 +420,7 @@ namespace System.Management.Automation.Internal
         /// the stream is closed for reading.  Instead, use WaitAny on
         /// this handle and also _readClosedHandle.
         /// </remarks>
-        private readonly AutoResetEvent _readHandle;
+        private AutoResetEvent _readHandle;
 
         /// <summary>
         /// Handle returned to callers for blocking on data ready.
@@ -431,7 +431,7 @@ namespace System.Management.Automation.Internal
         /// When this handle is set, the stream is closed for reading,
         /// so all blocked readers should be released.
         /// </summary>
-        private readonly ManualResetEvent _readClosedHandle;
+        private ManualResetEvent _readClosedHandle;
 
         /// <summary>
         /// Write handle - signaled with the number of objects in the
@@ -446,7 +446,7 @@ namespace System.Management.Automation.Internal
         /// the stream is closed for writing.  Instead, use WaitAny on
         /// this handle and also _writeClosedHandle.
         /// </remarks>
-        private readonly AutoResetEvent _writeHandle;
+        private AutoResetEvent _writeHandle;
 
         /// <summary>
         /// Handle returned to callers for blocking until buffer space
@@ -458,7 +458,7 @@ namespace System.Management.Automation.Internal
         /// When this handle is set, the stream is closed for writing,
         /// so all blocked readers should be released.
         /// </summary>
-        private readonly ManualResetEvent _writeClosedHandle;
+        private ManualResetEvent _writeClosedHandle;
         #endregion Synchronization handles
 
         /// <summary>
@@ -493,7 +493,7 @@ namespace System.Management.Automation.Internal
         /// Note that this is not permitted to be more than Int32.MaxValue,
         /// since the underlying list has this limitation.
         /// </summary>
-        private readonly int _capacity = Int32.MaxValue;
+        private int _capacity = Int32.MaxValue;
 
         /// <summary>
         /// This object is used to acquire an exclusive lock on the stream.
@@ -503,7 +503,7 @@ namespace System.Management.Automation.Internal
         /// we are protected from outside code interfering in our
         /// critical section.  Thanks to Wintellect for the hint.
         /// </remarks>
-        private readonly object _monitorObject = new object();
+        private object _monitorObject = new Object();
 
         /// <summary>
         /// Indicates if this stream has already been disposed.
@@ -541,7 +541,7 @@ namespace System.Management.Automation.Internal
         {
             if (capacity <= 0 || capacity > Int32.MaxValue)
             {
-                throw PSTraceSource.NewArgumentOutOfRangeException(nameof(capacity), capacity);
+                throw PSTraceSource.NewArgumentOutOfRangeException("capacity", capacity);
             }
 
             // the maximum number of objects to allow in the stream at a given time.
@@ -755,7 +755,7 @@ namespace System.Management.Automation.Internal
 
                 lock (_monitorObject)
                 {
-                    endOfStream = (_objects.Count == 0 && !_isOpen);
+                    endOfStream = (_objects.Count == 0 && _isOpen == false);
                 }
 
                 return endOfStream;
@@ -824,7 +824,7 @@ namespace System.Management.Automation.Internal
         /// </remarks>
         private bool WaitRead()
         {
-            if (!EndOfPipeline)
+            if (EndOfPipeline == false)
             {
                 try
                 {
@@ -839,7 +839,7 @@ namespace System.Management.Automation.Internal
                 }
             }
 
-            return !EndOfPipeline;
+            return EndOfPipeline == false;
         }
 
         /// <summary>
@@ -1124,7 +1124,7 @@ namespace System.Management.Automation.Internal
         {
             if (count < 0)
             {
-                throw PSTraceSource.NewArgumentOutOfRangeException(nameof(count), count);
+                throw PSTraceSource.NewArgumentOutOfRangeException("count", count);
             }
 
             if (count == 0)
@@ -1232,7 +1232,7 @@ namespace System.Management.Automation.Internal
 
             if (maxRequested < 0)
             {
-                throw PSTraceSource.NewArgumentOutOfRangeException(nameof(maxRequested), maxRequested);
+                throw PSTraceSource.NewArgumentOutOfRangeException("maxRequested", maxRequested);
             }
 
             try
@@ -1317,7 +1317,7 @@ namespace System.Management.Automation.Internal
         /// </exception>
         /// <remarks>
         /// If the enumeration contains elements equal to
-        /// AutomationNull.Value, they are ignored.
+        /// AutomationNull.Value, they are are ignored.
         /// This can cause the return value to be less than the size of
         /// the collection.
         /// </remarks>
@@ -1383,7 +1383,7 @@ namespace System.Management.Automation.Internal
 
                 // wait for buffer available
                 // false indicates EndOfPipeline
-                if (!WaitWrite())
+                if (WaitWrite() == false)
                 {
                     break;
                 }
@@ -1403,7 +1403,7 @@ namespace System.Management.Automation.Internal
                         // subtraction to ensure we don't have an
                         // overflow exception
                         int freeSpace = _capacity - _objects.Count;
-                        if (freeSpace <= 0)
+                        if (0 >= freeSpace)
                         {
                             // NOTE: lock is released in finally
                             continue;
@@ -1551,15 +1551,15 @@ namespace System.Management.Automation.Internal
     {
         #region Private Fields
 
-        private readonly PSDataCollection<T> _objects;
-        private readonly Guid _psInstanceId;
+        private PSDataCollection<T> _objects;
+        private Guid _psInstanceId;
         private bool _isOpen;
         private PipelineWriter _writer;
         private PipelineReader<object> _objectReader;
         private PipelineReader<PSObject> _psobjectReader;
         private PipelineReader<object> _objectReaderForPipeline;
         private PipelineReader<PSObject> _psobjectReaderForPipeline;
-        private readonly object _syncObject = new object();
+        private object _syncObject = new object();
         private bool _disposed = false;
 
         #endregion
@@ -1583,7 +1583,7 @@ namespace System.Management.Automation.Internal
         {
             if (storeToUse == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(storeToUse));
+                throw PSTraceSource.NewArgumentNullException("storeToUse");
             }
 
             _objects = storeToUse;
@@ -1979,3 +1979,4 @@ namespace System.Management.Automation.Internal
         #endregion IDisposable
     }
 }
+

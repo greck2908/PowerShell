@@ -1,9 +1,12 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
+
+using Dbg = System.Management.Automation.Diagnostics;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -56,7 +59,7 @@ namespace Microsoft.PowerShell.Commands
         {
             notMatched = new Collection<string>();
 
-            Collection<PSTraceSource> results = new();
+            Collection<PSTraceSource> results = new Collection<PSTraceSource>();
             foreach (string patternToMatch in patternsToMatch)
             {
                 bool matchFound = false;
@@ -72,7 +75,7 @@ namespace Microsoft.PowerShell.Commands
                         patternToMatch,
                         WildcardOptions.IgnoreCase);
 
-                Dictionary<string, PSTraceSource> traceCatalog = PSTraceSource.TraceCatalog;
+                Dictionary<String, PSTraceSource> traceCatalog = PSTraceSource.TraceCatalog;
 
                 foreach (PSTraceSource source in traceCatalog.Values)
                 {
@@ -102,12 +105,12 @@ namespace Microsoft.PowerShell.Commands
                         !WildcardPattern.ContainsWildcardCharacters(patternToMatch))
                     {
                         ItemNotFoundException itemNotFound =
-                            new(
+                            new ItemNotFoundException(
                                 patternToMatch,
                                 "TraceSourceNotFound",
                                 SessionStateStrings.TraceSourceNotFound);
 
-                        ErrorRecord errorRecord = new(itemNotFound.ErrorRecord, itemNotFound);
+                        ErrorRecord errorRecord = new ErrorRecord(itemNotFound.ErrorRecord, itemNotFound);
                         WriteError(errorRecord);
                     }
                 }

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -27,7 +27,6 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
     {
         private static long s_globalJobNumberCounter;
         private readonly long _myJobNumber = Interlocked.Increment(ref s_globalJobNumberCounter);
-
         private const string CIMJobType = "CimJob";
 
         internal CimJobContext JobContext
@@ -57,8 +56,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             _jobSpecificCustomOptions = new Lazy<CimCustomOptionsDictionary>(this.CalculateJobSpecificCustomOptions);
         }
 
-        private readonly CimSensitiveValueConverter _cimSensitiveValueConverter = new();
-
+        private readonly CimSensitiveValueConverter _cimSensitiveValueConverter = new CimSensitiveValueConverter();
         internal CimSensitiveValueConverter CimSensitiveValueConverter { get { return _cimSensitiveValueConverter; } }
 
         internal abstract IObservable<T> GetCimOperation();
@@ -84,7 +82,8 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
 
         private static bool IsWsManQuotaReached(Exception exception)
         {
-            if (!(exception is CimException cimException))
+            var cimException = exception as CimException;
+            if (cimException == null)
             {
                 return false;
             }
@@ -158,16 +157,13 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
                     });
         }
 
-        private static readonly Random s_globalRandom = new();
+        private static readonly Random s_globalRandom = new Random();
         private readonly Random _random;
         private int _sleepAndRetryDelayRangeMs = 1000;
         private int _sleepAndRetryExtraDelayMs = 0;
-
         private const int MaxRetryDelayMs = 15 * 1000;
         private const int MinRetryDelayMs = 100;
-
         private Timer _sleepAndRetryTimer;
-
         private void SleepAndRetry_OnWakeup(object state)
         {
             this.ExceptionSafeWrapper(
@@ -531,9 +527,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
         }
 
         private readonly Lazy<CimCustomOptionsDictionary> _jobSpecificCustomOptions;
-
         internal abstract CimCustomOptionsDictionary CalculateJobSpecificCustomOptions();
-
         private CimCustomOptionsDictionary GetJobSpecificCustomOptions()
         {
             return _jobSpecificCustomOptions.Value;
@@ -543,7 +537,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
 
         #region Controlling job state
 
-        private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         /// <summary>
         /// Stops this job.
@@ -578,7 +572,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             _cancellationTokenSource.Cancel();
         }
 
-        private readonly object _jobStateLock = new();
+        private readonly object _jobStateLock = new object();
         private bool _jobHadErrors;
         private bool _jobWasStarted;
         private bool _jobWasStopped;
@@ -730,7 +724,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
 
         #region Support for progress reporting
 
-        private readonly ConcurrentDictionary<int, ProgressRecord> _activityIdToLastProgressRecord = new();
+        private readonly ConcurrentDictionary<int, ProgressRecord> _activityIdToLastProgressRecord = new ConcurrentDictionary<int, ProgressRecord>();
 
         internal override void WriteProgress(ProgressRecord progressRecord)
         {
@@ -1009,7 +1003,8 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
         internal static bool IsShowComputerNameMarkerPresent(CimInstance cimInstance)
         {
             PSObject pso = PSObject.AsPSObject(cimInstance);
-            if (!(pso.InstanceMembers[RemotingConstants.ShowComputerNameNoteProperty] is PSPropertyInfo psShowComputerNameProperty))
+            PSPropertyInfo psShowComputerNameProperty = pso.InstanceMembers[RemotingConstants.ShowComputerNameNoteProperty] as PSPropertyInfo;
+            if (psShowComputerNameProperty == null)
             {
                 return false;
             }
@@ -1085,7 +1080,6 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
                 }
 
                 _cimSensitiveValueConverter.Dispose();
-                _cancellationTokenSource.Dispose();
             }
         }
     }

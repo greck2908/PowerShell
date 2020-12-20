@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Runspaces;
@@ -133,7 +133,7 @@ namespace System.Management.Automation
         {
             if (cmdlet == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(cmdlet));
+                throw PSTraceSource.NewArgumentNullException("cmdlet");
             }
 
             if (_owner != null)
@@ -175,7 +175,7 @@ namespace System.Management.Automation
         {
             if (script == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(script));
+                throw PSTraceSource.NewArgumentNullException("script");
             }
 
             if (_owner != null)
@@ -220,7 +220,7 @@ namespace System.Management.Automation
         {
             if (script == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(script));
+                throw PSTraceSource.NewArgumentNullException("script");
             }
 
             if (_owner != null)
@@ -258,7 +258,7 @@ namespace System.Management.Automation
         {
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             if (_owner != null)
@@ -356,26 +356,6 @@ namespace System.Management.Automation
             }
 
             _currentCommand.Parameters.Add(parameterName, true);
-            return this;
-        }
-
-        /// <summary>
-        /// Adds a <see cref="CommandParameter"/> instance to the last added command.
-        /// </summary>
-        internal PSCommand AddParameter(CommandParameter parameter)
-        {
-            if (_currentCommand == null)
-            {
-                throw PSTraceSource.NewInvalidOperationException(PSCommandStrings.ParameterRequiresCommand,
-                                                                 new object[] { "PSCommand" });
-            }
-
-            if (_owner != null)
-            {
-                _owner.AssertChangesAreAccepted();
-            }
-
-            _currentCommand.Parameters.Add(parameter);
             return this;
         }
 

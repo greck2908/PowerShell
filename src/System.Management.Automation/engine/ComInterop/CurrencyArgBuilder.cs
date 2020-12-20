@@ -1,11 +1,13 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-#pragma warning disable 618 // CurrencyWrapper is obsolete
-
-using System;
-using System.Diagnostics;
+#if !SILVERLIGHT // ComObject
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Management.Automation.ComInterop
@@ -23,7 +25,7 @@ namespace System.Management.Automation.ComInterop
             // parameter.WrappedObject
             return Expression.Property(
                 Helpers.Convert(base.Marshal(parameter), typeof(CurrencyWrapper)),
-                nameof(CurrencyWrapper.WrappedObject)
+                "WrappedObject"
             );
         }
 
@@ -31,7 +33,7 @@ namespace System.Management.Automation.ComInterop
         {
             // Decimal.ToOACurrency(parameter.WrappedObject)
             return Expression.Call(
-                typeof(decimal).GetMethod(nameof(decimal.ToOACurrency)),
+                typeof(Decimal).GetMethod("ToOACurrency"),
                 Marshal(parameter)
             );
         }
@@ -41,9 +43,9 @@ namespace System.Management.Automation.ComInterop
             // Decimal.FromOACurrency(value)
             return base.UnmarshalFromRef(
                 Expression.New(
-                    typeof(CurrencyWrapper).GetConstructor(new Type[] { typeof(decimal) }),
+                    typeof(CurrencyWrapper).GetConstructor(new Type[] { typeof(Decimal) }),
                     Expression.Call(
-                        typeof(decimal).GetMethod(nameof(decimal.FromOACurrency)),
+                        typeof(Decimal).GetMethod("FromOACurrency"),
                         value
                     )
                 )
@@ -51,3 +53,6 @@ namespace System.Management.Automation.ComInterop
         }
     }
 }
+
+#endif
+

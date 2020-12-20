@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -70,12 +70,12 @@ namespace System.Management.Automation
         {
             if (paths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                throw PSTraceSource.NewArgumentNullException("paths");
             }
 
             if (property == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(property));
+                throw PSTraceSource.NewArgumentNullException("property");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -141,12 +141,12 @@ namespace System.Management.Automation
         {
             if (paths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                throw PSTraceSource.NewArgumentNullException("paths");
             }
 
             if (property == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(property));
+                throw PSTraceSource.NewArgumentNullException("property");
             }
 
             ProviderInfo provider = null;
@@ -156,7 +156,7 @@ namespace System.Management.Automation
             {
                 if (path == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                    throw PSTraceSource.NewArgumentNullException("paths");
                 }
 
                 Collection<string> providerPaths =
@@ -467,12 +467,12 @@ namespace System.Management.Automation
         {
             if (paths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                throw PSTraceSource.NewArgumentNullException("paths");
             }
 
             if (property == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(property));
+                throw PSTraceSource.NewArgumentNullException("property");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -523,19 +523,19 @@ namespace System.Management.Automation
         {
             if (paths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                throw PSTraceSource.NewArgumentNullException("paths");
             }
 
             if (property == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(property));
+                throw PSTraceSource.NewArgumentNullException("property");
             }
 
             foreach (string path in paths)
             {
                 if (path == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                    throw PSTraceSource.NewArgumentNullException("paths");
                 }
 
                 ProviderInfo provider = null;
@@ -840,22 +840,22 @@ namespace System.Management.Automation
         {
             if (sourcePaths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourcePaths));
+                throw PSTraceSource.NewArgumentNullException("sourcePaths");
             }
 
             if (sourceProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourceProperty));
+                throw PSTraceSource.NewArgumentNullException("sourceProperty");
             }
 
             if (destinationPath == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationPath));
+                throw PSTraceSource.NewArgumentNullException("destinationPath");
             }
 
             if (destinationProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationProperty));
+                throw PSTraceSource.NewArgumentNullException("destinationProperty");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -921,29 +921,29 @@ namespace System.Management.Automation
         {
             if (sourcePaths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourcePaths));
+                throw PSTraceSource.NewArgumentNullException("sourcePaths");
             }
 
             if (sourceProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourceProperty));
+                throw PSTraceSource.NewArgumentNullException("sourceProperty");
             }
 
             if (destinationPath == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationPath));
+                throw PSTraceSource.NewArgumentNullException("destinationPath");
             }
 
             if (destinationProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationProperty));
+                throw PSTraceSource.NewArgumentNullException("destinationProperty");
             }
 
             foreach (string sourcePath in sourcePaths)
             {
                 if (sourcePath == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(sourcePaths));
+                    throw PSTraceSource.NewArgumentNullException("sourcePaths");
                 }
 
                 ProviderInfo provider = null;
@@ -1327,22 +1327,22 @@ namespace System.Management.Automation
         {
             if (sourcePaths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourcePaths));
+                throw PSTraceSource.NewArgumentNullException("sourcePaths");
             }
 
             if (sourceProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourceProperty));
+                throw PSTraceSource.NewArgumentNullException("sourceProperty");
             }
 
             if (destinationPath == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationPath));
+                throw PSTraceSource.NewArgumentNullException("destinationPath");
             }
 
             if (destinationProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationProperty));
+                throw PSTraceSource.NewArgumentNullException("destinationProperty");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -1411,22 +1411,22 @@ namespace System.Management.Automation
         {
             if (sourcePaths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourcePaths));
+                throw PSTraceSource.NewArgumentNullException("sourcePaths");
             }
 
             if (sourceProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourceProperty));
+                throw PSTraceSource.NewArgumentNullException("sourceProperty");
             }
 
             if (destinationPath == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationPath));
+                throw PSTraceSource.NewArgumentNullException("destinationPath");
             }
 
             if (destinationProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationProperty));
+                throw PSTraceSource.NewArgumentNullException("destinationProperty");
             }
 
             ProviderInfo provider = null;
@@ -1453,7 +1453,7 @@ namespace System.Management.Automation
             {
                 ArgumentException argException =
                     PSTraceSource.NewArgumentException(
-                        nameof(destinationPath),
+                        "destinationPath",
                         SessionStateStrings.MovePropertyDestinationResolveToSingle);
 
                 context.WriteError(new ErrorRecord(argException, argException.GetType().FullName, ErrorCategory.InvalidArgument, destinationProviderPaths));
@@ -1464,7 +1464,7 @@ namespace System.Management.Automation
                 {
                     if (sourcePath == null)
                     {
-                        throw PSTraceSource.NewArgumentNullException(nameof(sourcePaths));
+                        throw PSTraceSource.NewArgumentNullException("sourcePaths");
                     }
 
                     Collection<string> providerPaths =
@@ -1805,17 +1805,17 @@ namespace System.Management.Automation
         {
             if (sourcePaths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourcePaths));
+                throw PSTraceSource.NewArgumentNullException("sourcePaths");
             }
 
             if (sourceProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourceProperty));
+                throw PSTraceSource.NewArgumentNullException("sourceProperty");
             }
 
             if (destinationProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationProperty));
+                throw PSTraceSource.NewArgumentNullException("destinationProperty");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -1874,24 +1874,24 @@ namespace System.Management.Automation
         {
             if (paths == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                throw PSTraceSource.NewArgumentNullException("paths");
             }
 
             if (sourceProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sourceProperty));
+                throw PSTraceSource.NewArgumentNullException("sourceProperty");
             }
 
             if (destinationProperty == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(destinationProperty));
+                throw PSTraceSource.NewArgumentNullException("destinationProperty");
             }
 
             foreach (string path in paths)
             {
                 if (path == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                    throw PSTraceSource.NewArgumentNullException("paths");
                 }
 
                 ProviderInfo provider = null;

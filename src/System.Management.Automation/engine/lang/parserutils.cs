@@ -1,8 +1,7 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -10,8 +9,10 @@ using System.Management.Automation.Internal;
 using System.Management.Automation.Internal.Host;
 using System.Management.Automation.Language;
 using System.Management.Automation.Runspaces;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using Dbg = System.Management.Automation.Diagnostics;
@@ -190,7 +191,7 @@ namespace System.Management.Automation
             this.RequestingCommandProcessor = requestingCommand.Context.CurrentCommandProcessor;
         }
 
-        public CommandProcessorBase RequestingCommandProcessor { get; }
+        public CommandProcessorBase RequestingCommandProcessor { get; private set; }
     }
 
     #endregion Flow Control Exceptions
@@ -278,7 +279,6 @@ namespace System.Management.Automation
 
         private const int _MinCache = -100;
         private const int _MaxCache = 1000;
-
         private static readonly object[] s_integerCache = new object[_MaxCache - _MinCache];
         private static readonly string[] s_chars = new string[255];
         internal static readonly object _TrueObject = (object)true;
@@ -378,8 +378,8 @@ namespace System.Management.Automation
             lval = PSObject.Base(lval);
             rval = PSObject.Base(rval);
 
-            Type lvalType = lval?.GetType();
-            Type rvalType = rval?.GetType();
+            Type lvalType = lval != null ? lval.GetType() : null;
+            Type rvalType = rval != null ? rval.GetType() : null;
             Type opType;
             if (lvalType == null || (lvalType.IsPrimitive))
             {
@@ -601,8 +601,7 @@ namespace System.Management.Automation
 
                 int subStringLength = 0;
 
-                for (int charCount = 0; charCount < item.Length; charCount++)
-                {
+                for (int charCount = 0; charCount < item.Length; charCount++) {
                     // Evaluate the predicate using the character at cursor.
                     object predicateResult = predicate.DoInvokeReturnAsIs(
                         useLocalScope: true,
@@ -905,6 +904,7 @@ namespace System.Management.Automation
             return null;
         }
 
+
         /// <summary>
         /// The implementation of the PowerShell -replace operator....
         /// </summary>
@@ -927,7 +927,7 @@ namespace System.Management.Automation
                 {
                     // only allow 1 or 2 arguments to -replace
                     throw InterpreterError.NewInterpreterException(rval, typeof(RuntimeException), errorPosition,
-                        "BadReplaceArgument", ParserStrings.BadReplaceArgument, errorPosition.Text, rList.Count);
+                        "BadReplaceArgument", ParserStrings.BadReplaceArgument, ignoreCase ? "-ireplace" : "-replace", rList.Count);
                 }
 
                 if (rList.Count > 0)
@@ -965,21 +965,12 @@ namespace System.Management.Automation
                 }
             }
 
-            var replacer = ReplaceOperatorImpl.Create(context, rr, substitute);
             IEnumerator list = LanguagePrimitives.GetEnumerator(lval);
             if (list == null)
             {
-                string lvalString;
-                if (ExperimentalFeature.IsEnabled("PSCultureInvariantReplaceOperator"))
-                {
-                    lvalString = PSObject.ToStringParser(context, lval) ?? string.Empty;
-                }
-                else
-                {
-                    lvalString = lval?.ToString() ?? string.Empty;
-                }
+                string lvalString = lval?.ToString() ?? string.Empty;
 
-                return replacer.Replace(lvalString);
+                return ReplaceOperatorImpl(context, lvalString, rr, substitute);
             }
             else
             {
@@ -987,84 +978,51 @@ namespace System.Management.Automation
                 while (ParserOps.MoveNext(context, errorPosition, list))
                 {
                     string lvalString = PSObject.ToStringParser(context, ParserOps.Current(errorPosition, list));
-                    resultList.Add(replacer.Replace(lvalString));
+                    resultList.Add(ReplaceOperatorImpl(context, lvalString, rr, substitute));
                 }
 
                 return resultList.ToArray();
             }
         }
 
-        private struct ReplaceOperatorImpl
+        /// <summary>
+        /// ReplaceOperator implementation.
+        /// Abstracts away conversion of the optional substitute parameter to either a string or a MatchEvaluator delegate
+        /// and finally returns the result of the final Regex.Replace operation.
+        /// </summary>
+        /// <param name="context">The execution context in which to evaluate the expression.</param>
+        /// <param name="input">The input string.</param>
+        /// <param name="regex">A Regex instance.</param>
+        /// <param name="substitute">The substitute value.</param>
+        /// <returns>The result of the regex.Replace operation.</returns>
+        private static object ReplaceOperatorImpl(ExecutionContext context, string input, Regex regex, object substitute)
         {
-            public static ReplaceOperatorImpl Create(ExecutionContext context, Regex regex, object substitute)
+            switch (substitute)
             {
-                return new ReplaceOperatorImpl(context, regex, substitute);
-            }
+                case string replacementString:
+                    return regex.Replace(input, replacementString);
 
-            private readonly Regex _regex;
-            private readonly string _cachedReplacementString;
-            private readonly MatchEvaluator _cachedMatchEvaluator;
+                case ScriptBlock sb:
+                    MatchEvaluator me = match =>
+                    {
+                        var result = sb.DoInvokeReturnAsIs(
+                            useLocalScope: false, /* Use current scope to be consistent with 'ForEach/Where-Object {}' and 'collection.ForEach{}/Where{}' */
+                            errorHandlingBehavior: ScriptBlock.ErrorHandlingBehavior.WriteToCurrentErrorPipe,
+                            dollarUnder: match,
+                            input: AutomationNull.Value,
+                            scriptThis: AutomationNull.Value,
+                            args: Array.Empty<object>());
 
-            private ReplaceOperatorImpl(
-                ExecutionContext context,
-                Regex regex,
-                object substitute)
-            {
-                _regex = regex;
-                _cachedReplacementString = null;
-                _cachedMatchEvaluator = null;
+                        return PSObject.ToStringParser(context, result);
+                    };
+                    return regex.Replace(input, me);
 
-                switch (substitute)
-                {
-                    case string replacement:
-                        _cachedReplacementString = replacement;
-                        break;
+                case object val when LanguagePrimitives.TryConvertTo(val, out MatchEvaluator matchEvaluator):
+                    return regex.Replace(input, matchEvaluator);
 
-                    case ScriptBlock sb:
-                        _cachedMatchEvaluator = GetMatchEvaluator(context, sb);
-                        break;
-
-                    case object val when LanguagePrimitives.TryConvertTo(val, out _cachedMatchEvaluator):
-                        break;
-
-                    default:
-                        _cachedReplacementString = PSObject.ToStringParser(context, substitute);
-                        break;
-                }
-            }
-
-            // Local helper function to avoid creating an instance of the generated delegate helper class
-            // every time 'ReplaceOperatorImpl' is invoked.
-            private static MatchEvaluator GetMatchEvaluator(ExecutionContext context, ScriptBlock sb)
-            {
-                return match =>
-                {
-                    var result = sb.DoInvokeReturnAsIs(
-                        useLocalScope: false, /* Use current scope to be consistent with 'ForEach/Where-Object {}' and 'collection.ForEach{}/Where{}' */
-                        errorHandlingBehavior: ScriptBlock.ErrorHandlingBehavior.WriteToCurrentErrorPipe,
-                        dollarUnder: match,
-                        input: AutomationNull.Value,
-                        scriptThis: AutomationNull.Value,
-                        args: Array.Empty<object>());
-
-                    return PSObject.ToStringParser(context, result);
-                };
-            }
-
-            /// <summary>
-            /// ReplaceOperator implementation.
-            /// Abstracts away conversion of the optional substitute parameter to either a string or a MatchEvaluator delegate
-            /// and finally returns the result of the final Regex.Replace operation.
-            /// </summary>
-            public object Replace(string input)
-            {
-                if (_cachedReplacementString is not null)
-                {
-                    return _regex.Replace(input, _cachedReplacementString);
-                }
-
-                Dbg.Assert(_cachedMatchEvaluator is not null, "_cachedMatchEvaluator should be not null when code reach here.");
-                return _regex.Replace(input, _cachedMatchEvaluator);
+                default:
+                    string replacement = PSObject.ToStringParser(context, substitute);
+                    return regex.Replace(input, replacement);
             }
         }
 
@@ -1211,10 +1169,13 @@ namespace System.Management.Automation
 
             // if passed an explicit regex, just use it
             // otherwise compile the expression.
-            // In this situation, creation of Regex should not fail. We are not
-            // processing ArgumentException in this case.
-            Regex r = PSObject.Base(rval) as Regex
-                ?? NewRegex(PSObject.ToStringParser(context, rval), reOptions);
+            Regex r = PSObject.Base(rval) as Regex;
+            if (r == null)
+            {
+                // In this situation, creation of Regex should not fail. We are not
+                // processing ArgumentException in this case.
+                r = NewRegex(PSObject.ToStringParser(context, rval), reOptions);
+            }
 
             IEnumerator list = LanguagePrimitives.GetEnumerator(lval);
             if (list == null)
@@ -1386,37 +1347,35 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Cache regular expressions.
+        /// Cache regular expressions...
         /// </summary>
         /// <param name="patternString">The string to find the pattern for.</param>
-        /// <param name="options">The options used to create the regex.</param>
-        /// <returns>New or cached Regex.</returns>
+        /// <param name="options">The options used to create the regex...</param>
+        /// <returns>A case-insensitive Regex...</returns>
         internal static Regex NewRegex(string patternString, RegexOptions options)
         {
-            var subordinateRegexCache = s_regexCache.GetOrAdd(options, s_subordinateRegexCacheCreationDelegate);
-            if (subordinateRegexCache.TryGetValue(patternString, out Regex result))
-            {
-                return result;
-            }
-            else
-            {
-                if (subordinateRegexCache.Count > MaxRegexCache)
-                {
-                    // TODO: it would be useful to get a notice (in telemetry?) if the cache is full.
-                    subordinateRegexCache.Clear();
-                }
+            if (options != RegexOptions.IgnoreCase)
+                return new Regex(patternString, options);
 
-                var regex = new Regex(patternString, options);
-                return subordinateRegexCache.GetOrAdd(patternString, regex);
+            lock (s_regexCache)
+            {
+                Regex result;
+                if (s_regexCache.TryGetValue(patternString, out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    if (s_regexCache.Count > MaxRegexCache)
+                        s_regexCache.Clear();
+                    Regex re = new Regex(patternString, RegexOptions.IgnoreCase);
+                    s_regexCache.Add(patternString, re);
+                    return re;
+                }
             }
         }
 
-        private static readonly ConcurrentDictionary<RegexOptions, ConcurrentDictionary<string, Regex>> s_regexCache =
-            new ConcurrentDictionary<RegexOptions, ConcurrentDictionary<string, Regex>>();
-
-        private static readonly Func<RegexOptions, ConcurrentDictionary<string, Regex>> s_subordinateRegexCacheCreationDelegate =
-            key => new ConcurrentDictionary<string, Regex>(StringComparer.Ordinal);
-
+        private static Dictionary<string, Regex> s_regexCache = new Dictionary<string, Regex>();
         private const int MaxRegexCache = 1000;
 
         /// <summary>
@@ -1500,7 +1459,8 @@ namespace System.Management.Automation
                 return string.Empty;
             }
 
-            if (!(obj is PSObject mshObj))
+            PSObject mshObj = obj as PSObject;
+            if (mshObj == null)
             {
                 return obj.GetType().FullName;
             }
@@ -1604,7 +1564,9 @@ namespace System.Management.Automation
                 // not really a method call.
                 if (valueToSet != AutomationNull.Value)
                 {
-                    if (!(targetMethod is PSParameterizedProperty propertyToSet))
+                    PSParameterizedProperty propertyToSet = targetMethod as PSParameterizedProperty;
+
+                    if (propertyToSet == null)
                     {
                         throw InterpreterError.NewInterpreterException(methodName, typeof(RuntimeException), errorPosition,
                                                                        "ParameterizedPropertyAssignmentFailed", ParserStrings.ParameterizedPropertyAssignmentFailed, GetTypeFullName(target), methodName);
@@ -1666,15 +1628,13 @@ namespace System.Management.Automation
     /// </summary>
     internal class RangeEnumerator : IEnumerator
     {
-        private readonly int _lowerBound;
-
+        private int _lowerBound;
         internal int LowerBound
         {
             get { return _lowerBound; }
         }
 
-        private readonly int _upperBound;
-
+        private int _upperBound;
         internal int UpperBound
         {
             get { return _upperBound; }
@@ -1697,7 +1657,7 @@ namespace System.Management.Automation
             get { return _current; }
         }
 
-        private readonly int _increment = 1;
+        private int _increment = 1;
 
         private bool _firstElement = true;
 
@@ -1738,7 +1698,7 @@ namespace System.Management.Automation
     /// </summary>
     internal class CharRangeEnumerator : IEnumerator
     {
-        private readonly int _increment = 1;
+        private int _increment = 1;
 
         private bool _firstElement = true;
 
@@ -1756,9 +1716,15 @@ namespace System.Management.Automation
             get { return Current; }
         }
 
-        internal char LowerBound { get; }
+        internal char LowerBound
+        {
+            get; private set;
+        }
 
-        internal char UpperBound { get; }
+        internal char UpperBound
+        {
+            get; private set;
+        }
 
         public char Current
         {
@@ -1834,7 +1800,7 @@ namespace System.Management.Automation
         {
             // errToken may be null
             if (string.IsNullOrEmpty(resourceIdAndErrorId))
-                throw PSTraceSource.NewArgumentException(nameof(resourceIdAndErrorId));
+                throw PSTraceSource.NewArgumentException("resourceIdAndErrorId");
             // innerException may be null
             // args may be null or empty
 
@@ -1843,7 +1809,7 @@ namespace System.Management.Automation
             try
             {
                 string message;
-                if (args == null || args.Length == 0)
+                if (args == null || 0 == args.Length)
                 {
                     // Don't format in case the string contains literal curly braces
                     message = resourceString;
@@ -2004,7 +1970,7 @@ namespace System.Management.Automation
             if (context.PSDebugTraceLevel > level)
             {
                 string message;
-                if (args == null || args.Length == 0)
+                if (args == null || 0 == args.Length)
                 {
                     // Don't format in case the string contains literal curly braces
                     message = resourceString;

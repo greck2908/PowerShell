@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 #
@@ -20,7 +20,7 @@ $data
 @"
 #!/usr/bin/python3
 print('Hi!')
-"@ | Out-File -Encoding ascii hi
+"@ | out-file -encoding ascii hi
 
 # Make it executable
 chmod +x hi
@@ -35,7 +35,7 @@ cat class1.py
 ./class1.py
 
 # Capture the data as structured objects (arrays and hashtables)
-$data = ./class1.py | ConvertFrom-Json
+$data = ./class1.py | ConvertFrom-JSON
 
 # look at the first element of the returned array
 $data[0]

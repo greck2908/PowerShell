@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -47,15 +47,8 @@ namespace ConsoleApplication
 
                     foreach (string resxPath in Directory.EnumerateFiles(resourcePath, fileFilter))
                     {
-                        string accessModifier = "internal";
                         string className = Path.GetFileNameWithoutExtension(resxPath);
-                        if (className.StartsWith("public.", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            accessModifier = "public";
-                            className = className.Substring(className.IndexOf(".") + 1);
-                        }
-
-                        string sourceCode = GetStronglyTypeCsFileForResx(resxPath, moduleName, className, accessModifier);
+                        string sourceCode = GetStronglyTypeCsFileForResx(resxPath, moduleName, className);
                         string outPath = Path.Combine(genFolder, className + ".cs");
                         Console.WriteLine("ResGen for " + outPath);
                         File.WriteAllText(outPath, sourceCode);
@@ -64,13 +57,14 @@ namespace ConsoleApplication
             }
         }
 
-        private static string GetStronglyTypeCsFileForResx(string xmlPath, string moduleName, string className, string accessModifier)
+        private static string GetStronglyTypeCsFileForResx(string xmlPath, string moduleName, string className)
         {
             // Example
             //
             // className = Full.Name.Of.The.ClassFoo
             // shortClassName = ClassFoo
             // namespaceName = Full.Name.Of.The
+
             string shortClassName = className;
             string namespaceName = null;
             int lastIndexOfDot = className.LastIndexOf('.');
@@ -86,10 +80,10 @@ namespace ConsoleApplication
             {
                 string value = data.Value.Replace("\n", "\n    ///");
                 string name = data.Attribute("name").Value.Replace(' ', '_');
-                entries.AppendFormat(ENTRY, name, value, accessModifier);
+                entries.AppendFormat(ENTRY, name, value);
             }
 
-            string bodyCode = string.Format(BODY, shortClassName, moduleName, entries.ToString(), className, accessModifier, accessModifier.Equals("public", StringComparison.InvariantCultureIgnoreCase) ? "public." : string.Empty);
+            string bodyCode = string.Format(BODY, shortClassName, moduleName, entries.ToString(), className);
             if (namespaceName != null)
             {
                 bodyCode = string.Format(NAMESPACE, namespaceName, bodyCode);
@@ -118,7 +112,6 @@ namespace {0} {{
 {1}
 }}
 ";
-
         private static readonly string BODY = @"
 using System;
 using System.Reflection;
@@ -130,25 +123,24 @@ using System.Reflection;
 [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
 [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
 
-{4} class {0} {{
+internal class {0} {{
 
     private static global::System.Resources.ResourceManager resourceMan;
 
     private static global::System.Globalization.CultureInfo resourceCulture;
 
-    /// <summary>constructor</summary>
     [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(""Microsoft.Performance"", ""CA1811:AvoidUncalledPrivateCode"")]
-    {4} {0}() {{
+    internal {0}() {{
     }}
 
     /// <summary>
     ///   Returns the cached ResourceManager instance used by this class.
     /// </summary>
     [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-    {4} static global::System.Resources.ResourceManager ResourceManager {{
+    internal static global::System.Resources.ResourceManager ResourceManager {{
         get {{
-            if (resourceMan is null) {{
-                global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager(""{1}.resources.{5}{3}"", typeof({0}).Assembly);
+            if (object.ReferenceEquals(resourceMan, null)) {{
+                global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager(""{1}.resources.{3}"", typeof({0}).Assembly);
                 resourceMan = temp;
             }}
 
@@ -161,7 +153,7 @@ using System.Reflection;
     ///   resource lookups using this strongly typed resource class.
     /// </summary>
     [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-    {4} static global::System.Globalization.CultureInfo Culture {{
+    internal static global::System.Globalization.CultureInfo Culture {{
         get {{
             return resourceCulture;
         }}
@@ -179,11 +171,12 @@ using System.Reflection;
     /// <summary>
     ///   Looks up a localized string similar to {1}
     /// </summary>
-    {2} static string {0} {{
+    internal static string {0} {{
         get {{
             return ResourceManager.GetString(""{0}"", resourceCulture);
         }}
     }}
 ";
+
     }
 }

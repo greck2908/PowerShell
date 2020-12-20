@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -6,16 +6,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Globalization;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Language;
-using System.Management.Automation.PSTasks;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using CommonParamSet = System.Management.Automation.Internal.CommonParameters;
 using Dbg = System.Management.Automation.Diagnostics;
 
 namespace Microsoft.PowerShell.Commands
@@ -23,7 +19,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// A thin wrapper over a property-getting Callsite, to allow reuse when possible.
     /// </summary>
-    internal struct DynamicPropertyGetter
+    struct DynamicPropertyGetter
     {
         private CallSite<Func<CallSite, object, object>> _getValueDynamicSite;
 
@@ -37,6 +33,7 @@ namespace Microsoft.PowerShell.Commands
             // If wildcards are involved, the resolved property name could potentially
             // be different on every object... but probably not, so we'll attempt to
             // reuse the callsite if possible.
+
             if (!propertyName.Equals(_lastUsedPropertyName, StringComparison.OrdinalIgnoreCase))
             {
                 _lastUsedPropertyName = propertyName;
@@ -58,129 +55,104 @@ namespace Microsoft.PowerShell.Commands
     /// to each element of the pipeline.
     /// </summary>
     [Cmdlet("ForEach", "Object", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low,
-        DefaultParameterSetName = ForEachObjectCommand.ScriptBlockSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096867",
+        DefaultParameterSetName = "ScriptBlockSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113300",
         RemotingCapability = RemotingCapability.None)]
-    public sealed class ForEachObjectCommand : PSCmdlet, IDisposable
+    public sealed class ForEachObjectCommand : PSCmdlet
     {
-        #region Private Members
-
-        private const string ParallelParameterSet = "ParallelParameterSet";
-        private const string ScriptBlockSet = "ScriptBlockSet";
-        private const string PropertyAndMethodSet = "PropertyAndMethodSet";
-
-        #endregion
-
-        #region Common Parameters
-
         /// <summary>
         /// This parameter specifies the current pipeline object.
         /// </summary>
-        [Parameter(ValueFromPipeline = true, ParameterSetName = ForEachObjectCommand.ScriptBlockSet)]
-        [Parameter(ValueFromPipeline = true, ParameterSetName = ForEachObjectCommand.PropertyAndMethodSet)]
-        [Parameter(ValueFromPipeline = true, ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
+        [Parameter(ValueFromPipeline = true, ParameterSetName = "ScriptBlockSet")]
+        [Parameter(ValueFromPipeline = true, ParameterSetName = "PropertyAndMethodSet")]
         public PSObject InputObject
         {
-            get { return _inputObject; }
-
             set { _inputObject = value; }
+
+            get { return _inputObject; }
         }
 
         private PSObject _inputObject = AutomationNull.Value;
 
-        #endregion
-
         #region ScriptBlockSet
 
-        private readonly List<ScriptBlock> _scripts = new List<ScriptBlock>();
+        private List<ScriptBlock> _scripts = new List<ScriptBlock>();
 
         /// <summary>
-        /// Gets or sets the script block to apply in begin processing.
+        /// The script block to apply in begin processing.
         /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.ScriptBlockSet)]
+        [Parameter(ParameterSetName = "ScriptBlockSet")]
         public ScriptBlock Begin
         {
-            get
-            {
-                return null;
-            }
-
             set
             {
                 _scripts.Insert(0, value);
             }
-        }
 
-        /// <summary>
-        /// Gets or sets the script block to apply.
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = ForEachObjectCommand.ScriptBlockSet)]
-        [AllowNull]
-        [AllowEmptyCollection]
-        public ScriptBlock[] Process
-        {
             get
             {
                 return null;
             }
+        }
 
+        /// <summary>
+        /// The script block to apply.
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "ScriptBlockSet")]
+        [AllowNull]
+        [AllowEmptyCollection]
+        public ScriptBlock[] Process
+        {
             set
             {
                 if (value == null)
-                {
                     _scripts.Add(null);
-                }
                 else
-                {
                     _scripts.AddRange(value);
-                }
+            }
+
+            get
+            {
+                return null;
             }
         }
 
         private ScriptBlock _endScript;
         private bool _setEndScript;
-
         /// <summary>
-        /// Gets or sets the script block to apply in complete processing.
+        /// The script block to apply in complete processing.
         /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.ScriptBlockSet)]
+        [Parameter(ParameterSetName = "ScriptBlockSet")]
         public ScriptBlock End
         {
-            get
-            {
-                return _endScript;
-            }
-
             set
             {
                 _endScript = value;
                 _setEndScript = true;
             }
+
+            get
+            {
+                return _endScript;
+            }
         }
 
         /// <summary>
-        /// Gets or sets the remaining script blocks to apply.
+        /// The remaining script blocks to apply.
         /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.ScriptBlockSet, ValueFromRemainingArguments = true)]
+        [Parameter(ParameterSetName = "ScriptBlockSet", ValueFromRemainingArguments = true)]
         [AllowNull]
         [AllowEmptyCollection]
         public ScriptBlock[] RemainingScripts
         {
-            get
-            {
-                return null;
-            }
-
             set
             {
                 if (value == null)
-                {
                     _scripts.Add(null);
-                }
                 else
-                {
                     _scripts.AddRange(value);
-                }
             }
+
+            get { return null; }
         }
 
         private int _start, _end;
@@ -190,22 +162,16 @@ namespace Microsoft.PowerShell.Commands
         #region PropertyAndMethodSet
 
         /// <summary>
-        /// Gets or sets the property or method name.
+        /// The property or method name.
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = ForEachObjectCommand.PropertyAndMethodSet)]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "PropertyAndMethodSet")]
         [ValidateTrustedData]
         [ValidateNotNullOrEmpty]
         public string MemberName
         {
-            get
-            {
-                return _propertyOrMethodName;
-            }
+            set { _propertyOrMethodName = value; }
 
-            set
-            {
-                _propertyOrMethodName = value;
-            }
+            get { return _propertyOrMethodName; }
         }
 
         private string _propertyOrMethodName;
@@ -215,62 +181,19 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The arguments passed to a method invocation.
         /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.PropertyAndMethodSet, ValueFromRemainingArguments = true)]
+        [Parameter(ParameterSetName = "PropertyAndMethodSet", ValueFromRemainingArguments = true)]
         [ValidateTrustedData]
         [Alias("Args")]
         public object[] ArgumentList
         {
-            get { return _arguments; }
-
             set { _arguments = value; }
+
+            get { return _arguments; }
         }
 
         private object[] _arguments;
 
         #endregion PropertyAndMethodSet
-
-        #region ParallelParameterSet
-
-        /// <summary>
-        /// Gets or sets a script block to run in parallel for each pipeline object.
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
-        public ScriptBlock Parallel { get; set; }
-
-        /// <summary>
-        /// Gets or sets the maximum number of concurrently running scriptblocks on separate threads.
-        /// The default number is 5.
-        /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
-        [ValidateRange(1, Int32.MaxValue)]
-        public int ThrottleLimit { get; set; } = 5;
-
-        /// <summary>
-        /// Gets or sets a timeout time in seconds, after which the parallel running scripts will be stopped
-        /// The default value is 0, indicating no timeout.
-        /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
-        [ValidateRange(0, (Int32.MaxValue / 1000))]
-        public int TimeoutSeconds { get; set; }
-
-        /// <summary>
-        /// Gets or sets a flag that returns a job object immediately for the parallel operation, instead of returning after
-        /// all foreach processing is completed.
-        /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
-        public SwitchParameter AsJob { get; set; }
-
-        /// <summary>
-        /// Gets or sets a flag so that a new runspace object is created for each loop iteration, instead of reusing objects
-        /// from the runspace pool.
-        /// By default, runspaces are reused from a runspace pool.
-        /// </summary>
-        [Parameter(ParameterSetName = ForEachObjectCommand.ParallelParameterSet)]
-        public SwitchParameter UseNewRunspace { get; set; }
-
-        #endregion
-
-        #region Overrides
 
         /// <summary>
         /// Execute the begin scriptblock at the start of processing.
@@ -280,661 +203,10 @@ namespace Microsoft.PowerShell.Commands
         /// <exception cref="ParameterBindingException">See Pipeline.Invoke.</exception>
         protected override void BeginProcessing()
         {
-            switch (ParameterSetName)
-            {
-                case ForEachObjectCommand.ScriptBlockSet:
-                    InitScriptBlockParameterSet();
-                    break;
+            Dbg.Assert(ParameterSetName == "ScriptBlockSet" || ParameterSetName == "PropertyAndMethodSet", "ParameterSetName is neither 'ScriptBlockSet' nor 'PropertyAndMethodSet'");
 
-                case ForEachObjectCommand.ParallelParameterSet:
-                    InitParallelParameterSet();
-                    break;
-            }
-        }
+            if (ParameterSetName != "ScriptBlockSet") return;
 
-        /// <summary>
-        /// Execute the processing script blocks on the current pipeline object
-        /// which is passed as it's only parameter.
-        /// </summary>
-        /// <exception cref="ParseException">Could not parse script.</exception>
-        /// <exception cref="RuntimeException">See Pipeline.Invoke.</exception>
-        /// <exception cref="ParameterBindingException">See Pipeline.Invoke.</exception>
-        protected override void ProcessRecord()
-        {
-            switch (ParameterSetName)
-            {
-                case ForEachObjectCommand.ScriptBlockSet:
-                    ProcessScriptBlockParameterSet();
-                    break;
-
-                case ForEachObjectCommand.PropertyAndMethodSet:
-                    ProcessPropertyAndMethodParameterSet();
-                    break;
-
-                case ForEachObjectCommand.ParallelParameterSet:
-                    ProcessParallelParameterSet();
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Execute the end scriptblock when the pipeline is complete.
-        /// </summary>
-        /// <exception cref="ParseException">Could not parse script.</exception>
-        /// <exception cref="RuntimeException">See Pipeline.Invoke.</exception>
-        /// <exception cref="ParameterBindingException">See Pipeline.Invoke.</exception>
-        protected override void EndProcessing()
-        {
-            switch (ParameterSetName)
-            {
-                case ForEachObjectCommand.ScriptBlockSet:
-                    EndBlockParameterSet();
-                    break;
-
-                case ForEachObjectCommand.ParallelParameterSet:
-                    EndParallelParameterSet();
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Handle pipeline stop signal.
-        /// </summary>
-        protected override void StopProcessing()
-        {
-            switch (ParameterSetName)
-            {
-                case ForEachObjectCommand.ParallelParameterSet:
-                    StopParallelProcessing();
-                    break;
-            }
-        }
-
-        #endregion
-
-        #region IDisposable
-
-        /// <summary>
-        /// Dispose cmdlet instance.
-        /// </summary>
-        public void Dispose()
-        {
-            // Ensure all parallel task objects are disposed
-            _taskTimer?.Dispose();
-            _taskDataStreamWriter?.Dispose();
-            _taskPool?.Dispose();
-            _taskCollection?.Dispose();
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        #region PSTasks
-
-        private PSTaskPool _taskPool;
-        private PSTaskDataStreamWriter _taskDataStreamWriter;
-        private Dictionary<string, object> _usingValuesMap;
-        private Timer _taskTimer;
-        private PSTaskJob _taskJob;
-        private PSDataCollection<System.Management.Automation.PSTasks.PSTask> _taskCollection;
-        private Exception _taskCollectionException;
-        private string _currentLocationPath;
-
-        private void InitParallelParameterSet()
-        {
-            // The following common parameters are not (yet) supported in this parameter set.
-            //  ErrorAction, WarningAction, InformationAction, PipelineVariable.
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(CommonParamSet.ErrorAction)) ||
-                MyInvocation.BoundParameters.ContainsKey(nameof(CommonParamSet.WarningAction)) ||
-                MyInvocation.BoundParameters.ContainsKey(nameof(CommonParamSet.InformationAction)) ||
-                MyInvocation.BoundParameters.ContainsKey(nameof(CommonParamSet.PipelineVariable)))
-            {
-                ThrowTerminatingError(
-                        new ErrorRecord(
-                            new PSNotSupportedException(InternalCommandStrings.ParallelCommonParametersNotSupported),
-                            "ParallelCommonParametersNotSupported",
-                            ErrorCategory.NotImplemented,
-                            this));
-            }
-
-            // Get the current working directory location, if available.
-            try
-            {
-                _currentLocationPath = SessionState.Internal.CurrentLocation.Path;
-            }
-            catch (PSInvalidOperationException)
-            {
-            }
-
-            bool allowUsingExpression = this.Context.SessionState.LanguageMode != PSLanguageMode.NoLanguage;
-            _usingValuesMap = ScriptBlockToPowerShellConverter.GetUsingValuesAsDictionary(
-                                Parallel,
-                                allowUsingExpression,
-                                this.Context,
-                                null);
-
-            // Validate using values map, which is a map of '$using:' variables referenced in the script.
-            // Script block variables are not allowed since their behavior is undefined outside the runspace
-            // in which they were created.
-            foreach (object item in _usingValuesMap.Values)
-            {
-                if (item is ScriptBlock)
-                {
-                    ThrowTerminatingError(
-                        new ErrorRecord(
-                            new PSArgumentException(InternalCommandStrings.ParallelUsingVariableCannotBeScriptBlock),
-                            "ParallelUsingVariableCannotBeScriptBlock",
-                            ErrorCategory.InvalidType,
-                            this));
-                }
-            }
-
-            if (AsJob)
-            {
-                // Set up for returning a job object.
-                if (MyInvocation.BoundParameters.ContainsKey(nameof(TimeoutSeconds)))
-                {
-                    ThrowTerminatingError(
-                        new ErrorRecord(
-                            new PSArgumentException(InternalCommandStrings.ParallelCannotUseTimeoutWithJob),
-                            "ParallelCannotUseTimeoutWithJob",
-                            ErrorCategory.InvalidOperation,
-                            this));
-                }
-
-                _taskJob = new PSTaskJob(
-                    Parallel.ToString(),
-                    ThrottleLimit,
-                    UseNewRunspace);
-
-                return;
-            }
-
-            // Set up for synchronous processing and data streaming.
-            _taskCollection = new PSDataCollection<System.Management.Automation.PSTasks.PSTask>();
-            _taskDataStreamWriter = new PSTaskDataStreamWriter(this);
-            _taskPool = new PSTaskPool(ThrottleLimit, UseNewRunspace);
-            _taskPool.PoolComplete += (sender, args) => _taskDataStreamWriter.Close();
-
-            // Create timeout timer if requested.
-            if (TimeoutSeconds != 0)
-            {
-                _taskTimer = new Timer(
-                    callback: (_) => { _taskCollection.Complete(); _taskPool.StopAll(); },
-                    state: null,
-                    dueTime: TimeoutSeconds * 1000,
-                    period: Timeout.Infinite);
-            }
-
-            // Task collection handler.
-            System.Threading.ThreadPool.QueueUserWorkItem(
-                (_) =>
-                {
-                    // As piped input are converted to PSTasks and added to the _taskCollection,
-                    // transfer the task to the _taskPool on this dedicated thread.
-                    // The _taskPool will block this thread when it is full, and allow more tasks to
-                    // be added only when a currently running task completes and makes space in the pool.
-                    // Continue adding any tasks appearing in _taskCollection until the collection is closed.
-                    while (true)
-                    {
-                        // This handle will unblock the thread when a new task is available or the _taskCollection
-                        // is closed.
-                        _taskCollection.WaitHandle.WaitOne();
-
-                        // Task collection open state is volatile.
-                        // Record current task collection open state here, to be checked after processing.
-                        bool isOpen = _taskCollection.IsOpen;
-
-                        try
-                        {
-                            // Read all tasks in the collection.
-                            foreach (var task in _taskCollection.ReadAll())
-                            {
-                                // This _taskPool method will block if the pool is full and will unblock
-                                // only after a task completes making more space.
-                                _taskPool.Add(task);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _taskCollection.Complete();
-                            _taskCollectionException = ex;
-                            _taskDataStreamWriter.Close();
-
-                            break;
-                        }
-
-                        // Loop is exited only when task collection is closed and all task
-                        // collection tasks are processed.
-                        if (!isOpen)
-                        {
-                            break;
-                        }
-                    }
-
-                    // We are done adding tasks and can close the task pool.
-                    _taskPool.Close();
-                });
-        }
-
-        private void ProcessParallelParameterSet()
-        {
-            // Validate piped InputObject
-            if (_inputObject != null &&
-                _inputObject.BaseObject is ScriptBlock)
-            {
-                WriteError(
-                    new ErrorRecord(
-                            new PSArgumentException(InternalCommandStrings.ParallelPipedInputObjectCannotBeScriptBlock),
-                            "ParallelPipedInputObjectCannotBeScriptBlock",
-                            ErrorCategory.InvalidType,
-                            this));
-
-                return;
-            }
-
-            if (AsJob)
-            {
-                // Add child task job.
-                var taskChildJob = new PSTaskChildJob(
-                    Parallel,
-                    _usingValuesMap,
-                    InputObject,
-                    _currentLocationPath);
-
-                _taskJob.AddJob(taskChildJob);
-
-                return;
-            }
-
-            // Write any streaming data
-            _taskDataStreamWriter.WriteImmediate();
-
-            // Add to task collection for processing.
-            if (_taskCollection.IsOpen)
-            {
-                try
-                {
-                    // Create a PSTask based on this piped input and add it to the task collection.
-                    // A dedicated thread will add it to the PSTask pool in a performant manner.
-                    _taskCollection.Add(
-                        new System.Management.Automation.PSTasks.PSTask(
-                            Parallel,
-                            _usingValuesMap,
-                            InputObject,
-                            _currentLocationPath,
-                            _taskDataStreamWriter));
-                }
-                catch (InvalidOperationException)
-                {
-                    // This exception is thrown if the task collection is closed, which should not happen.
-                    Dbg.Assert(false, "Should not add to a closed PSTask collection");
-                }
-            }
-        }
-
-        private void EndParallelParameterSet()
-        {
-            if (AsJob)
-            {
-                // Start and return parent job object.
-                _taskJob.Start();
-                JobRepository.Add(_taskJob);
-                WriteObject(_taskJob);
-
-                return;
-            }
-
-            // Close task collection and wait for processing to complete while streaming data.
-            _taskDataStreamWriter.WriteImmediate();
-            _taskCollection.Complete();
-            _taskDataStreamWriter.WaitAndWrite();
-
-            // Check for an unexpected error from the _taskCollection handler thread and report here.
-            var ex = _taskCollectionException;
-            if (ex != null)
-            {
-                var msg = string.Format(CultureInfo.InvariantCulture, InternalCommandStrings.ParallelPipedInputProcessingError, ex);
-                WriteError(
-                    new ErrorRecord(
-                        exception: new InvalidOperationException(msg),
-                        errorId: "ParallelPipedInputProcessingError",
-                        errorCategory: ErrorCategory.InvalidOperation,
-                        targetObject: this));
-            }
-        }
-
-        private void StopParallelProcessing()
-        {
-            _taskCollection?.Complete();
-            _taskPool?.StopAll();
-        }
-
-        #endregion
-
-        private void EndBlockParameterSet()
-        {
-            if (_endScript == null)
-            {
-                return;
-            }
-
-            var emptyArray = Array.Empty<object>();
-            _endScript.InvokeUsingCmdlet(
-                contextCmdlet: this,
-                useLocalScope: false,
-                errorHandlingBehavior: ScriptBlock.ErrorHandlingBehavior.WriteToCurrentErrorPipe,
-                dollarUnder: AutomationNull.Value,
-                input: emptyArray,
-                scriptThis: AutomationNull.Value,
-                args: emptyArray);
-        }
-
-        private void ProcessPropertyAndMethodParameterSet()
-        {
-            _targetString = string.Format(CultureInfo.InvariantCulture, InternalCommandStrings.ForEachObjectTarget, GetStringRepresentation(InputObject));
-
-            if (LanguagePrimitives.IsNull(InputObject))
-            {
-                if (_arguments != null && _arguments.Length > 0)
-                {
-                    WriteError(GenerateNameParameterError("InputObject", ParserStrings.InvokeMethodOnNull,
-                                                          "InvokeMethodOnNull", _inputObject));
-                }
-                else
-                {
-                    // should process
-                    string propertyAction = string.Format(CultureInfo.InvariantCulture,
-                        InternalCommandStrings.ForEachObjectPropertyAction, _propertyOrMethodName);
-
-                    if (ShouldProcess(_targetString, propertyAction))
-                    {
-                        if (Context.IsStrictVersion(2))
-                        {
-                            WriteError(GenerateNameParameterError("InputObject", InternalCommandStrings.InputObjectIsNull,
-                                                                  "InputObjectIsNull", _inputObject));
-                        }
-                        else
-                        {
-                            // we write null out because:
-                            // PS C:\> $null | ForEach-object {$_.aa} | ForEach-Object {$_ + 3}
-                            // 3
-                            // so we also want
-                            // PS C:\> $null | ForEach-object aa | ForEach-Object {$_ + 3}
-                            // 3
-                            // But if we don't write anything to the pipeline when _inputObject is null,
-                            // the result 3 will not be generated.
-                            WriteObject(null);
-                        }
-                    }
-                }
-
-                return;
-            }
-
-            ErrorRecord errorRecord = null;
-
-            // if args exist, this is explicitly a method invocation
-            if (_arguments != null && _arguments.Length > 0)
-            {
-                MethodCallWithArguments();
-            }
-            // no arg provided
-            else
-            {
-                // if inputObject is of IDictionary, get the value
-                if (GetValueFromIDictionaryInput()) { return; }
-
-                PSMemberInfo member = null;
-                if (WildcardPattern.ContainsWildcardCharacters(_propertyOrMethodName))
-                {
-                    // get the matched member(s)
-                    ReadOnlyPSMemberInfoCollection<PSMemberInfo> members =
-                        _inputObject.Members.Match(_propertyOrMethodName, PSMemberTypes.All);
-                    Dbg.Assert(members != null, "The return value of Members.Match should never be null");
-
-                    if (members.Count > 1)
-                    {
-                        // write error record: property method ambiguous
-                        StringBuilder possibleMatches = new StringBuilder();
-                        foreach (PSMemberInfo item in members)
-                        {
-                            possibleMatches.AppendFormat(CultureInfo.InvariantCulture, " {0}", item.Name);
-                        }
-
-                        WriteError(GenerateNameParameterError("Name", InternalCommandStrings.AmbiguousPropertyOrMethodName,
-                                                              "AmbiguousPropertyOrMethodName", _inputObject,
-                                                              _propertyOrMethodName, possibleMatches));
-                        return;
-                    }
-
-                    if (members.Count == 1)
-                    {
-                        member = members[0];
-                    }
-                }
-                else
-                {
-                    member = _inputObject.Members[_propertyOrMethodName];
-                }
-
-                // member is a method
-                if (member is PSMethodInfo)
-                {
-                    // first we check if the member is a ParameterizedProperty
-                    PSParameterizedProperty targetParameterizedProperty = member as PSParameterizedProperty;
-                    if (targetParameterizedProperty != null)
-                    {
-                        // should process
-                        string propertyAction = string.Format(CultureInfo.InvariantCulture,
-                            InternalCommandStrings.ForEachObjectPropertyAction, targetParameterizedProperty.Name);
-
-                        // ParameterizedProperty always take parameters, so we output the member.Value directly
-                        if (ShouldProcess(_targetString, propertyAction))
-                        {
-                            WriteObject(member.Value);
-                        }
-
-                        return;
-                    }
-
-                    PSMethodInfo targetMethod = member as PSMethodInfo;
-                    Dbg.Assert(targetMethod != null, "targetMethod should not be null here.");
-                    try
-                    {
-                        // should process
-                        string methodAction = string.Format(CultureInfo.InvariantCulture,
-                            InternalCommandStrings.ForEachObjectMethodActionWithoutArguments, targetMethod.Name);
-
-                        if (ShouldProcess(_targetString, methodAction))
-                        {
-                            if (!BlockMethodInLanguageMode(InputObject))
-                            {
-                                object result = targetMethod.Invoke(Array.Empty<object>());
-                                WriteToPipelineWithUnrolling(result);
-                            }
-                        }
-                    }
-                    catch (PipelineStoppedException)
-                    {
-                        // PipelineStoppedException can be caused by select-object
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        MethodException mex = ex as MethodException;
-                        if (mex != null && mex.ErrorRecord != null && mex.ErrorRecord.FullyQualifiedErrorId == "MethodCountCouldNotFindBest")
-                        {
-                            WriteObject(targetMethod.Value);
-                        }
-                        else
-                        {
-                            WriteError(new ErrorRecord(ex, "MethodInvocationError", ErrorCategory.InvalidOperation, _inputObject));
-                        }
-                    }
-                }
-                else
-                {
-                    string resolvedPropertyName = null;
-                    bool isBlindDynamicAccess = false;
-                    if (member == null)
-                    {
-                        if ((_inputObject.BaseObject is IDynamicMetaObjectProvider) &&
-                            !WildcardPattern.ContainsWildcardCharacters(_propertyOrMethodName))
-                        {
-                            // Let's just try a dynamic property access. Note that if it
-                            // comes to depending on dynamic access, we are assuming it is a
-                            // property; we don't have ETS info to tell us up front if it
-                            // even exists or not, let alone if it is a method or something
-                            // else.
-                            //
-                            // Note that this is "truly blind"--the name did not show up in
-                            // GetDynamicMemberNames(), else it would show up as a dynamic
-                            // member.
-
-                            resolvedPropertyName = _propertyOrMethodName;
-                            isBlindDynamicAccess = true;
-                        }
-                        else
-                        {
-                            errorRecord = GenerateNameParameterError("Name", InternalCommandStrings.PropertyOrMethodNotFound,
-                                                                     "PropertyOrMethodNotFound", _inputObject,
-                                                                     _propertyOrMethodName);
-                        }
-                    }
-                    else
-                    {
-                        // member is [presumably] a property (note that it could be a
-                        // dynamic property, if it shows up in GetDynamicMemberNames())
-                        resolvedPropertyName = member.Name;
-                    }
-
-                    if (!string.IsNullOrEmpty(resolvedPropertyName))
-                    {
-                        // should process
-                        string propertyAction = string.Format(CultureInfo.InvariantCulture,
-                            InternalCommandStrings.ForEachObjectPropertyAction, resolvedPropertyName);
-
-                        if (ShouldProcess(_targetString, propertyAction))
-                        {
-                            try
-                            {
-                                WriteToPipelineWithUnrolling(_propGetter.GetValue(InputObject, resolvedPropertyName));
-                            }
-                            catch (TerminateException) // The debugger is terminating the execution
-                            {
-                                throw;
-                            }
-                            catch (MethodException)
-                            {
-                                throw;
-                            }
-                            catch (PipelineStoppedException)
-                            {
-                                // PipelineStoppedException can be caused by select-object
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                // For normal property accesses, we do not generate an error
-                                // here. The problem for truly blind dynamic accesses (the
-                                // member did not show up in GetDynamicMemberNames) is that
-                                // we can't tell the difference between "it failed because
-                                // the property does not exist" (let's call this case 1) and
-                                // "it failed because accessing it actually threw some
-                                // exception" (let's call that case 2).
-                                //
-                                // PowerShell behavior for normal (non-dynamic) properties
-                                // is different for these two cases: case 1 gets an error
-                                // (which is possible because the ETS tells us up front if
-                                // the property exists or not), and case 2 does not. (For
-                                // normal properties, this catch block /is/ case 2.)
-                                //
-                                // For IDMOPs, we have the chance to attempt a "blind"
-                                // access, but the cost is that we must have the same
-                                // response to both cases (because we cannot distinguish
-                                // between the two). So we have to make a choice: we can
-                                // either swallow ALL errors (including "The property
-                                // 'Blarg' does not exist"), or expose them all.
-                                //
-                                // Here, for truly blind dynamic access, we choose to
-                                // preserve the behavior of showing "The property 'Blarg'
-                                // does not exist" (case 1) errors than to suppress
-                                // "FooException thrown when accessing Bloop property" (case
-                                // 2) errors.
-
-                                if (isBlindDynamicAccess)
-                                {
-                                    errorRecord = new ErrorRecord(ex,
-                                                                  "DynamicPropertyAccessFailed_" + _propertyOrMethodName,
-                                                                  ErrorCategory.InvalidOperation,
-                                                                  InputObject);
-                                }
-                                else
-                                {
-                                    // When the property is not gettable or it throws an exception.
-                                    // e.g. when trying to access an assembly's location property, since dynamic assemblies are not backed up by a file,
-                                    // an exception will be thrown when accessing its location property. In this case, return null.
-                                    WriteObject(null);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (errorRecord != null)
-            {
-                string propertyAction = string.Format(CultureInfo.InvariantCulture,
-                    InternalCommandStrings.ForEachObjectPropertyAction, _propertyOrMethodName);
-
-                if (ShouldProcess(_targetString, propertyAction))
-                {
-                    if (Context.IsStrictVersion(2))
-                    {
-                        WriteError(errorRecord);
-                    }
-                    else
-                    {
-                        // we write null out because:
-                        // PS C:\> "string" | ForEach-Object {$_.aa} | ForEach-Object {$_ + 3}
-                        // 3
-                        // so we also want
-                        // PS C:\> "string" | ForEach-Object aa | ForEach-Object {$_ + 3}
-                        // 3
-                        // But if we don't write anything to the pipeline when no member is found,
-                        // the result 3 will not be generated.
-                        WriteObject(null);
-                    }
-                }
-            }
-        }
-
-        private void ProcessScriptBlockParameterSet()
-        {
-            for (int i = _start; i < _end; i++)
-            {
-                // Only execute scripts that aren't null. This isn't treated as an error
-                // because it allows you to parameterize a command - for example you might allow
-                // for actions before and after the main processing script. They could be null
-                // by default and therefore ignored then filled in later...
-                if (_scripts[i] != null)
-                {
-                    _scripts[i].InvokeUsingCmdlet(
-                        contextCmdlet: this,
-                        useLocalScope: false,
-                        errorHandlingBehavior: ScriptBlock.ErrorHandlingBehavior.WriteToCurrentErrorPipe,
-                        dollarUnder: InputObject,
-                        input: new object[] { InputObject },
-                        scriptThis: AutomationNull.Value,
-                        args: Array.Empty<object>());
-                }
-            }
-        }
-
-        private void InitScriptBlockParameterSet()
-        {
             // Win8: 176403: ScriptCmdlets sets the global WhatIf and Confirm preferences
             // This effects the new W8 foreach-object cmdlet with -whatif and -confirm
             // implemented. -whatif and -confirm needed only for PropertyAndMethodSet
@@ -1004,15 +276,331 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
+        /// Execute the processing script blocks on the current pipeline object
+        /// which is passed as it's only parameter.
+        /// </summary>
+        /// <exception cref="ParseException">Could not parse script.</exception>
+        /// <exception cref="RuntimeException">See Pipeline.Invoke.</exception>
+        /// <exception cref="ParameterBindingException">See Pipeline.Invoke.</exception>
+        protected override void ProcessRecord()
+        {
+            Dbg.Assert(ParameterSetName == "ScriptBlockSet" || ParameterSetName == "PropertyAndMethodSet", "ParameterSetName is neither 'ScriptBlockSet' nor 'PropertyAndMethodSet'");
+
+            switch (ParameterSetName)
+            {
+                case "ScriptBlockSet":
+                    for (int i = _start; i < _end; i++)
+                    {
+                        // Only execute scripts that aren't null. This isn't treated as an error
+                        // because it allows you to parameterize a command - for example you might allow
+                        // for actions before and after the main processing script. They could be null
+                        // by default and therefore ignored then filled in later...
+                        if (_scripts[i] != null)
+                        {
+                            _scripts[i].InvokeUsingCmdlet(
+                                contextCmdlet: this,
+                                useLocalScope: false,
+                                errorHandlingBehavior: ScriptBlock.ErrorHandlingBehavior.WriteToCurrentErrorPipe,
+                                dollarUnder: InputObject,
+                                input: new object[] { InputObject },
+                                scriptThis: AutomationNull.Value,
+                                args: Array.Empty<object>());
+                        }
+                    }
+
+                    break;
+                case "PropertyAndMethodSet":
+
+                    _targetString = string.Format(CultureInfo.InvariantCulture, InternalCommandStrings.ForEachObjectTarget, GetStringRepresentation(InputObject));
+
+                    if (LanguagePrimitives.IsNull(InputObject))
+                    {
+                        if (_arguments != null && _arguments.Length > 0)
+                        {
+                            WriteError(GenerateNameParameterError("InputObject", ParserStrings.InvokeMethodOnNull,
+                                                                  "InvokeMethodOnNull", _inputObject));
+                        }
+                        else
+                        {
+                            // should process
+                            string propertyAction = string.Format(CultureInfo.InvariantCulture,
+                                InternalCommandStrings.ForEachObjectPropertyAction, _propertyOrMethodName);
+
+                            if (ShouldProcess(_targetString, propertyAction))
+                            {
+                                if (Context.IsStrictVersion(2))
+                                {
+                                    WriteError(GenerateNameParameterError("InputObject", InternalCommandStrings.InputObjectIsNull,
+                                                                          "InputObjectIsNull", _inputObject));
+                                }
+                                else
+                                {
+                                    // we write null out because:
+                                    // PS C:\> $null | ForEach-object {$_.aa} | ForEach-Object {$_ + 3}
+                                    // 3
+                                    // so we also want
+                                    // PS C:\> $null | ForEach-object aa | ForEach-Object {$_ + 3}
+                                    // 3
+                                    // But if we don't write anything to the pipeline when _inputObject is null,
+                                    // the result 3 will not be generated.
+                                    WriteObject(null);
+                                }
+                            }
+                        }
+
+                        return;
+                    }
+
+                    ErrorRecord errorRecord = null;
+
+                    // if args exist, this is explicitly a method invocation
+                    if (_arguments != null && _arguments.Length > 0)
+                    {
+                        MethodCallWithArguments();
+                    }
+                    // no arg provided
+                    else
+                    {
+                        // if inputObject is of IDictionary, get the value
+                        if (GetValueFromIDictionaryInput()) { return; }
+
+                        PSMemberInfo member = null;
+                        if (WildcardPattern.ContainsWildcardCharacters(_propertyOrMethodName))
+                        {
+                            // get the matched member(s)
+                            ReadOnlyPSMemberInfoCollection<PSMemberInfo> members =
+                                _inputObject.Members.Match(_propertyOrMethodName, PSMemberTypes.All);
+                            Dbg.Assert(members != null, "The return value of Members.Match should never be null");
+
+                            if (members.Count > 1)
+                            {
+                                // write error record: property method ambiguous
+                                StringBuilder possibleMatches = new StringBuilder();
+                                foreach (PSMemberInfo item in members)
+                                {
+                                    possibleMatches.AppendFormat(CultureInfo.InvariantCulture, " {0}", item.Name);
+                                }
+
+                                WriteError(GenerateNameParameterError("Name", InternalCommandStrings.AmbiguousPropertyOrMethodName,
+                                                                      "AmbiguousPropertyOrMethodName", _inputObject,
+                                                                      _propertyOrMethodName, possibleMatches));
+                                return;
+                            }
+
+                            if (members.Count == 1)
+                            {
+                                member = members[0];
+                            }
+                        }
+                        else
+                        {
+                            member = _inputObject.Members[_propertyOrMethodName];
+                        }
+
+                        // member is a method
+                        if (member is PSMethodInfo)
+                        {
+                            // first we check if the member is a ParameterizedProperty
+                            PSParameterizedProperty targetParameterizedProperty = member as PSParameterizedProperty;
+                            if (targetParameterizedProperty != null)
+                            {
+                                // should process
+                                string propertyAction = string.Format(CultureInfo.InvariantCulture,
+                                    InternalCommandStrings.ForEachObjectPropertyAction, targetParameterizedProperty.Name);
+
+                                // ParameterizedProperty always take parameters, so we output the member.Value directly
+                                if (ShouldProcess(_targetString, propertyAction))
+                                {
+                                    WriteObject(member.Value);
+                                }
+
+                                return;
+                            }
+
+                            PSMethodInfo targetMethod = member as PSMethodInfo;
+                            Dbg.Assert(targetMethod != null, "targetMethod should not be null here.");
+                            try
+                            {
+                                // should process
+                                string methodAction = string.Format(CultureInfo.InvariantCulture,
+                                    InternalCommandStrings.ForEachObjectMethodActionWithoutArguments, targetMethod.Name);
+
+                                if (ShouldProcess(_targetString, methodAction))
+                                {
+                                    if (!BlockMethodInLanguageMode(InputObject))
+                                    {
+                                        object result = targetMethod.Invoke(Array.Empty<object>());
+                                        WriteToPipelineWithUnrolling(result);
+                                    }
+                                }
+                            }
+                            catch (PipelineStoppedException)
+                            {
+                                // PipelineStoppedException can be caused by select-object
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                MethodException mex = ex as MethodException;
+                                if (mex != null && mex.ErrorRecord != null && mex.ErrorRecord.FullyQualifiedErrorId == "MethodCountCouldNotFindBest")
+                                {
+                                    WriteObject(targetMethod.Value);
+                                }
+                                else
+                                {
+                                    WriteError(new ErrorRecord(ex, "MethodInvocationError", ErrorCategory.InvalidOperation, _inputObject));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            string resolvedPropertyName = null;
+                            bool isBlindDynamicAccess = false;
+                            if (member == null)
+                            {
+                                if ((_inputObject.BaseObject is IDynamicMetaObjectProvider) &&
+                                    !WildcardPattern.ContainsWildcardCharacters(_propertyOrMethodName))
+                                {
+                                    // Let's just try a dynamic property access. Note that if it
+                                    // comes to depending on dynamic access, we are assuming it is a
+                                    // property; we don't have ETS info to tell us up front if it
+                                    // even exists or not, let alone if it is a method or something
+                                    // else.
+                                    //
+                                    // Note that this is "truly blind"--the name did not show up in
+                                    // GetDynamicMemberNames(), else it would show up as a dynamic
+                                    // member.
+
+                                    resolvedPropertyName = _propertyOrMethodName;
+                                    isBlindDynamicAccess = true;
+                                }
+                                else
+                                {
+                                    errorRecord = GenerateNameParameterError("Name", InternalCommandStrings.PropertyOrMethodNotFound,
+                                                                             "PropertyOrMethodNotFound", _inputObject,
+                                                                             _propertyOrMethodName);
+                                }
+                            }
+                            else
+                            {
+                                // member is [presumably] a property (note that it could be a
+                                // dynamic property, if it shows up in GetDynamicMemberNames())
+                                resolvedPropertyName = member.Name;
+                            }
+
+                            if (!string.IsNullOrEmpty(resolvedPropertyName))
+                            {
+                                // should process
+                                string propertyAction = string.Format(CultureInfo.InvariantCulture,
+                                    InternalCommandStrings.ForEachObjectPropertyAction, resolvedPropertyName);
+
+                                if (ShouldProcess(_targetString, propertyAction))
+                                {
+                                    try
+                                    {
+                                        WriteToPipelineWithUnrolling(_propGetter.GetValue(InputObject, resolvedPropertyName));
+                                    }
+                                    catch (TerminateException) // The debugger is terminating the execution
+                                    {
+                                        throw;
+                                    }
+                                    catch (MethodException)
+                                    {
+                                        throw;
+                                    }
+                                    catch (PipelineStoppedException)
+                                    {
+                                        // PipelineStoppedException can be caused by select-object
+                                        throw;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        // For normal property accesses, we do not generate an error
+                                        // here. The problem for truly blind dynamic accesses (the
+                                        // member did not show up in GetDynamicMemberNames) is that
+                                        // we can't tell the difference between "it failed because
+                                        // the property does not exist" (let's call this case 1) and
+                                        // "it failed because accessing it actually threw some
+                                        // exception" (let's call that case 2).
+                                        //
+                                        // PowerShell behavior for normal (non-dynamic) properties
+                                        // is different for these two cases: case 1 gets an error
+                                        // (which is possible because the ETS tells us up front if
+                                        // the property exists or not), and case 2 does not. (For
+                                        // normal properties, this catch block /is/ case 2.)
+                                        //
+                                        // For IDMOPs, we have the chance to attempt a "blind"
+                                        // access, but the cost is that we must have the same
+                                        // response to both cases (because we cannot distinguish
+                                        // between the two). So we have to make a choice: we can
+                                        // either swallow ALL errors (including "The property
+                                        // 'Blarg' does not exist"), or expose them all.
+                                        //
+                                        // Here, for truly blind dynamic access, we choose to
+                                        // preserve the behavior of showing "The property 'Blarg'
+                                        // does not exist" (case 1) errors than to suppress
+                                        // "FooException thrown when accessing Bloop property" (case
+                                        // 2) errors.
+
+                                        if (isBlindDynamicAccess)
+                                        {
+                                            errorRecord = new ErrorRecord(ex,
+                                                                          "DynamicPropertyAccessFailed_" + _propertyOrMethodName,
+                                                                          ErrorCategory.InvalidOperation,
+                                                                          InputObject);
+                                        }
+                                        else
+                                        {
+                                            // When the property is not gettable or it throws an exception.
+                                            // e.g. when trying to access an assembly's location property, since dynamic assemblies are not backed up by a file,
+                                            // an exception will be thrown when accessing its location property. In this case, return null.
+                                            WriteObject(null);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (errorRecord != null)
+                    {
+                        string propertyAction = string.Format(CultureInfo.InvariantCulture,
+                            InternalCommandStrings.ForEachObjectPropertyAction, _propertyOrMethodName);
+
+                        if (ShouldProcess(_targetString, propertyAction))
+                        {
+                            if (Context.IsStrictVersion(2))
+                            {
+                                WriteError(errorRecord);
+                            }
+                            else
+                            {
+                                // we write null out because:
+                                // PS C:\> "string" | ForEach-Object {$_.aa} | ForEach-Object {$_ + 3}
+                                // 3
+                                // so we also want
+                                // PS C:\> "string" | ForEach-Object aa | ForEach-Object {$_ + 3}
+                                // 3
+                                // But if we don't write anything to the pipeline when no member is found,
+                                // the result 3 will not be generated.
+                                WriteObject(null);
+                            }
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Do method invocation with arguments.
         /// </summary>
         private void MethodCallWithArguments()
         {
             // resolve the name
             ReadOnlyPSMemberInfoCollection<PSMemberInfo> methods =
-                _inputObject.Members.Match(
-                    _propertyOrMethodName,
-                    PSMemberTypes.Methods | PSMemberTypes.ParameterizedProperty);
+                _inputObject.Members.Match(_propertyOrMethodName,
+                                           PSMemberTypes.Methods | PSMemberTypes.ParameterizedProperty);
 
             Dbg.Assert(methods != null, "The return value of Members.Match should never be null.");
             if (methods.Count > 1)
@@ -1024,23 +612,15 @@ namespace Microsoft.PowerShell.Commands
                     possibleMatches.AppendFormat(CultureInfo.InvariantCulture, " {0}", item.Name);
                 }
 
-                WriteError(GenerateNameParameterError(
-                    "Name",
-                    InternalCommandStrings.AmbiguousMethodName,
-                    "AmbiguousMethodName",
-                    _inputObject,
-                    _propertyOrMethodName,
-                    possibleMatches));
+                WriteError(GenerateNameParameterError("Name", InternalCommandStrings.AmbiguousMethodName,
+                                                      "AmbiguousMethodName", _inputObject,
+                                                      _propertyOrMethodName, possibleMatches));
             }
-            else if (methods.Count == 0 || methods[0] is not PSMethodInfo)
+            else if (methods.Count == 0 || !(methods[0] is PSMethodInfo))
             {
                 // write error record: method no found
-                WriteError(GenerateNameParameterError(
-                    "Name",
-                    InternalCommandStrings.MethodNotFound,
-                    "MethodNotFound",
-                    _inputObject,
-                    _propertyOrMethodName));
+                WriteError(GenerateNameParameterError("Name", InternalCommandStrings.MethodNotFound,
+                                                      "MethodNotFound", _inputObject, _propertyOrMethodName));
             }
             else
             {
@@ -1084,8 +664,8 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Get the string representation of the passed-in object.
         /// </summary>
-        /// <param name="obj">Source object.</param>
-        /// <returns>String representation of the source object.</returns>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         private static string GetStringRepresentation(object obj)
         {
             string objInString;
@@ -1112,7 +692,7 @@ namespace Microsoft.PowerShell.Commands
         /// Get the value by taking _propertyOrMethodName as the key, if the
         /// input object is a IDictionary.
         /// </summary>
-        /// <returns>True if success.</returns>
+        /// <returns></returns>
         private bool GetValueFromIDictionaryInput()
         {
             object target = PSObject.Base(_inputObject);
@@ -1122,10 +702,8 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (hash != null && hash.Contains(_propertyOrMethodName))
                 {
-                    string keyAction = string.Format(
-                        CultureInfo.InvariantCulture,
-                        InternalCommandStrings.ForEachObjectKeyAction,
-                        _propertyOrMethodName);
+                    string keyAction = string.Format(CultureInfo.InvariantCulture,
+                            InternalCommandStrings.ForEachObjectKeyAction, _propertyOrMethodName);
                     if (ShouldProcess(_targetString, keyAction))
                     {
                         object result = hash[_propertyOrMethodName];
@@ -1148,7 +726,7 @@ namespace Microsoft.PowerShell.Commands
         /// Unroll the object to be output. If it's of type IEnumerator, unroll and output it
         /// by calling WriteOutIEnumerator. If it's not, unroll and output it by calling WriteObject(obj, true)
         /// </summary>
-        /// <param name="obj">Source object.</param>
+        /// <param name="obj"></param>
         private void WriteToPipelineWithUnrolling(object obj)
         {
             IEnumerator objAsEnumerator = LanguagePrimitives.GetEnumerator(obj);
@@ -1165,7 +743,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Unroll an IEnumerator and output all entries.
         /// </summary>
-        /// <param name="list">Source list.</param>
+        /// <param name="list"></param>
         private void WriteOutIEnumerator(IEnumerator list)
         {
             if (list != null)
@@ -1186,9 +764,8 @@ namespace Microsoft.PowerShell.Commands
         /// Check if the language mode is the restrictedLanguageMode before invoking a method.
         /// Write out error message and return true if we are in restrictedLanguageMode.
         /// </summary>
-        /// <param name="inputObject">Source object.</param>
-        /// <returns>True if we are in restrictedLanguageMode.</returns>
-        private bool BlockMethodInLanguageMode(object inputObject)
+        /// <returns></returns>
+        private bool BlockMethodInLanguageMode(Object inputObject)
         {
             // Cannot invoke a method in RestrictedLanguage mode
             if (Context.LanguageMode == PSLanguageMode.RestrictedLanguage)
@@ -1218,8 +795,6 @@ namespace Microsoft.PowerShell.Commands
             return false;
         }
 
-        #endregion
-
         /// <summary>
         /// Generate the appropriate error record.
         /// </summary>
@@ -1232,7 +807,7 @@ namespace Microsoft.PowerShell.Commands
         internal static ErrorRecord GenerateNameParameterError(string paraName, string resourceString, string errorId, object target, params object[] args)
         {
             string message;
-            if (args == null || args.Length == 0)
+            if (args == null || 0 == args.Length)
             {
                 // Don't format in case the string contains literal curly braces
                 message = resourceString;
@@ -1255,6 +830,30 @@ namespace Microsoft.PowerShell.Commands
 
             return errorRecord;
         }
+
+        /// <summary>
+        /// Execute the end scriptblock when the pipeline is complete.
+        /// </summary>
+        /// <exception cref="ParseException">Could not parse script.</exception>
+        /// <exception cref="RuntimeException">See Pipeline.Invoke.</exception>
+        /// <exception cref="ParameterBindingException">See Pipeline.Invoke.</exception>
+        protected override void EndProcessing()
+        {
+            if (ParameterSetName != "ScriptBlockSet") return;
+
+            if (_endScript == null)
+                return;
+
+            var emptyArray = Array.Empty<object>();
+            _endScript.InvokeUsingCmdlet(
+                contextCmdlet: this,
+                useLocalScope: false,
+                errorHandlingBehavior: ScriptBlock.ErrorHandlingBehavior.WriteToCurrentErrorPipe,
+                dollarUnder: AutomationNull.Value,
+                input: emptyArray,
+                scriptThis: AutomationNull.Value,
+                args: emptyArray);
+        }
     }
 
     /// <summary>
@@ -1264,50 +863,43 @@ namespace Microsoft.PowerShell.Commands
     /// is passed on, otherwise it is dropped.
     /// </summary>
     [Cmdlet("Where", "Object", DefaultParameterSetName = "EqualSet",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096806", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113423", RemotingCapability = RemotingCapability.None)]
     public sealed class WhereObjectCommand : PSCmdlet
     {
         /// <summary>
-        /// Gets or sets the current pipeline object.
+        /// This parameter specifies the current pipeline object.
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
         public PSObject InputObject
         {
-            get
-            {
-                return _inputObject;
-            }
+            set { _inputObject = value; }
 
-            set
-            {
-                _inputObject = value;
-            }
+            get { return _inputObject; }
         }
 
         private PSObject _inputObject = AutomationNull.Value;
 
         private ScriptBlock _script;
         /// <summary>
-        /// Gets or sets the script block to apply.
+        /// The script block to apply.
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "ScriptBlockSet")]
         public ScriptBlock FilterScript
         {
-            get
-            {
-                return _script;
-            }
-
             set
             {
                 _script = value;
             }
+
+            get
+            {
+                return _script;
+            }
         }
 
         private string _property;
-
         /// <summary>
-        /// Gets or sets the property to retrieve value.
+        /// The property to retrieve value.
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "EqualSet")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "CaseSensitiveEqualSet")]
@@ -1343,21 +935,14 @@ namespace Microsoft.PowerShell.Commands
         [ValidateNotNullOrEmpty]
         public string Property
         {
-            get
-            {
-                return _property;
-            }
+            set { _property = value; }
 
-            set
-            {
-                _property = value;
-            }
+            get { return _property; }
         }
 
         private object _convertedValue;
         private object _value = true;
         private bool _valueNotSpecified = true;
-
         /// <summary>
         /// The value to compare against.
         /// </summary>
@@ -1393,16 +978,13 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Position = 1, ParameterSetName = "IsNotSet")]
         public object Value
         {
-            get
-            {
-                return _value;
-            }
-
             set
             {
                 _value = value;
                 _valueNotSpecified = false;
             }
+
+            get { return _value; }
         }
 
         #region binary operator parameters
@@ -1414,553 +996,369 @@ namespace Microsoft.PowerShell.Commands
         private bool _forceBooleanEvaluation = true;
 
         /// <summary>
-        /// Gets or sets binary operator -Equal
+        /// Binary operator -Equal
         /// It's the default parameter set, so -EQ is not mandatory.
         /// </summary>
         [Parameter(ParameterSetName = "EqualSet")]
         [Alias("IEQ")]
         public SwitchParameter EQ
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ieq;
-            }
-
             set
             {
                 _binaryOperator = TokenKind.Ieq;
                 _forceBooleanEvaluation = false;
             }
+
+            get { return _binaryOperator == TokenKind.Ieq; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -ceq.
+        /// Case sensitive binary operator -ceq.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveEqualSet")]
         public SwitchParameter CEQ
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ceq;
-            }
+            set { _binaryOperator = TokenKind.Ceq; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Ceq;
-            }
+            get { return _binaryOperator == TokenKind.Ceq; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -NotEqual.
+        /// Binary operator -NotEqual.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "NotEqualSet")]
         [Alias("INE")]
         public SwitchParameter NE
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ine;
-            }
+            set { _binaryOperator = TokenKind.Ine; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Ine;
-            }
+            get { return _binaryOperator == TokenKind.Ine; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cne.
+        /// Case sensitive binary operator -cne.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveNotEqualSet")]
         public SwitchParameter CNE
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cne;
-            }
+            set { _binaryOperator = TokenKind.Cne; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cne;
-            }
+            get { return _binaryOperator == TokenKind.Cne; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -GreaterThan.
+        /// Binary operator -GreaterThan.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "GreaterThanSet")]
         [Alias("IGT")]
         public SwitchParameter GT
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Igt;
-            }
+            set { _binaryOperator = TokenKind.Igt; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Igt;
-            }
+            get { return _binaryOperator == TokenKind.Igt; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cgt.
+        /// Case sensitive binary operator -cgt.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveGreaterThanSet")]
         public SwitchParameter CGT
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cgt;
-            }
+            set { _binaryOperator = TokenKind.Cgt; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cgt;
-            }
+            get { return _binaryOperator == TokenKind.Cgt; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -LessThan.
+        /// Binary operator -LessThan.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "LessThanSet")]
         [Alias("ILT")]
         public SwitchParameter LT
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ilt;
-            }
+            set { _binaryOperator = _binaryOperator = TokenKind.Ilt; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Ilt;
-            }
+            get { return _binaryOperator == TokenKind.Ilt; }
         }
 
         /// <summary>
-        /// Gets -sets case sensitive binary operator -clt.
+        /// Case sensitive binary operator -clt.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveLessThanSet")]
         public SwitchParameter CLT
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Clt;
-            }
+            set { _binaryOperator = TokenKind.Clt; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Clt;
-            }
+            get { return _binaryOperator == TokenKind.Clt; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -GreaterOrEqual.
+        /// Binary operator -GreaterOrEqual.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "GreaterOrEqualSet")]
         [Alias("IGE")]
         public SwitchParameter GE
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ige;
-            }
+            set { _binaryOperator = TokenKind.Ige; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Ige;
-            }
+            get { return _binaryOperator == TokenKind.Ige; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cge.
+        /// Case sensitive binary operator -cge.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveGreaterOrEqualSet")]
         public SwitchParameter CGE
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cge;
-            }
+            set { _binaryOperator = TokenKind.Cge; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cge;
-            }
+            get { return _binaryOperator == TokenKind.Cge; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -LessOrEqual.
+        /// Binary operator -LessOrEqual.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "LessOrEqualSet")]
         [Alias("ILE")]
         public SwitchParameter LE
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ile;
-            }
+            set { _binaryOperator = TokenKind.Ile; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Ile;
-            }
+            get { return _binaryOperator == TokenKind.Ile; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cle.
+        /// Case sensitive binary operator -cle.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveLessOrEqualSet")]
         public SwitchParameter CLE
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cle;
-            }
+            set { _binaryOperator = TokenKind.Cle; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cle;
-            }
+            get { return _binaryOperator == TokenKind.Cle; }
         }
 
         /// <summary>
-        ///Gets or sets binary operator -Like.
+        /// Binary operator -Like.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "LikeSet")]
         [Alias("ILike")]
         public SwitchParameter Like
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ilike;
-            }
+            set { _binaryOperator = TokenKind.Ilike; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Ilike;
-            }
+            get { return _binaryOperator == TokenKind.Ilike; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -clike.
+        /// Case sensitive binary operator -clike.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveLikeSet")]
         public SwitchParameter CLike
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Clike;
-            }
+            set { _binaryOperator = TokenKind.Clike; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Clike;
-            }
+            get { return _binaryOperator == TokenKind.Clike; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -NotLike.
+        /// Binary operator -NotLike.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "NotLikeSet")]
         [Alias("INotLike")]
         public SwitchParameter NotLike
         {
-            get
-            {
-                return false;
-            }
+            set { _binaryOperator = TokenKind.Inotlike; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Inotlike;
-            }
+            get { return false; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cnotlike.
+        /// Case sensitive binary operator -cnotlike.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveNotLikeSet")]
         public SwitchParameter CNotLike
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cnotlike;
-            }
+            set { _binaryOperator = TokenKind.Cnotlike; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cnotlike;
-            }
+            get { return _binaryOperator == TokenKind.Cnotlike; }
         }
 
         /// <summary>
-        /// Get or sets binary operator -Match.
+        /// Binary operator -Match.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "MatchSet")]
         [Alias("IMatch")]
         public SwitchParameter Match
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Imatch;
-            }
+            set { _binaryOperator = TokenKind.Imatch; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Imatch;
-            }
+            get { return _binaryOperator == TokenKind.Imatch; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cmatch.
+        /// Case sensitive binary operator -cmatch.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveMatchSet")]
         public SwitchParameter CMatch
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cmatch;
-            }
+            set { _binaryOperator = TokenKind.Cmatch; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cmatch;
-            }
+            get { return _binaryOperator == TokenKind.Cmatch; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -NotMatch.
+        /// Binary operator -NotMatch.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "NotMatchSet")]
         [Alias("INotMatch")]
         public SwitchParameter NotMatch
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Inotmatch;
-            }
+            set { _binaryOperator = TokenKind.Inotmatch; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Inotmatch;
-            }
+            get { return _binaryOperator == TokenKind.Inotmatch; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cnotmatch.
+        /// Case sensitive binary operator -cnotmatch.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveNotMatchSet")]
         public SwitchParameter CNotMatch
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cnotmatch;
-            }
+            set { _binaryOperator = TokenKind.Cnotmatch; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cnotmatch;
-            }
+            get { return _binaryOperator == TokenKind.Cnotmatch; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -Contains.
+        /// Binary operator -Contains.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "ContainsSet")]
         [Alias("IContains")]
         public SwitchParameter Contains
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Icontains;
-            }
+            set { _binaryOperator = TokenKind.Icontains; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Icontains;
-            }
+            get { return _binaryOperator == TokenKind.Icontains; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -ccontains.
+        /// Case sensitive binary operator -ccontains.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveContainsSet")]
         public SwitchParameter CContains
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Ccontains;
-            }
+            set { _binaryOperator = TokenKind.Ccontains; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Ccontains;
-            }
+            get { return _binaryOperator == TokenKind.Ccontains; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -NotContains.
+        /// Binary operator -NotContains.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "NotContainsSet")]
         [Alias("INotContains")]
         public SwitchParameter NotContains
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Inotcontains;
-            }
+            set { _binaryOperator = TokenKind.Inotcontains; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Inotcontains;
-            }
+            get { return _binaryOperator == TokenKind.Inotcontains; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cnotcontains.
+        /// Case sensitive binary operator -cnotcontains.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveNotContainsSet")]
         public SwitchParameter CNotContains
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cnotcontains;
-            }
+            set { _binaryOperator = TokenKind.Cnotcontains; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cnotcontains;
-            }
+            get { return _binaryOperator == TokenKind.Cnotcontains; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -In.
+        /// Binary operator -In.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "InSet")]
         [Alias("IIn")]
         public SwitchParameter In
         {
-            get
-            {
-                return _binaryOperator == TokenKind.In;
-            }
+            set { _binaryOperator = TokenKind.In; }
 
-            set
-            {
-                _binaryOperator = TokenKind.In;
-            }
+            get { return _binaryOperator == TokenKind.In; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cin.
+        /// Case sensitive binary operator -cin.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveInSet")]
         public SwitchParameter CIn
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cin;
-            }
+            set { _binaryOperator = TokenKind.Cin; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cin;
-            }
+            get { return _binaryOperator == TokenKind.Cin; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -NotIn.
+        /// Binary operator -NotIn.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "NotInSet")]
         [Alias("INotIn")]
         public SwitchParameter NotIn
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Inotin;
-            }
+            set { _binaryOperator = TokenKind.Inotin; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Inotin;
-            }
+            get { return _binaryOperator == TokenKind.Inotin; }
         }
 
         /// <summary>
-        /// Gets or sets case sensitive binary operator -cnotin.
+        /// Case sensitive binary operator -cnotin.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CaseSensitiveNotInSet")]
         public SwitchParameter CNotIn
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Cnotin;
-            }
+            set { _binaryOperator = TokenKind.Cnotin; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Cnotin;
-            }
+            get { return _binaryOperator == TokenKind.Cnotin; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -Is.
+        /// Binary operator -Is.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "IsSet")]
         public SwitchParameter Is
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Is;
-            }
+            set { _binaryOperator = TokenKind.Is; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Is;
-            }
+            get { return _binaryOperator == TokenKind.Is; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -IsNot.
+        /// Binary operator -IsNot.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "IsNotSet")]
         public SwitchParameter IsNot
         {
-            get
-            {
-                return _binaryOperator == TokenKind.IsNot;
-            }
+            set { _binaryOperator = TokenKind.IsNot; }
 
-            set
-            {
-                _binaryOperator = TokenKind.IsNot;
-            }
+            get { return _binaryOperator == TokenKind.IsNot; }
         }
 
         /// <summary>
-        /// Gets or sets binary operator -Not.
+        /// Binary operator -Not.
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "Not")]
         public SwitchParameter Not
         {
-            get
-            {
-                return _binaryOperator == TokenKind.Not;
-            }
+            set { _binaryOperator = TokenKind.Not; }
 
-            set
-            {
-                _binaryOperator = TokenKind.Not;
-            }
+            get { return _binaryOperator == TokenKind.Not; }
         }
 
         #endregion binary operator parameters
 
         private readonly CallSite<Func<CallSite, object, bool>> _toBoolSite =
             CallSite<Func<CallSite, object, bool>>.Create(PSConvertBinder.Get(typeof(bool)));
-
         private Func<object, object, object> _operationDelegate;
 
         private static Func<object, object, object> GetCallSiteDelegate(ExpressionType expressionType, bool ignoreCase)
@@ -1982,21 +1380,20 @@ namespace Microsoft.PowerShell.Commands
         private static Tuple<CallSite<Func<CallSite, object, IEnumerator>>, CallSite<Func<CallSite, object, object, object>>> GetContainsCallSites(bool ignoreCase)
         {
             var enumerableSite = CallSite<Func<CallSite, object, IEnumerator>>.Create(PSEnumerableBinder.Get());
-            var equalSite =
+            var eqSite =
                 CallSite<Func<CallSite, object, object, object>>.Create(PSBinaryOperationBinder.Get(
                     ExpressionType.Equal, ignoreCase, scalarCompare: true));
 
-            return Tuple.Create(enumerableSite, equalSite);
+            return Tuple.Create(enumerableSite, eqSite);
         }
 
         private void CheckLanguageMode()
         {
             if (Context.LanguageMode.Equals(PSLanguageMode.RestrictedLanguage))
             {
-                string message = string.Format(
-                    CultureInfo.InvariantCulture,
-                    InternalCommandStrings.OperationNotAllowedInRestrictedLanguageMode,
-                    _binaryOperator);
+                string message = string.Format(CultureInfo.InvariantCulture,
+                                               InternalCommandStrings.OperationNotAllowedInRestrictedLanguageMode,
+                                               _binaryOperator);
                 PSInvalidOperationException exception =
                     new PSInvalidOperationException(message);
                 ThrowTerminatingError(new ErrorRecord(exception, "OperationNotAllowedInRestrictedLanguageMode", ErrorCategory.InvalidOperation, null));
@@ -2005,10 +1402,9 @@ namespace Microsoft.PowerShell.Commands
 
         private object GetLikeRHSOperand(object operand)
         {
-            if (!(operand is string val))
-            {
+            var val = operand as string;
+            if (val == null)
                 return operand;
-            }
 
             var wildcardOptions = _binaryOperator == TokenKind.Ilike || _binaryOperator == TokenKind.Inotlike
                 ? WildcardOptions.IgnoreCase
@@ -2020,9 +1416,7 @@ namespace Microsoft.PowerShell.Commands
         protected override void BeginProcessing()
         {
             if (_script != null)
-            {
                 return;
-            }
 
             switch (_binaryOperator)
             {
@@ -2109,7 +1503,6 @@ namespace Microsoft.PowerShell.Commands
                 case TokenKind.Not:
                     _operationDelegate = GetCallSiteDelegateBoolean(ExpressionType.NotEqual, ignoreCase: true);
                     break;
-
                 // the second to last parameter in ContainsOperator has flipped semantics compared to others.
                 // "true" means "contains" while "false" means "notcontains"
                 case TokenKind.Icontains:
@@ -2220,9 +1613,7 @@ namespace Microsoft.PowerShell.Commands
         protected override void ProcessRecord()
         {
             if (_inputObject == AutomationNull.Value)
-            {
                 return;
-            }
 
             if (_script != null)
             {
@@ -2268,10 +1659,7 @@ namespace Microsoft.PowerShell.Commands
 
                 bool strictModeWithError = false;
                 object lvalue = GetValue(ref strictModeWithError);
-                if (strictModeWithError)
-                {
-                    return;
-                }
+                if (strictModeWithError) return;
 
                 try
                 {
@@ -2388,12 +1776,9 @@ namespace Microsoft.PowerShell.Commands
                 }
                 else if (Context.IsStrictVersion(2))
                 {
-                    WriteError(ForEachObjectCommand.GenerateNameParameterError(
-                        "Property",
-                        InternalCommandStrings.PropertyNotFound,
-                        "PropertyNotFound",
-                        _inputObject,
-                        _property));
+                    WriteError(ForEachObjectCommand.GenerateNameParameterError("Property",
+                                                                               InternalCommandStrings.PropertyNotFound,
+                                                                               "PropertyNotFound", _inputObject, _property));
                     error = true;
                 }
             }
@@ -2440,6 +1825,7 @@ namespace Microsoft.PowerShell.Commands
                     // showing "The property 'Blarg' does not exist" (case 1) errors than to
                     // suppress "FooException thrown when accessing Bloop property" (case
                     // 2) errors.
+
                     if (isBlindDynamicAccess && Context.IsStrictVersion(2))
                     {
                         WriteError(new ErrorRecord(ex,
@@ -2463,7 +1849,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Get the matched PSMembers.
         /// </summary>
-        /// <returns>Matched PSMembers.</returns>
+        /// <returns></returns>
         private ReadOnlyPSMemberInfoCollection<PSMemberInfo> GetMatchMembers()
         {
             if (!WildcardPattern.ContainsWildcardCharacters(_property))
@@ -2487,82 +1873,58 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements a cmdlet that sets the script debugging options.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "PSDebug", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096959")]
+    [Cmdlet(VerbsCommon.Set, "PSDebug", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113398")]
     public sealed class SetPSDebugCommand : PSCmdlet
     {
         /// <summary>
-        /// Gets or sets the script tracing level.
+        /// Sets the script tracing level.
         /// </summary>
         [Parameter(ParameterSetName = "on")]
         [ValidateRange(0, 2)]
         public int Trace
         {
-            get
-            {
-                return _trace;
-            }
+            set { _trace = value; }
 
-            set
-            {
-                _trace = value;
-            }
+            get { return _trace; }
         }
 
         private int _trace = -1;
 
         /// <summary>
-        /// Gets or sets stepping on and off.
+        /// Turns stepping on and off.
         /// </summary>
         [Parameter(ParameterSetName = "on")]
         public SwitchParameter Step
         {
-            get
-            {
-                return (SwitchParameter)_step;
-            }
+            set { _step = value; }
 
-            set
-            {
-                _step = value;
-            }
+            get { return (SwitchParameter)_step; }
         }
 
         private bool? _step;
 
         /// <summary>
-        /// Gets or sets strict mode on and off.
+        /// Turns strict mode on and off.
         /// </summary>
         [Parameter(ParameterSetName = "on")]
         public SwitchParameter Strict
         {
-            get
-            {
-                return (SwitchParameter)_strict;
-            }
+            set { _strict = value; }
 
-            set
-            {
-                _strict = value;
-            }
+            get { return (SwitchParameter)_strict; }
         }
 
         private bool? _strict;
 
         /// <summary>
-        /// Gets or sets all script debugging features off.
+        /// Turns all script debugging features off.
         /// </summary>
         [Parameter(ParameterSetName = "off")]
         public SwitchParameter Off
         {
-            get
-            {
-                return _off;
-            }
+            get { return _off; }
 
-            set
-            {
-                _off = value;
-            }
+            set { _off = value; }
         }
 
         private bool _off;
@@ -2584,12 +1946,9 @@ namespace Microsoft.PowerShell.Commands
                 {
                     Context.Debugger.EnableTracing(_trace, _step);
                 }
-
                 // Version 0 is the same as off
                 if (_strict != null)
-                {
                     Context.EngineSessionState.GlobalScope.StrictModeVersion = new Version((bool)_strict ? 1 : 0, 0);
-                }
             }
         }
     }
@@ -2613,24 +1972,19 @@ namespace Microsoft.PowerShell.Commands
     /// Unlike Set-PSDebug -strict, Set-StrictMode is not engine-wide, and only
     /// affects the scope it was defined in.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "StrictMode", DefaultParameterSetName = "Version", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096804")]
+    [Cmdlet(VerbsCommon.Set, "StrictMode", DefaultParameterSetName = "Version", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113450")]
     public class SetStrictModeCommand : PSCmdlet
     {
         /// <summary>
-        /// Gets or sets strict mode off.
+        /// The following is the definition of the input parameter "Off".
+        /// Turns strict mode off.
         /// </summary>
         [Parameter(ParameterSetName = "Off", Mandatory = true)]
         public SwitchParameter Off
         {
-            get
-            {
-                return _off;
-            }
+            get { return _off; }
 
-            set
-            {
-                _off = value;
-            }
+            set { _off = value; }
         }
 
         private SwitchParameter _off;
@@ -2655,7 +2009,7 @@ namespace Microsoft.PowerShell.Commands
                         return PSVersionInfo.PSVersion;
                     }
 
-                    if (versionStr.Contains('.'))
+                    if (versionStr.Contains("."))
                     {
                         // If the string contains a '.', let the Version constructor handle the conversion.
                         return inputData;
@@ -2687,33 +2041,25 @@ namespace Microsoft.PowerShell.Commands
                 if (version == null || !PSVersionInfo.IsValidPSVersion(version))
                 {
                     // No conversion succeeded so throw and exception...
-                    throw new ValidationMetadataException(
-                        "InvalidPSVersion",
-                        null,
-                        Metadata.ValidateVersionFailure,
-                        arguments);
+                    throw new ValidationMetadataException("InvalidPSVersion",
+                        null, Metadata.ValidateVersionFailure, arguments);
                 }
             }
         }
 
         /// <summary>
-        /// Gets or sets strict mode in the current scope.
+        /// The following is the definition of the input parameter "Version".
+        /// Turns strict mode in the current scope.
         /// </summary>
         [Parameter(ParameterSetName = "Version", Mandatory = true)]
-        [ArgumentToVersionTransformation]
-        [ValidateVersion]
+        [ArgumentToVersionTransformation()]
+        [ValidateVersion()]
         [Alias("v")]
         public Version Version
         {
-            get
-            {
-                return _version;
-            }
+            get { return _version; }
 
-            set
-            {
-                _version = value;
-            }
+            set { _version = value; }
         }
 
         private Version _version;

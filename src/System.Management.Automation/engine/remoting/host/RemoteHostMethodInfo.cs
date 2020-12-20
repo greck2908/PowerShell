@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -144,35 +144,35 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHost),
                         "get_Name",
                         typeof(string),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.GetVersion:
                     return new RemoteHostMethodInfo(
                         typeof(PSHost),
                         "get_Version",
                         typeof(Version),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.GetInstanceId:
                     return new RemoteHostMethodInfo(
                         typeof(PSHost),
                         "get_InstanceId",
                         typeof(Guid),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.GetCurrentCulture:
                     return new RemoteHostMethodInfo(
                         typeof(PSHost),
                         "get_CurrentCulture",
                         typeof(System.Globalization.CultureInfo),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.GetCurrentUICulture:
                     return new RemoteHostMethodInfo(
                         typeof(PSHost),
                         "get_CurrentUICulture",
                         typeof(System.Globalization.CultureInfo),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 // Host methods.
 
@@ -188,28 +188,28 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHost),
                         "EnterNestedPrompt",
                         typeof(void),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.ExitNestedPrompt:
                     return new RemoteHostMethodInfo(
                         typeof(PSHost),
                         "ExitNestedPrompt",
                         typeof(void),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.NotifyBeginApplication:
                     return new RemoteHostMethodInfo(
                         typeof(PSHost),
                         "NotifyBeginApplication",
                         typeof(void),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.NotifyEndApplication:
                     return new RemoteHostMethodInfo(
                         typeof(PSHost),
                         "NotifyEndApplication",
                         typeof(void),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 // Host UI methods.
 
@@ -218,14 +218,14 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostUserInterface),
                         "ReadLine",
                         typeof(string),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.ReadLineAsSecureString:
                     return new RemoteHostMethodInfo(
                         typeof(PSHostUserInterface),
                         "ReadLineAsSecureString",
                         typeof(System.Security.SecureString),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.Write1:
                     return new RemoteHostMethodInfo(
@@ -246,7 +246,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostUserInterface),
                         "WriteLine",
                         typeof(void),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.WriteLine2:
                     return new RemoteHostMethodInfo(
@@ -339,7 +339,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_ForegroundColor",
                         typeof(ConsoleColor),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetForegroundColor:
                     return new RemoteHostMethodInfo(
@@ -353,7 +353,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_BackgroundColor",
                         typeof(ConsoleColor),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetBackgroundColor:
                     return new RemoteHostMethodInfo(
@@ -367,7 +367,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_CursorPosition",
                         typeof(Coordinates),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetCursorPosition:
                     return new RemoteHostMethodInfo(
@@ -381,7 +381,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_WindowPosition",
                         typeof(Coordinates),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetWindowPosition:
                     return new RemoteHostMethodInfo(
@@ -395,7 +395,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_CursorSize",
                         typeof(int),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetCursorSize:
                     return new RemoteHostMethodInfo(
@@ -409,7 +409,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_BufferSize",
                         typeof(Size),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetBufferSize:
                     return new RemoteHostMethodInfo(
@@ -423,7 +423,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_WindowSize",
                         typeof(Size),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetWindowSize:
                     return new RemoteHostMethodInfo(
@@ -437,7 +437,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_WindowTitle",
                         typeof(string),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetWindowTitle:
                     return new RemoteHostMethodInfo(
@@ -453,21 +453,21 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "get_MaxWindowSize",
                         typeof(Size),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.GetMaxPhysicalWindowSize:
                     return new RemoteHostMethodInfo(
                         typeof(PSHostRawUserInterface),
                         "get_MaxPhysicalWindowSize",
                         typeof(Size),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.GetKeyAvailable:
                     return new RemoteHostMethodInfo(
                         typeof(PSHostRawUserInterface),
                         "get_KeyAvailable",
                         typeof(bool),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 // Host raw UI methods.
 
@@ -483,7 +483,7 @@ namespace System.Management.Automation.Remoting
                         typeof(PSHostRawUserInterface),
                         "FlushInputBuffer",
                         typeof(void),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.SetBufferContents1:
                     return new RemoteHostMethodInfo(
@@ -527,7 +527,7 @@ namespace System.Management.Automation.Remoting
                         typeof(IHostSupportsInteractiveSession),
                         "PopRunspace",
                         typeof(void),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 // IHostSupportsInteractiveSession properties.
 
@@ -536,14 +536,14 @@ namespace System.Management.Automation.Remoting
                         typeof(IHostSupportsInteractiveSession),
                         "get_IsRunspacePushed",
                         typeof(bool),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 case RemoteHostMethodId.GetRunspace:
                     return new RemoteHostMethodInfo(
                         typeof(IHostSupportsInteractiveSession),
                         "get_Runspace",
                         typeof(System.Management.Automation.Runspaces.Runspace),
-                        Array.Empty<Type>());
+                        new Type[] { });
 
                 default:
                     Dbg.Assert(false, "All RemoteHostMethodId's should be handled. This code should not be reached.");

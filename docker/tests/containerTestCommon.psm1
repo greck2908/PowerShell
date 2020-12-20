@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 $script:forcePull = $true
@@ -72,9 +72,10 @@ function Get-LinuxContainer
     {
         Write-Output @{
             Name = $os
-            Path = "$PSScriptRoot/../release/$os"
+            Path = "$psscriptroot/../release/$os"
         }
     }
+
 }
 
 # Return a list of Windows Container Test Cases
@@ -84,7 +85,7 @@ function Get-WindowsContainer
     {
         Write-Output @{
             Name = $os
-            Path = "$PSScriptRoot/../release/$os"
+            Path = "$psscriptroot/../release/$os"
         }
     }
 }
@@ -129,7 +130,7 @@ function Test-SkipLinux
             return $true
         }
         default {
-            throw "Unknown docker os '$os'"
+            throw "Unknow docker os '$os'"
         }
     }
 }
@@ -183,7 +184,7 @@ function Get-ContainerPowerShellVersion
     $runParams = @()
     $localVolumeName = $testContext.resolvedTestDrive
     $runParams += '--rm'
-    if($TestContext.Type -ne 'Windows' -and $IsWindows)
+    if($TestContext.Type -ne 'Windows' -and $isWindows)
     {
         # use a container volume on windows because host volumes are not automatic
         $volumeName = "test-volume-" + (Get-Random -Minimum 100 -Maximum 999)
@@ -204,7 +205,7 @@ function Get-ContainerPowerShellVersion
     $runParams += ('$PSVersionTable.PSVersion.ToString() | out-string | out-file -encoding ascii -FilePath '+$testContext.containerLogPath)
 
     $null = Invoke-Docker -Command run -Params $runParams -SuppressHostOutput
-    if($TestContext.Type -ne 'Windows' -and $IsWindows)
+    if($TestContext.Type -ne 'Windows' -and $isWindows)
     {
         $null = Invoke-Docker -Command cp -Params "${volumeName}:$($testContext.containerLogPath)", $TestContext.ResolvedLogPath
         $null = Invoke-Docker -Command container, rm -Params $volumeName, '--force' -SuppressHostOutput

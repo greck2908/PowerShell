@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -10,7 +10,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Waits for a given event to arrive.
     /// </summary>
-    [Cmdlet(VerbsLifecycle.Wait, "Event", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097042")]
+    [Cmdlet(VerbsLifecycle.Wait, "Event", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135276")]
     [OutputType(typeof(PSEventArgs))]
     public class WaitEventCommand : PSCmdlet
     {
@@ -60,9 +60,9 @@ namespace Microsoft.PowerShell.Commands
 
         #endregion parameters
 
-        private readonly AutoResetEvent _eventArrived = new(false);
+        private AutoResetEvent _eventArrived = new AutoResetEvent(false);
         private PSEventArgs _receivedEvent = null;
-        private readonly object _receivedEventLock = new();
+        private object _receivedEventLock = new Object();
         private WildcardPattern _matchPattern;
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace Microsoft.PowerShell.Commands
             _eventArrived.Set();
         }
 
-        private void ReceivedEvents_PSEventReceived(object sender, PSEventArgs e)
+        private void ReceivedEvents_PSEventReceived(Object sender, PSEventArgs e)
         {
             // If they want to wait on just any event
             if (_sourceIdentifier == null)

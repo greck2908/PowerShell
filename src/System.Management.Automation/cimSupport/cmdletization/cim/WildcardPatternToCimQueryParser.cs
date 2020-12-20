@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
@@ -20,7 +20,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
     /// </remarks>
     internal class WildcardPatternToCimQueryParser : WildcardPatternParser
     {
-        private readonly StringBuilder _result = new();
+        private readonly StringBuilder _result = new StringBuilder();
         private bool _needClientSideFiltering;
 
         protected override void AppendLiteralCharacter(char c)
@@ -79,13 +79,13 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             // 93 = ]
             // 94 = ^
             // 95 = _
-            if ((startOfCharacterRange >= 91) && (startOfCharacterRange <= 94))
+            if ((91 <= startOfCharacterRange) && (startOfCharacterRange <= 94))
             {
                 startOfCharacterRange = (char)90;
                 _needClientSideFiltering = true;
             }
 
-            if ((endOfCharacterRange >= 91) && (endOfCharacterRange <= 94))
+            if ((91 <= endOfCharacterRange) && (endOfCharacterRange <= 94))
             {
                 endOfCharacterRange = (char)95;
                 _needClientSideFiltering = true;

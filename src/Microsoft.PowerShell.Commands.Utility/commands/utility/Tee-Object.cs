@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -11,7 +11,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Class for Tee-object implementation.
     /// </summary>
-    [Cmdlet("Tee", "Object", DefaultParameterSetName = "File", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097034")]
+    [Cmdlet("Tee", "Object", DefaultParameterSetName = "File", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113417")]
     public sealed class TeeObjectCommand : PSCmdlet, IDisposable
     {
         /// <summary>
@@ -111,7 +111,6 @@ namespace Microsoft.PowerShell.Commands
                 // the values to be written
             }
         }
-
         /// <summary>
         /// </summary>
         protected override void ProcessRecord()
@@ -149,6 +148,13 @@ namespace Microsoft.PowerShell.Commands
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Finalizer.
+        /// </summary>
+        ~TeeObjectCommand()
+        {
+            Dispose(false);
+        }
         #region private
         private CommandWrapper _commandWrapper;
         private bool _alreadyDisposed;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -1116,12 +1116,12 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// Provides information about a verb used to name commands defined in PowerShell.
+    /// Class for Verbs and Groups.
     /// </summary>
     public class VerbInfo
     {
         /// <summary>
-        /// The verb name, used to begin command names.
+        /// Verb Name.
         /// </summary>
         public string Verb
         {
@@ -1129,7 +1129,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// The alias prefix, recommended for aliases to commands that begin with this verb.
+        /// Alias Prefix.
         /// </summary>
         public string AliasPrefix
         {
@@ -1137,7 +1137,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// The name of the functional category of commands that begin with this verb.
+        /// Group Name.
         /// </summary>
         public string Group
         {
@@ -1145,7 +1145,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Explains what the verb is meant to do with its object.
+        /// Description.
         /// </summary>
         public string Description
         {
@@ -1311,8 +1311,8 @@ namespace System.Management.Automation
 #endif
         }
 
-        private static readonly Dictionary<string, bool> s_validVerbs = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Dictionary<string, string[]> s_recommendedAlternateVerbs = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, bool> s_validVerbs = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, string[]> s_recommendedAlternateVerbs = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
         internal static bool IsStandard(string verb)
         {

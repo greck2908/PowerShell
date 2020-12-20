@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -15,6 +15,7 @@ namespace Microsoft.PowerShell
     /// ProgressNode is an augmentation of the ProgressRecord type that adds extra fields for the purposes of tracking
     /// outstanding activities received by the host, and rendering them in the console.
     /// </summary>
+
     internal
     class
     ProgressNode : ProgressRecord
@@ -22,6 +23,7 @@ namespace Microsoft.PowerShell
         /// <summary>
         /// Indicates the various layouts for rendering a particular node.  Each style is progressively less terse.
         /// </summary>
+
         internal
         enum
         RenderStyle
@@ -40,11 +42,12 @@ namespace Microsoft.PowerShell
             /// The node will be displayed the same as Full, plus, the whole StatusDescription and CurrentOperation will be displayed (in multiple lines if needed).
             /// </summary>
             FullPlus = 4,
-        }
+        };
 
         /// <summary>
         /// Constructs an instance from a ProgressRecord.
         /// </summary>
+
         internal
         ProgressNode(Int64 sourceId, ProgressRecord record)
             :
@@ -77,6 +80,7 @@ namespace Microsoft.PowerShell
         /// <param name="rawUI">
         /// The PSHostRawUserInterface used to gauge string widths in the rendering.
         /// </param>
+
         internal
         void
         Render(ArrayList strCollection, int indentation, int maxWidth, PSHostRawUserInterface rawUI)
@@ -126,6 +130,7 @@ namespace Microsoft.PowerShell
         /// <param name="isFullPlus">
         /// Indicate if the full StatusDescription and CurrentOperation should be displayed.
         /// </param>
+
         private
         void
         RenderFull(ArrayList strCollection, int indentation, int maxWidth, PSHostRawUserInterface rawUI, bool isFullPlus)
@@ -235,6 +240,7 @@ namespace Microsoft.PowerShell
         /// <param name="rawUI">
         /// The PSHostRawUserInterface used to gauge string widths in the rendering.
         /// </param>
+
         private
         void
         RenderCompact(ArrayList strCollection, int indentation, int maxWidth, PSHostRawUserInterface rawUI)
@@ -303,6 +309,7 @@ namespace Microsoft.PowerShell
         /// <param name="rawUI">
         /// The PSHostRawUserInterface used to gauge string widths in the rendering.
         /// </param>
+
         private
         void
         RenderMinimal(ArrayList strCollection, int indentation, int maxWidth, PSHostRawUserInterface rawUI)
@@ -340,6 +347,7 @@ namespace Microsoft.PowerShell
         /// <summary>
         /// The nodes that have this node as their parent.
         /// </summary>
+
         internal
         ArrayList
         Children;
@@ -354,6 +362,7 @@ namespace Microsoft.PowerShell
         /// space. The rendering of nodes can be progressively "compressed" into a more terse format, or not rendered at all in
         /// order to fit as many nodes as possible in the available space. The oldest nodes are compressed or skipped first.
         /// </summary>
+
         internal
         int
         Age;
@@ -361,6 +370,7 @@ namespace Microsoft.PowerShell
         /// <summary>
         /// The style in which this node should be rendered.
         /// </summary>
+
         internal
         RenderStyle
         Style = RenderStyle.FullPlus;
@@ -368,6 +378,7 @@ namespace Microsoft.PowerShell
         /// <summary>
         /// Identifies the source of the progress record.
         /// </summary>
+
         internal
         Int64
         SourceId;
@@ -376,6 +387,7 @@ namespace Microsoft.PowerShell
         /// The number of vertical BufferCells that are required to render the node in its current style.
         /// </summary>
         /// <value></value>
+
         internal int LinesRequiredMethod(PSHostRawUserInterface rawUi, int maxWidth)
         {
             Dbg.Assert(this.RecordType != ProgressRecordType.Completed, "should never render completed records");
@@ -409,6 +421,7 @@ namespace Microsoft.PowerShell
         /// The number of vertical BufferCells that are required to render the node in the Full style.
         /// </summary>
         /// <value></value>
+
         private int LinesRequiredInFullStyleMethod(PSHostRawUserInterface rawUi, int maxWidth, bool isFullPlus)
         {
             // Since the fields of this instance could have been changed, we compute this on-the-fly.
@@ -466,6 +479,7 @@ namespace Microsoft.PowerShell
         /// The number of vertical BufferCells that are required to render the node in the Compact style.
         /// </summary>
         /// <value></value>
+
         private
         int
         LinesRequiredInCompactStyle
@@ -490,3 +504,4 @@ namespace Microsoft.PowerShell
         }
     }
 }   // namespace
+

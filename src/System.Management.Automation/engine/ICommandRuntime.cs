@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Host;
@@ -560,7 +560,6 @@ namespace System.Management.Automation
     /// execute an instance of a Cmdlet. ICommandRuntime2 extends the ICommandRuntime interface
     /// by adding support for the informational data stream.
     /// </summary>
-#nullable enable
     public interface ICommandRuntime2 : ICommandRuntime
     {
         /// <summary>
@@ -615,6 +614,6 @@ namespace System.Management.Automation
         /// performed, and the Cmdlet should move on to the next target resource.
         /// </returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
-        bool ShouldContinue(string? query, string? caption, bool hasSecurityImpact, ref bool yesToAll, ref bool noToAll);
+        bool ShouldContinue(string query, string caption, bool hasSecurityImpact, ref bool yesToAll, ref bool noToAll);
     }
 }

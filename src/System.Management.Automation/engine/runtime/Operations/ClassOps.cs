@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -284,7 +284,7 @@ namespace System.Management.Automation.Internal
         {
             var validateAttributes = type.GetProperty(propertyName).GetCustomAttributes<ValidateArgumentsAttribute>();
             var executionContext = LocalPipeline.GetExecutionContextFromTLS();
-            var engineIntrinsics = executionContext?.EngineIntrinsics;
+            var engineIntrinsics = executionContext == null ? null : executionContext.EngineIntrinsics;
             foreach (var validateAttribute in validateAttributes)
             {
                 validateAttribute.InternalValidate(value, engineIntrinsics);

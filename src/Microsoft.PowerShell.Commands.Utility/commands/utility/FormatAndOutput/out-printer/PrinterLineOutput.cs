@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -70,7 +70,6 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         #endregion
 
         /// <summary>
-        /// Initializes static members of the <see cref="PrinterLineOutput"/> class.
         /// Used for static initializations like DefaultPrintFontName.
         /// </summary>
         static PrinterLineOutput()
@@ -82,7 +81,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PrinterLineOutput"/> class.
+        /// Constructor for the class.
         /// </summary>
         /// <param name="printerName">Name of printer, if null use default printer.</param>
         internal PrinterLineOutput(string printerName)
@@ -90,8 +89,8 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             _printerName = printerName;
 
             // instantiate the helper to do the line processing when LineOutput.WriteXXX() is called
-            WriteLineHelper.WriteCallback wl = new(this.OnWriteLine);
-            WriteLineHelper.WriteCallback w = new(this.OnWrite);
+            WriteLineHelper.WriteCallback wl = new WriteLineHelper.WriteCallback(this.OnWriteLine);
+            WriteLineHelper.WriteCallback w = new WriteLineHelper.WriteCallback(this.OnWrite);
 
             _writeLineHelper = new WriteLineHelper(true, wl, w, this.DisplayCells);
         }
@@ -124,7 +123,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             try
             {
                 // create a new print document object and set the printer name, if available
-                PrintDocument pd = new();
+                PrintDocument pd = new PrintDocument();
 
                 if (!string.IsNullOrEmpty(_printerName))
                 {
@@ -132,7 +131,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 }
 
                 // set up the callback mechanism
-                pd.PrintPage += this.pd_PrintPage;
+                pd.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
 
                 // start printing
                 pd.Print();
@@ -188,9 +187,9 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             // we compute the length of two strings, one made of "large" characters
             // one made of "narrow" ones. If they are the same length, we assume that
             // the font is fixed pitch.
-            const string large = "ABCDEF";
+            string large = "ABCDEF";
             float wLarge = g.MeasureString(large, _printFont).Width / large.Length;
-            const string narrow = ".;'}l|";
+            string narrow = ".;'}l|";
             float wNarrow = g.MeasureString(narrow, _printFont).Width / narrow.Length;
 
             if (Math.Abs((float)(wLarge - wNarrow)) < 0.001F)
@@ -230,7 +229,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 // on the first page we have to initialize the metrics for LineOutput
 
                 // work out the number of columns per page assuming fixed pitch font
-                const string s = "ABCDEF";
+                string s = "ABCDEF";
                 float w = ev.Graphics.MeasureString(s, _printFont).Width / s.Length;
                 float columnsPerPage = ev.MarginBounds.Width / w;
 
@@ -277,7 +276,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Name of the printer to print to. Null means default printer.
         /// </summary>
-        private readonly string _printerName = null;
+        private string _printerName = null;
 
         /// <summary>
         /// Name of the font to use, if null the default is used.
@@ -316,13 +315,13 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Text lines ready to print (after output cache playback).
         /// </summary>
-        private readonly Queue<string> _lines = new();
+        private Queue<string> _lines = new Queue<string>();
 
         /// <summary>
         /// Cached font object.
         /// </summary>
         private Font _printFont = null;
 
-        private readonly WriteLineHelper _writeLineHelper;
+        private WriteLineHelper _writeLineHelper;
     }
 }

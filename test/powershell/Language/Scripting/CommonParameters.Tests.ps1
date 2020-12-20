@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Common parameters support for script cmdlets" -Tags "CI" {
     BeforeEach {
@@ -141,7 +141,7 @@ Describe "Common parameters support for script cmdlets" -Tags "CI" {
             # Exception: "Command execution stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: error foo"
 
             # BUG in runspace api.
-            #$ps.error.count | Should -Be 1
+            #$ps.error.count | Should Be 1
 
             $ps.InvocationStateInfo.State | Should -BeExactly 'Failed'
         }
@@ -154,7 +154,7 @@ Describe "Common parameters support for script cmdlets" -Tags "CI" {
                     [CmdletBinding(SupportsShouldProcess=$true)]
                     param()
 
-                    if($PSCmdlet.shouldprocess("foo", "foo action"))
+                    if($pscmdlet.shouldprocess("foo", "foo action"))
                     {
                         write-output "foo action"
                     }
@@ -205,7 +205,7 @@ Describe "Common parameters support for script cmdlets" -Tags "CI" {
                     [CmdletBinding(supportsshouldprocess=$true, ConfirmImpact="none")]
                     param()
 
-                    if($PSCmdlet.shouldprocess("foo", "foo action"))
+                    if($pscmdlet.shouldprocess("foo", "foo action"))
                     {
                         write-output "foo action"
                     }
@@ -239,7 +239,7 @@ Describe "Common parameters support for script cmdlets" -Tags "CI" {
                     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact="low")]
                     param()
 
-                    if($PSCmdlet.shouldprocess("foo", "foo action"))
+                    if($pscmdlet.shouldprocess("foo", "foo action"))
                     {
                         write-output "foo action"
                     }
@@ -274,7 +274,7 @@ Describe "Common parameters support for script cmdlets" -Tags "CI" {
                     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact="medium")]
                     param()
 
-                    if($PSCmdlet.shouldprocess("foo", "foo action"))
+                    if($pscmdlet.shouldprocess("foo", "foo action"))
                     {
                         write-output "foo action"
                     }
@@ -310,7 +310,7 @@ Describe "Common parameters support for script cmdlets" -Tags "CI" {
                     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact="high")]
                     param()
 
-                    if($PSCmdlet.shouldprocess("foo", "foo action"))
+                    if($pscmdlet.shouldprocess("foo", "foo action"))
                     {
                         write-output "foo action"
                     }
@@ -346,7 +346,7 @@ Describe "Common parameters support for script cmdlets" -Tags "CI" {
                     [CmdletBinding()]
                     param()
 
-                    if($PSCmdlet.shouldcontinue("foo", "foo action"))
+                    if($pscmdlet.shouldcontinue("foo", "foo action"))
                     {
                         write-output "foo action"
                     }

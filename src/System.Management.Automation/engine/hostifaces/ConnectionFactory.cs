@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
@@ -62,7 +62,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (host == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(host));
+                throw PSTraceSource.NewArgumentNullException("host");
             }
 
             return new LocalRunspace(host, InitialSessionState.CreateDefault());
@@ -85,7 +85,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (initialSessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(initialSessionState));
+                throw PSTraceSource.NewArgumentNullException("initialSessionState");
             }
 
             PSHost host = new DefaultHost(CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
@@ -116,12 +116,12 @@ namespace System.Management.Automation.Runspaces
         {
             if (host == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(host));
+                throw PSTraceSource.NewArgumentNullException("host");
             }
 
             if (initialSessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(initialSessionState));
+                throw PSTraceSource.NewArgumentNullException("initialSessionState");
             }
 
             return new LocalRunspace(host, initialSessionState);
@@ -150,12 +150,12 @@ namespace System.Management.Automation.Runspaces
         {
             if (host == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(host));
+                throw PSTraceSource.NewArgumentNullException("host");
             }
 
             if (initialSessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(initialSessionState));
+                throw PSTraceSource.NewArgumentNullException("initialSessionState");
             }
 
             return new LocalRunspace(host, initialSessionState, true);
@@ -454,11 +454,11 @@ namespace System.Management.Automation.Runspaces
         public static RunspacePool CreateRunspacePool(int minRunspaces,
             int maxRunspaces, RunspaceConnectionInfo connectionInfo, PSHost host, TypeTable typeTable, PSPrimitiveDictionary applicationArguments)
         {
-            if (connectionInfo is not WSManConnectionInfo &&
-                connectionInfo is not NewProcessConnectionInfo &&
-                connectionInfo is not NamedPipeConnectionInfo &&
-                connectionInfo is not VMConnectionInfo &&
-                connectionInfo is not ContainerConnectionInfo)
+            if ((!(connectionInfo is WSManConnectionInfo)) &&
+                (!(connectionInfo is NewProcessConnectionInfo)) &&
+                (!(connectionInfo is NamedPipeConnectionInfo)) &&
+                (!(connectionInfo is VMConnectionInfo)) &&
+                (!(connectionInfo is ContainerConnectionInfo)))
             {
                 throw new NotSupportedException();
             }
@@ -539,12 +539,12 @@ namespace System.Management.Automation.Runspaces
         /// <returns></returns>
         public static Runspace CreateRunspace(RunspaceConnectionInfo connectionInfo, PSHost host, TypeTable typeTable, PSPrimitiveDictionary applicationArguments, string name)
         {
-            if (connectionInfo is not WSManConnectionInfo &&
-                connectionInfo is not NewProcessConnectionInfo &&
-                connectionInfo is not NamedPipeConnectionInfo &&
-                connectionInfo is not SSHConnectionInfo &&
-                connectionInfo is not VMConnectionInfo &&
-                connectionInfo is not ContainerConnectionInfo)
+            if ((!(connectionInfo is WSManConnectionInfo)) &&
+                (!(connectionInfo is NewProcessConnectionInfo)) &&
+                (!(connectionInfo is NamedPipeConnectionInfo)) &&
+                (!(connectionInfo is SSHConnectionInfo)) &&
+                (!(connectionInfo is VMConnectionInfo)) &&
+                (!(connectionInfo is ContainerConnectionInfo)))
             {
                 throw new NotSupportedException();
             }
@@ -606,3 +606,4 @@ namespace System.Management.Automation.Runspaces
         #endregion V3 Extensions
     }
 }
+

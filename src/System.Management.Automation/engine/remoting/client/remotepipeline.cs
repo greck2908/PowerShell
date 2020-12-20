@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -20,18 +20,18 @@ namespace System.Management.Automation
         #region Private Members
 
         private PowerShell _powershell;
-        private readonly bool _addToHistory;
+        private bool _addToHistory;
         private bool _isNested;
         private bool _isSteppable;
-        private readonly Runspace _runspace;
-        private readonly object _syncRoot = new object();
+        private Runspace _runspace;
+        private object _syncRoot = new object();
         private bool _disposed = false;
         private string _historyString;
         private PipelineStateInfo _pipelineStateInfo = new PipelineStateInfo(PipelineState.NotStarted);
-        private readonly CommandCollection _commands = new CommandCollection();
-        private readonly string _computerName;
-        private readonly Guid _runspaceId;
-        private readonly ConnectCommandInfo _connectCmdInfo = null;
+        private CommandCollection _commands = new CommandCollection();
+        private string _computerName;
+        private Guid _runspaceId;
+        private ConnectCommandInfo _connectCmdInfo = null;
 
         /// <summary>
         /// This is queue of all the state change event which have occured for
@@ -56,7 +56,7 @@ namespace System.Management.Automation
             public RunspaceAvailability NewRunspaceAvailability;
         }
 
-        private readonly bool _performNestedCheck = true;
+        private bool _performNestedCheck = true;
 
         #endregion Private Members
 
@@ -126,7 +126,8 @@ namespace System.Management.Automation
 
             _powershell.SetIsNested(isNested);
 
-            _powershell.InvocationStateChanged += HandleInvocationStateChanged;
+            _powershell.InvocationStateChanged +=
+               new EventHandler<PSInvocationStateChangedEventArgs>(HandleInvocationStateChanged);
         }
 
         /// <summary>
@@ -152,7 +153,8 @@ namespace System.Management.Automation
             _powershell = new PowerShell(_connectCmdInfo, _inputStream, _outputStream, _errorStream,
                 ((RemoteRunspace)_runspace).RunspacePool);
 
-            _powershell.InvocationStateChanged += HandleInvocationStateChanged;
+            _powershell.InvocationStateChanged +=
+                new EventHandler<PSInvocationStateChangedEventArgs>(HandleInvocationStateChanged);
         }
 
         /// <summary>
@@ -171,7 +173,7 @@ namespace System.Management.Automation
             // originally copied it from PipelineBase
             if (pipeline == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(pipeline));
+                throw PSTraceSource.NewArgumentNullException("pipeline");
             }
 
             if (pipeline._disposed)
@@ -360,12 +362,12 @@ namespace System.Management.Automation
         // Stream and Collection go together...a stream wraps
         // a corresponding collection to support
         // streaming behavior of the pipeline.
-        private readonly PSDataCollection<PSObject> _outputCollection;
-        private readonly PSDataCollectionStream<PSObject> _outputStream;
-        private readonly PSDataCollection<ErrorRecord> _errorCollection;
-        private readonly PSDataCollectionStream<ErrorRecord> _errorStream;
-        private readonly PSDataCollection<object> _inputCollection;
-        private readonly PSDataCollectionStream<object> _inputStream;
+        private PSDataCollection<PSObject> _outputCollection;
+        private PSDataCollectionStream<PSObject> _outputStream;
+        private PSDataCollection<ErrorRecord> _errorCollection;
+        private PSDataCollectionStream<ErrorRecord> _errorStream;
+        private PSDataCollection<object> _inputCollection;
+        private PSDataCollectionStream<object> _inputStream;
 
         /// <summary>
         /// Stream for providing input to PipelineProcessor. Host will write on
@@ -543,7 +545,7 @@ namespace System.Management.Automation
                     catch (ObjectDisposedException)
                     {
                         throw PSTraceSource.NewObjectDisposedException("Pipeline");
-                    }
+                    };
 
                     asyncresult.AsyncWaitHandle.WaitOne();
                 }
@@ -892,7 +894,8 @@ namespace System.Management.Automation
 
             _powershell.InitForRemotePipeline(_commands, _inputStream, _outputStream, _errorStream, settings, RedirectShellErrorOutputPipe);
 
-            _powershell.RemotePowerShell.HostCallReceived += HandleHostCallReceived;
+            _powershell.RemotePowerShell.HostCallReceived +=
+                new EventHandler<RemoteDataEventArgs<RemoteHostCall>>(HandleHostCallReceived);
         }
 
         /// <summary>
@@ -928,7 +931,8 @@ namespace System.Management.Automation
 
                 _powershell.InitForRemotePipelineConnect(_inputStream, _outputStream, _errorStream, settings, RedirectShellErrorOutputPipe);
 
-                _powershell.RemotePowerShell.HostCallReceived += HandleHostCallReceived;
+                _powershell.RemotePowerShell.HostCallReceived +=
+                    new EventHandler<RemoteDataEventArgs<RemoteHostCall>>(HandleHostCallReceived);
             }
         }
 
@@ -1048,7 +1052,7 @@ namespace System.Management.Automation
             RemotePipeline currentPipeline =
                 (RemotePipeline)((RemoteRunspace)_runspace).GetCurrentlyRunningPipeline();
 
-            if (!_isNested)
+            if (_isNested == false)
             {
                 if (currentPipeline == null &&
                     ((RemoteRunspace)_runspace).RunspaceAvailability != RunspaceAvailability.Busy &&
@@ -1093,7 +1097,7 @@ namespace System.Management.Automation
                         return;
                     }
 
-                    if (!syncCall)
+                    if (syncCall == false)
                     {
                         throw PSTraceSource.NewInvalidOperationException(
                                 RunspaceStrings.NestedPipelineInvokeAsync);

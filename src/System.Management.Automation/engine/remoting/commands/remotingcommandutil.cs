@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -36,12 +36,12 @@ namespace Microsoft.PowerShell.Commands
         {
             if (runspaceInfos == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(runspaceInfos));
+                throw PSTraceSource.NewArgumentNullException("runspaceInfos");
             }
 
             if (runspaceInfos.GetLength(0) == 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(runspaceInfos));
+                throw PSTraceSource.NewArgumentException("runspaceInfos");
             }
 
             for (int i = 0; i < runspaceInfos.GetLength(0); i++)
@@ -65,12 +65,12 @@ namespace Microsoft.PowerShell.Commands
         {
             if (runspaceInfos == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(runspaceInfos));
+                throw PSTraceSource.NewArgumentNullException("runspaceInfos");
             }
 
             if (runspaceInfos.GetLength(0) == 0)
             {
-                throw PSTraceSource.NewArgumentException(nameof(runspaceInfos));
+                throw PSTraceSource.NewArgumentException("runspaceInfos");
             }
 
             return false;
@@ -87,7 +87,7 @@ namespace Microsoft.PowerShell.Commands
             return;
 #else
             bool notSupported = true;
-            const string WSManKeyPath = "Software\\Microsoft\\Windows\\CurrentVersion\\WSMAN\\";
+            string WSManKeyPath = "Software\\Microsoft\\Windows\\CurrentVersion\\WSMAN\\";
 
             CheckHostRemotingPrerequisites();
 
@@ -222,3 +222,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

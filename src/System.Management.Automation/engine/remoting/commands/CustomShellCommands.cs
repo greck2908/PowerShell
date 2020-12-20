@@ -1,25 +1,27 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Security.AccessControl;
+using System.Text;
+
 using System.Management.Automation;
 using System.Management.Automation.Internal;
-using System.Management.Automation.Language;
-using System.Management.Automation.Remoting;
 using System.Management.Automation.Runspaces;
-using System.Security;
-using System.Security.AccessControl;
-using System.Security.Principal;
-using System.Text;
-using System.Threading;
+using System.Management.Automation.Remoting;
+using System.Management.Automation.Language;
+
 using Dbg = System.Management.Automation.Diagnostics;
-using PowerShellApi = System.Management.Automation.PowerShell;
 using WSManNativeApi = System.Management.Automation.Remoting.Client.WSManNativeApi;
+using PowerShellApi = System.Management.Automation.PowerShell;
+
+using System.Security;
+using System.Collections.Generic;
+using System.Security.Principal;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -30,7 +32,7 @@ namespace Microsoft.PowerShell.Commands
     [Cmdlet(VerbsLifecycle.Register, RemotingConstants.PSSessionConfigurationNoun,
         DefaultParameterSetName = PSSessionConfigurationCommandBase.NameParameterSetName,
         SupportsShouldProcess = true,
-        ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096793")]
+        ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144306")]
     public sealed class RegisterPSSessionConfigurationCommand : PSSessionConfigurationCommandBase
     {
         #region Private Data
@@ -271,7 +273,6 @@ else
     Register-PSSessionConfiguration -filepath $args[0] -pluginName $args[1] -shouldShowUI $args[2] -force $args[3] -whatif:$args[4] -confirm:$args[5] -restartWSManTarget $args[6] -restartWSManAction $args[7] -restartWSManRequired $args[8] -runAsUserName $args[9] -runAsPassword $args[10] -accessMode $args[11] -isSddlSpecified $args[12] -configTableSddl $args[13] -erroraction $args[14]
 }}
 ";
-
         private static readonly ScriptBlock s_newPluginSb;
 
         private const string pluginXmlFormat = @"
@@ -294,7 +295,6 @@ else
   {11}
 </PlugInConfiguration>
 ";
-
         private const string architectureAttribFormat = @"
     Architecture='{0}'";
 
@@ -312,7 +312,6 @@ else
 
         private const string initParamFormat = @"
 <Param Name='{0}' Value='{1}' />{2}";
-
         private const string privateDataFormat = @"<Param Name='PrivateData'>{0}</Param>";
         private const string securityElementFormat = "<Security Uri='{0}' ExactMatch='true' Sddl='{1}' />";
         private const string SessionConfigDataFormat = @"<SessionConfigurationData>{0}</SessionConfigurationData>";
@@ -589,8 +588,8 @@ else
                                             restartServiceTarget,
                                             restartServiceAction,
                                             restartWSManRequiredForUI,
-                                            runAsCredential?.UserName,
-                                            runAsCredential?.Password,
+                                            runAsCredential != null ? runAsCredential.UserName : null,
+                                            runAsCredential != null ? runAsCredential.Password : null,
                                             AccessMode,
                                             isSddlSpecified,
                                             _configTableSDDL,
@@ -641,7 +640,7 @@ else
         /// 1. New shell successfully registered. However cannot delete temporary plugin file {0}.
         ///    Reason for failure: {1}.
         /// </exception>
-        private static void DeleteFile(string tmpFileName)
+        private void DeleteFile(string tmpFileName)
         {
             Dbg.Assert(!string.IsNullOrEmpty(tmpFileName), "tmpFile cannot be null or empty.");
 
@@ -693,7 +692,7 @@ else
         /// 2. Cannot write shell configuration data into temporary file {0}. Try again.
         ///    Reason for failure: {1}.
         /// </exception>
-        private static string ConstructTemporaryFile(string pluginContent)
+        private string ConstructTemporaryFile(string pluginContent)
         {
             // Path.GetTempFileName creates a temporary file whereas GetRandomFileName does not.
             string tmpFileName = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName()) + "psshell.xml";
@@ -708,7 +707,7 @@ else
                     try
                     {
                         // Make sure the file is not read only
-                        destfile.Attributes &= ~(FileAttributes.ReadOnly | FileAttributes.Hidden);
+                        destfile.Attributes = destfile.Attributes & ~(FileAttributes.ReadOnly | FileAttributes.Hidden);
                         destfile.Delete();
                     }
                     catch (FileNotFoundException fnf)
@@ -798,7 +797,7 @@ else
             destConfigFilePath = null;
             StringBuilder initParameters = new StringBuilder();
 
-            const bool assemblyAndTypeTokensSet = false;
+            bool assemblyAndTypeTokensSet = false;
 
             // DISC endpoint
             if (Path != null)
@@ -869,7 +868,7 @@ else
 
                     if (configTable.ContainsKey(ConfigFileConstants.PowerShellVersion))
                     {
-                        if (!isPSVersionSpecified)
+                        if (isPSVersionSpecified == false)
                         {
                             try
                             {
@@ -1051,7 +1050,7 @@ else
                     maxObjectSizeMB.Value,
                     Environment.NewLine));
             }
-
+#if !CORECLR // No ApartmentState In CoreCLR
             if (threadAptState.HasValue)
             {
                 initParameters.Append(string.Format(CultureInfo.InvariantCulture,
@@ -1060,7 +1059,7 @@ else
                     threadAptState.Value,
                     Environment.NewLine));
             }
-
+#endif
             if (threadOptions.HasValue)
             {
                 initParameters.Append(string.Format(CultureInfo.InvariantCulture,
@@ -1071,7 +1070,7 @@ else
             }
 
             // Default value for PSVersion
-            if (!isPSVersionSpecified)
+            if (isPSVersionSpecified == false)
             {
                 psVersion = PSVersionInfo.PSVersion;
             }
@@ -1123,6 +1122,11 @@ else
                 architectureParameter = string.Format(CultureInfo.InvariantCulture,
                     architectureAttribFormat,
                     tempValue);
+            }
+
+            if (!isUseSharedProcessSpecified)
+            {
+                UseSharedProcess = true;
             }
 
             string sharedHostParameter = string.Empty;
@@ -1661,7 +1665,6 @@ else
         }
 
         private const string DACLPrefix = "D:";
-
         private static Collection<string> ParseDACLACEs(
             string sddl,
             out string prologue,
@@ -1753,7 +1756,8 @@ else
             }
 
             StringBuilder conditionalACE = new StringBuilder();
-            if (!(configTable[ConfigFileConstants.RequiredGroups] is Hashtable requiredGroupsHash))
+            Hashtable requiredGroupsHash = configTable[ConfigFileConstants.RequiredGroups] as Hashtable;
+            if (requiredGroupsHash == null)
             {
                 throw new PSInvalidOperationException(RemotingErrorIdStrings.RequiredGroupsNotHashTable);
             }
@@ -2037,6 +2041,7 @@ else
         internal PSCredential runAsCredential;
         internal bool isRunAsCredentialSpecified;
 
+#if !CORECLR // No ApartmentState In CoreCLR
         /// <summary>
         /// ApartmentState of the Runspace created for the shell.
         /// </summary>
@@ -2057,6 +2062,7 @@ else
         }
 
         internal ApartmentState? threadAptState;
+#endif
 
         /// <summary>
         /// ThreadOptions of the Runspace created for the shell.
@@ -2373,7 +2379,7 @@ else
                         // Add this check after checking if it a path
                         if (!string.IsNullOrEmpty(modulepath.Trim()))
                         {
-                            if ((modulepath.Contains('\\') || modulepath.Contains(':')) &&
+                            if ((modulepath.Contains("\\") || modulepath.Contains(":")) &&
                                 !(Directory.Exists(modulepath) || File.Exists(modulepath)))
                             {
                                 throw new ArgumentException(
@@ -2438,7 +2444,7 @@ else
     /// Class implementing Unregister-PSSessionConfiguration.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Unregister, RemotingConstants.PSSessionConfigurationNoun,
-        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096803")]
+        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144308")]
     public sealed class UnregisterPSSessionConfigurationCommand : PSCmdlet
     {
         #region Private Data
@@ -2521,7 +2527,6 @@ else
     Unregister-PSSessionConfiguration -filter $args[0] -whatif:$args[1] -confirm:$args[2] -action $args[3] -targetTemplate $args[4] -shellNotErrMsgFormat $args[5] -force $args[6] -erroraction $args[7]
 }}
 ";
-
         private static readonly ScriptBlock s_removePluginSb;
         private bool _isErrorReported;
 
@@ -2673,7 +2678,7 @@ else
     /// <summary>
     /// Class implementing Get-PSSessionConfiguration.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, RemotingConstants.PSSessionConfigurationNoun, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096790")]
+    [Cmdlet(VerbsCommon.Get, RemotingConstants.PSSessionConfigurationNoun, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144304")]
     [OutputType("Microsoft.PowerShell.Commands.PSSessionConfigurationCommands#PSSessionConfiguration")]
     public sealed class GetPSSessionConfigurationCommand : PSCmdlet
     {
@@ -2713,6 +2718,28 @@ function ExtractPluginProperties([string]$pluginDir, $objectToWriteTo)
     }}
 
     Get-Details $pluginDir $h
+
+    # Workflow is not supported in PowerShell 6+. Attempting to load the
+    # assembly results in a FileNotFoundException.
+    if (![System.Management.Automation.Platform]::IsCoreCLR -AND
+        $h[""AssemblyName""] -eq ""Microsoft.PowerShell.Workflow.ServiceCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL"") {{
+
+        $serviceCore = [Reflection.Assembly]::Load(""Microsoft.Powershell.Workflow.ServiceCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL"")
+
+        if ($null -ne $serviceCore) {{
+
+            $ci = new-Object system.management.automation.cmdletinfo ""New-PSWorkflowExecutionOptions"", ([Microsoft.PowerShell.Commands.NewPSWorkflowExecutionOptionCommand])
+            $wf = [powershell]::Create(""currentrunspace"").AddCommand($ci).Invoke()
+
+            if($null -ne $wf -and $wf.Count -ne 0) {{
+                $wf = $wf[0]
+
+                foreach ($o in $wf.GetType().GetProperties()) {{
+                    $h[$o.Name] = $o.GetValue($wf, $null)
+                }}
+            }}
+        }}
+    }}
 
     if (test-path -LiteralPath $pluginDir\InitializationParameters\SessionConfigurationData) {{
         $xscd = [xml](Unescape-xml (Unescape-xml (get-item -LiteralPath $pluginDir\InitializationParameters\SessionConfigurationData).Value))
@@ -2791,7 +2818,6 @@ $args[0] | ForEach-Object {{
 ";
 
         private const string MODULEPATH = "ModulesToImport";
-
         private static readonly ScriptBlock s_getPluginSb;
 
         #endregion
@@ -2905,7 +2931,7 @@ $args[0] | ForEach-Object {{
     [Cmdlet(VerbsCommon.Set, RemotingConstants.PSSessionConfigurationNoun,
        DefaultParameterSetName = PSSessionConfigurationCommandBase.NameParameterSetName,
        SupportsShouldProcess = true,
-       ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096901")]
+       ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144307")]
     public sealed class SetPSSessionConfigurationCommand : PSSessionConfigurationCommandBase
     {
         #region Private Data
@@ -2918,7 +2944,6 @@ $args[0] | ForEach-Object {{
         private const string getCurrentIdleTimeoutmsFormat = @"(Get-Item 'WSMan:\localhost\Plugin\{0}\Quotas\IdleTimeoutms').Value";
         private const string getAssemblyNameDataFormat = @"(Get-Item 'WSMan:\localhost\Plugin\{0}\InitializationParameters\assemblyname').Value";
         private const string getSessionConfigurationDataSbFormat = @"(Get-Item 'WSMan:\localhost\Plugin\{0}\InitializationParameters\SessionConfigurationData').Value";
-
         private const string setSessionConfigurationDataSbFormat = @"
 function Set-SessionConfigurationData([string] $scd) {{
     if (test-path 'WSMan:\localhost\Plugin\{0}\InitializationParameters\" + ConfigurationDataFromXML.SESSIONCONFIGTOKEN + @"')
@@ -3184,7 +3209,6 @@ function Set-PSSessionConfiguration([PSObject]$customShellObject,
 
 Set-PSSessionConfiguration $args[0] $args[1] $args[2] $args[3] $args[4] $args[5] $args[6] $args[7] $args[8] $args[9] $args[10] $args[11]
 ";
-
         private const string initParamFormat = @"<Param Name='{0}' Value='{1}' />";
         private const string privateDataFormat = @"<Param Name='PrivateData'>{0}</Param>";
 
@@ -3203,7 +3227,9 @@ Set-PSSessionConfiguration $args[0] $args[1] $args[2] $args[3] $args[4] $args[5]
             ConfigurationDataFromXML.MAXRCVDOBJSIZETOKEN,
             ConfigurationDataFromXML.MAXRCVDCMDSIZETOKEN,
             ConfigurationDataFromXML.THREADOPTIONSTOKEN,
+#if !CORECLR // No ApartmentState In CoreCLR
             ConfigurationDataFromXML.THREADAPTSTATETOKEN,
+#endif
             ConfigurationDataFromXML.PSVERSIONTOKEN,
             ConfigurationDataFromXML.MAXPSVERSIONTOKEN,
             ConfigurationDataFromXML.SESSIONCONFIGTOKEN,
@@ -3570,6 +3596,56 @@ Set-PSSessionConfiguration $args[0] $args[1] $args[2] $args[3] $args[4] $args[5]
 
                 Hashtable quotas = transportOption.ConstructQuotasAsHashtable();
 
+                int idleTimeOut = 0;
+
+                if (idleTimeOut != 0 && quotas.ContainsKey(WSManConfigurationOption.AttribMaxIdleTimeout))
+                {
+                    bool setMaxIdleTimeoutFirst = true;
+                    int maxIdleTimeOut;
+
+                    if (LanguagePrimitives.TryConvertTo<int>(quotas[WSManConfigurationOption.AttribMaxIdleTimeout], out maxIdleTimeOut))
+                    {
+                        int? currentIdleTimeoutms = WSManConfigurationOption.DefaultIdleTimeout;
+
+                        // Get the current IdleTimeOut quota value
+                        //
+                        using (System.Management.Automation.PowerShell ps = System.Management.Automation.PowerShell.Create())
+                        {
+                            ps.AddScript(string.Format(CultureInfo.InvariantCulture, getCurrentIdleTimeoutmsFormat, CodeGeneration.EscapeSingleQuotedStringContent(Name)));
+                            Collection<PSObject> psObjectCollection = ps.Invoke(new object[] { Name }) as Collection<PSObject>;
+                            if (psObjectCollection == null || psObjectCollection.Count != 1)
+                            {
+                                Dbg.Assert(false, "This should never happen. ps.Invoke always return a Collection<PSObject>");
+                            }
+
+                            currentIdleTimeoutms = Convert.ToInt32(psObjectCollection[0].ToString(), CultureInfo.InvariantCulture);
+                        }
+
+                        if (currentIdleTimeoutms >= maxIdleTimeOut && currentIdleTimeoutms >= idleTimeOut)
+                        {
+                            setMaxIdleTimeoutFirst = false;
+                        }
+                    }
+
+                    ScriptBlock setTimeoutQuotasSb = ScriptBlock.Create(
+                           string.Format(CultureInfo.InvariantCulture, setSessionConfigurationTimeoutQuotasSbFormat, CodeGeneration.EscapeSingleQuotedStringContent(Name)));
+                    setTimeoutQuotasSb.LanguageMode = PSLanguageMode.FullLanguage;
+
+                    setTimeoutQuotasSb.InvokeUsingCmdlet(
+                        contextCmdlet: this,
+                        useLocalScope: true,
+                        errorHandlingBehavior: ScriptBlock.ErrorHandlingBehavior.WriteToCurrentErrorPipe,
+                        dollarUnder: AutomationNull.Value,
+                        input: Array.Empty<object>(),
+                        scriptThis: AutomationNull.Value,
+                        args: new object[] { maxIdleTimeOut, idleTimeOut, setMaxIdleTimeoutFirst });
+
+                    // Remove Idle timeout values as we have set them above
+                    //
+                    quotas.Remove(WSManConfigurationOption.AttribMaxIdleTimeout);
+                    quotas.Remove(WSManConfigurationOption.AttribIdleTimeout);
+                }
+
                 setQuotasSb.InvokeUsingCmdlet(
                     contextCmdlet: this,
                     useLocalScope: true,
@@ -3778,10 +3854,12 @@ Set-PSSessionConfiguration $args[0] $args[1] $args[2] $args[3] $args[4] $args[5]
                 result.Properties.Add(new PSNoteProperty(ConfigurationDataFromXML.MAXRCVDOBJSIZETOKEN, input));
             }
 
+#if !CORECLR // No ApartmentState In CoreCLR
             if (threadAptState.HasValue)
             {
                 result.Properties.Add(new PSNoteProperty(ConfigurationDataFromXML.THREADAPTSTATETOKEN, threadAptState.Value));
             }
+#endif
 
             if (threadOptions.HasValue)
             {
@@ -3949,7 +4027,7 @@ Set-PSSessionConfiguration $args[0] $args[1] $args[2] $args[3] $args[4] $args[5]
     /// Class implementing Enable-PSSessionConfiguration cmdlet.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Enable, RemotingConstants.PSSessionConfigurationNoun,
-        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096785")]
+        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144301")]
     public sealed class EnablePSSessionConfigurationCommand : PSCmdlet
     {
         #region Private Data
@@ -3962,11 +4040,6 @@ Set-PSSessionConfiguration $args[0] $args[1] $args[2] $args[3] $args[4] $args[5]
 
 function Test-WinRMQuickConfigNeeded
 {{
-    # see issue #11005 - Function Test-WinRMQuickConfigNeeded needs to be updated: 
-    # 1) currently this function always returns $True
-    # 2) checking for a firewall rule using Get-NetFirewallRule engages WinCompat code and has significant perf impact on Enable-PSRemoting; maybe change to Get-CimInstance -ClassName MSFT_NetFirewallRule
-    return $True
-
 # Checking the following items
 #1. Starting or restarting (if already started) the WinRM service
 #2. Setting the WinRM service startup type to Automatic
@@ -4167,7 +4240,7 @@ param(
 $_ | Enable-PSSessionConfiguration -force $args[0] -sddl $args[1] -isSDDLSpecified $args[2] -queryForSet $args[3] -captionForSet $args[4] -queryForQC $args[5] -captionForQC $args[6] -whatif:$args[7] -confirm:$args[8] -shouldProcessDescForQC $args[9] -setEnabledTarget $args[10] -setEnabledAction $args[11] -skipNetworkProfileCheck $args[12] -noServiceRestart $args[13]
 ";
 
-        private static readonly ScriptBlock s_enablePluginSb;
+        private static ScriptBlock s_enablePluginSb;
 
         #endregion
 
@@ -4195,7 +4268,7 @@ $_ | Enable-PSSessionConfiguration -force $args[0] -sddl $args[1] -isSDDLSpecifi
         [ValidateNotNullOrEmpty]
         public string[] Name { get; set; }
 
-        private readonly Collection<string> _shellsToEnable = new Collection<string>();
+        private Collection<string> _shellsToEnable = new Collection<string>();
 
         /// <summary>
         /// Property that sets force parameter. This will allow
@@ -4384,7 +4457,7 @@ $_ | Enable-PSSessionConfiguration -force $args[0] -sddl $args[1] -isSDDLSpecifi
     /// <summary>
     /// </summary>
     [Cmdlet(VerbsLifecycle.Disable, RemotingConstants.PSSessionConfigurationNoun,
-        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096692")]
+        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144299")]
     public sealed class DisablePSSessionConfigurationCommand : PSCmdlet
     {
         #region Private Data
@@ -4453,8 +4526,7 @@ param(
 
 $_ | Disable-PSSessionConfiguration -force $args[0] -whatif:$args[1] -confirm:$args[2] -restartWinRMMessage $args[3] -setEnabledTarget $args[4] -setEnabledAction $args[5] -noServiceRestart $args[6]
 ";
-
-        private static readonly ScriptBlock s_disablePluginSb;
+        private static ScriptBlock s_disablePluginSb;
 
         #endregion
 
@@ -4482,7 +4554,7 @@ $_ | Disable-PSSessionConfiguration -force $args[0] -whatif:$args[1] -confirm:$a
         [ValidateNotNullOrEmpty]
         public string[] Name { get; set; }
 
-        private readonly Collection<string> _shellsToDisable = new Collection<string>();
+        private Collection<string> _shellsToDisable = new Collection<string>();
 
         /// <summary>
         /// Property that sets force parameter. This will allow
@@ -4616,7 +4688,7 @@ $_ | Disable-PSSessionConfiguration -force $args[0] -whatif:$args[1] -confirm:$a
     /// <summary>
     /// </summary>
     [Cmdlet(VerbsLifecycle.Enable, RemotingConstants.PSRemotingNoun,
-        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096577")]
+        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144300")]
     public sealed class EnablePSRemotingCommand : PSCmdlet
     {
         #region Private Data
@@ -4658,12 +4730,12 @@ param(
         $resolvedPluginInstallPath = Resolve-Path $pluginInstallPath
     }}
 
-    if (!(Test-Path $resolvedPluginInstallPath\{4}))
+    if (!(Test-Path $resolvedPluginInstallPath\{5}))
     {{
-        Copy-Item -Path $PSHOME\{4} -Destination $resolvedPluginInstallPath -Force -ErrorAction Stop
-        if (!(Test-Path $resolvedPluginInstallPath\{4}))
+        Copy-Item -Path $PSHOME\{5} -Destination $resolvedPluginInstallPath -Force -ErrorAction Stop
+        if (!(Test-Path $resolvedPluginInstallPath\{5}))
         {{
-            Write-Error ($errorMsgUnableToInstallPlugin -f ""{4}"", $resolvedPluginInstallPath)
+            Write-Error ($errorMsgUnableToInstallPlugin -f ""{5}"", $resolvedPluginInstallPath)
             return $null
         }}
     }}
@@ -4703,7 +4775,7 @@ param(
     $null = Register-PSSessionConfiguration -Name $configurationName -force -ErrorAction Stop
 
     set-item -WarningAction SilentlyContinue wsman:\localhost\plugin\$configurationName\Quotas\MaxShellsPerUser -value ""25"" -confirm:$false
-    set-item -WarningAction SilentlyContinue wsman:\localhost\plugin\$configurationName\Quotas\MaxIdleTimeoutms -value {3} -confirm:$false
+    set-item -WarningAction SilentlyContinue wsman:\localhost\plugin\$configurationName\Quotas\MaxIdleTimeoutms -value {4} -confirm:$false
     restart-service winrm -confirm:$false
 }}
 
@@ -4790,6 +4862,65 @@ param(
 
             Register-EndpointIfNotPresent -Name (""PowerShell."" + $powershellVersionMajor) $Force $queryForRegisterDefault $captionForRegisterDefault
 
+            # PowerShell Workflow and WOW are not supported for PowerShell 6+
+            if (![System.Management.Automation.Platform]::IsCoreCLR)
+            {{
+                # Check Microsoft.PowerShell.Workflow endpoint
+                $errorCount = $error.Count
+                $endPoint = Get-PSSessionConfiguration {0}.workflow -Force:$Force -ErrorAction silentlycontinue 2>&1
+                $newErrorCount = $error.Count
+
+                # remove the 'No Session Configuration matches criteria' errors
+                for ($index = 0; $index -lt ($newErrorCount - $errorCount); $index ++)
+                {{
+                    $error.RemoveAt(0)
+                }}
+
+                if (!$endpoint)
+                {{
+                    $qMessage = $queryForRegisterDefault -f ""Microsoft.PowerShell.Workflow"",""Register-PSSessionConfiguration Microsoft.PowerShell.Workflow -force""
+                    if ($force -or $pscmdlet.ShouldProcess($qMessage, $captionForRegisterDefault)) {{
+                        $tempxmlfile = [io.path]::Gettempfilename()
+                        ""{1}"" | out-file -force -filepath $tempxmlfile -confirm:$false
+                        $null = winrm create winrm/config/plugin?Name=Microsoft.PowerShell.Workflow -file:$tempxmlfile
+                        remove-item -path $tempxmlfile -force -confirm:$false
+                        restart-service winrm -confirm:$false
+                    }}
+                }}
+
+                $pa = $env:PROCESSOR_ARCHITECTURE
+                if ($pa -eq ""x86"")
+                {{
+                    # on 64-bit platforms, wow64 bit process has the correct architecture
+                    # available in processor_architew6432 variable
+                    $pa = $env:PROCESSOR_ARCHITEW6432
+                }}
+
+                if ((($pa -eq ""amd64"")) -and (test-path $env:windir\syswow64\pwrshplugin.dll))
+                {{
+                    # Check availability of WOW64 endpoint. Register if not available.
+                    $errorCount = $error.Count
+                    $endPoint = Get-PSSessionConfiguration {0}32 -Force:$Force -ErrorAction silentlycontinue 2>&1
+                    $newErrorCount = $error.Count
+
+                    # remove the 'No Session Configuration matches criteria' errors
+                    for ($index = 0; $index -lt ($newErrorCount - $errorCount); $index ++)
+                    {{
+                        $error.RemoveAt(0)
+                    }}
+
+                    $qMessage = $queryForRegisterDefault -f ""{0}32"",""Register-PSSessionConfiguration {0}32 -processorarchitecture x86 -force""
+                    if ((!$endpoint) -and
+                        ($force  -or $pscmdlet.ShouldProcess($qMessage, $captionForRegisterDefault)))
+                    {{
+                        $null = Register-PSSessionConfiguration {0}32 -processorarchitecture x86 -force
+                        set-item -WarningAction SilentlyContinue wsman:\localhost\plugin\{0}32\Quotas\MaxShellsPerUser -value ""25"" -confirm:$false
+                        set-item -WarningAction SilentlyContinue wsman:\localhost\plugin\{0}32\Quotas\MaxIdleTimeoutms -value {4} -confirm:$false
+                        restart-service winrm -confirm:$false
+                    }}
+                }}
+            }}
+
             # remove the 'network deny all' tag
             Get-PSSessionConfiguration -Force:$Force | ForEach-Object {{
                 $sddl = $null
@@ -4830,12 +4961,12 @@ param(
                             # Remote Management Users, Win8+ only
                             if ([System.Environment]::OSVersion.Version -ge ""6.2.0.0"")
                             {{
-                                $rmSidId = new-object system.security.principal.securityidentifier ""{1}""
+                                $rmSidId = new-object system.security.principal.securityidentifier ""{2}""
                                 $sd.DiscretionaryAcl.AddAccess('Allow', $rmSidId, 268435456, 'none', 'none')
                             }}
 
                             # Interactive Users
-                            $iaSidId = new-object system.security.principal.securityidentifier ""{2}""
+                            $iaSidId = new-object system.security.principal.securityidentifier ""{3}""
                             $sd.DiscretionaryAcl.AddAccess('Allow', $iaSidId, 268435456, 'none', 'none')
                         }}
 
@@ -4859,7 +4990,45 @@ param(
 Enable-PSRemoting -force $args[0] -queryForRegisterDefault $args[1] -captionForRegisterDefault $args[2] -queryForSet $args[3] -captionForSet $args[4] -whatif:$args[5] -confirm:$args[6] -skipNetworkProfileCheck $args[7] -errorMsgUnableToInstallPlugin $args[8]
 ";
 
-        private static readonly ScriptBlock s_enableRemotingSb;
+        private const string _workflowConfigXml = @"
+<PlugInConfiguration xmlns='http://schemas.microsoft.com/wbem/wsman/1/config/PluginConfiguration'
+    Name='Microsoft.Powershell.Workflow'
+    Filename='%windir%\system32\pwrshplugin.dll'
+    SDKVersion='2'
+    XmlRenderingType='text'
+    UseSharedProcess='true'
+    ProcessIdleTimeoutSec='1209600'
+    OutputBufferingMode='Block'
+    Enabled='True'
+>
+<InitializationParameters>
+<Param Name='PSVersion'  Value='{0}' />
+<Param Name='AssemblyName' Value='Microsoft.PowerShell.Workflow.ServiceCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL'/>
+<Param Name='PSSessionConfigurationTypeName' Value='Microsoft.PowerShell.Workflow.PSWorkflowSessionConfiguration'/>
+<Param Name='SessionConfigurationData'
+    Value ='
+        &lt;SessionConfigurationData&gt;
+            &lt;Param Name=&quot;ModulesToImport&quot; Value=&quot;%windir%\system32\windowspowershell\v1.0\Modules\PSWorkflow&quot; /&gt;
+            &lt;Param Name=&quot;PrivateData&quot;&gt;
+                &lt;PrivateData&gt;
+                    &lt;Param Name=&quot;enablevalidation&quot; Value=&quot;true&quot; /&gt;
+                &lt;/PrivateData&gt;
+            &lt;/Param&gt;
+       &lt;/SessionConfigurationData&gt;
+       '
+/>
+</InitializationParameters>
+<Resources>
+    <Resource ResourceUri='http://schemas.microsoft.com/powershell/Microsoft.Powershell.Workflow' SupportsOptions='true' ExactMatch='true'>
+        <Security Uri='http://schemas.microsoft.com/powershell/Microsoft.PowerShell.Workflow' Sddl='{1}' ExactMatch='False'/>
+        <Capability Type='Shell' />
+    </Resource>
+</Resources>
+<Quotas MaxMemoryPerShellMB='1024' MaxIdleTimeoutms='2147483647' MaxConcurrentUsers='5' IdleTimeoutms='7200000' MaxProcessesPerShell='15' MaxConcurrentCommandsPerShell='1000' MaxShells='25' MaxShellsPerUser='25' />
+</PlugInConfiguration>
+";
+
+        private static ScriptBlock s_enableRemotingSb;
 
         #endregion
 
@@ -4867,9 +5036,15 @@ Enable-PSRemoting -force $args[0] -queryForRegisterDefault $args[1] -captionForR
 
         static EnablePSRemotingCommand()
         {
+            string workflowConfigXml = string.Format(CultureInfo.InvariantCulture, _workflowConfigXml,
+                string.Format(CultureInfo.InvariantCulture, "{0}.{1}", PSVersionInfo.PSVersion.Major, PSVersionInfo.PSVersion.Minor),
+                PSSessionConfigurationCommandBase.GetLocalSddl());
+
             string enableRemotingScript = string.Format(CultureInfo.InvariantCulture,
                 enableRemotingSbFormat, PSSessionConfigurationCommandUtilities.GetWinrmPluginShellName(),
-                PSSessionConfigurationCommandBase.RemoteManagementUsersSID, PSSessionConfigurationCommandBase.InteractiveUsersSID,
+                // Workflow endpoint configuration will be done through Register-PSSessionConfiguration
+                // when the new features are available.
+                workflowConfigXml, PSSessionConfigurationCommandBase.RemoteManagementUsersSID, PSSessionConfigurationCommandBase.InteractiveUsersSID,
                 RemotingConstants.MaxIdleTimeoutMS, RemotingConstants.PSPluginDLLName);
 
             // compile the script block statically and reuse the same instance
@@ -4984,7 +5159,7 @@ Enable-PSRemoting -force $args[0] -queryForRegisterDefault $args[1] -captionForR
     /// local access is still enabled.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Disable, RemotingConstants.PSRemotingNoun,
-        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096482")]
+        SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Medium, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144298")]
     public sealed class DisablePSRemotingCommand : PSCmdlet
     {
         #region Private Data
@@ -5084,8 +5259,7 @@ param(
 
 Disable-PSRemoting -force:$args[0] -queryForSet $args[1] -captionForSet $args[2] -restartWinRMMessage $args[3] -whatif:$args[4] -confirm:$args[5]
 ";
-
-        private static readonly ScriptBlock s_disableRemotingSb;
+        private static ScriptBlock s_disableRemotingSb;
 
         #endregion Private Data
 

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -53,12 +53,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (parameterType == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterType));
+                throw PSTraceSource.NewArgumentNullException("parameterType");
             }
 
             _name = name;
@@ -236,6 +236,6 @@ namespace System.Management.Automation
         /// </summary>
         public object Data { get; set; }
 
-        internal static readonly RuntimeDefinedParameter[] EmptyParameterArray = Array.Empty<RuntimeDefinedParameter>();
+        internal static RuntimeDefinedParameter[] EmptyParameterArray = new RuntimeDefinedParameter[0];
     }
 }

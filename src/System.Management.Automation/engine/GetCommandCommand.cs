@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -21,7 +21,7 @@ namespace Microsoft.PowerShell.Commands
     /// commands of the given name.  It returns an instance of CommandInfo for each
     /// command that is found.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "Command", DefaultParameterSetName = "CmdletSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096579")]
+    [Cmdlet(VerbsCommon.Get, "Command", DefaultParameterSetName = "CmdletSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113309")]
     [OutputType(typeof(AliasInfo), typeof(ApplicationInfo), typeof(FunctionInfo),
                 typeof(CmdletInfo), typeof(ExternalScriptInfo), typeof(FilterInfo),
                 typeof(string), typeof(PSObject))]
@@ -350,7 +350,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = "AllCommandSet")]
         public SwitchParameter UseFuzzyMatching { get; set; }
 
-        private readonly List<CommandScore> _commandScores = new List<CommandScore>();
+        private List<CommandScore> _commandScores = new List<CommandScore>();
 
         /// <summary>
         /// Gets or sets the parameter that determines if return cmdlets based on abbreviation expansion.
@@ -369,9 +369,8 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void BeginProcessing()
         {
-#if LEGACYTELEMETRY
             _timer.Start();
-#endif
+
             base.BeginProcessing();
 
             if (ShowCommandInfo.IsPresent && Syntax.IsPresent)
@@ -390,8 +389,6 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            _commandsWritten.Clear();
-
             // Module and FullyQualifiedModule should not be specified at the same time.
             // Throw out terminating error if this is the case.
             if (_isModuleSpecified && _isFullyQualifiedModuleSpecified)
@@ -531,7 +528,9 @@ namespace Microsoft.PowerShell.Commands
                     {
                         if (!string.IsNullOrEmpty(result.Syntax))
                         {
-                            PSObject syntax = GetSyntaxObject(result);
+                            PSObject syntax = PSObject.AsPSObject(result.Syntax);
+
+                            syntax.IsHelpObject = true;
 
                             WriteObject(syntax);
                         }
@@ -553,11 +552,9 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-#if LEGACYTELEMETRY
             _timer.Stop();
 
-            // No telemetry here - capturing the name of a command which we are not familiar with
-            // may be confidential customer information
+#if LEGACYTELEMETRY
             // We want telementry on commands people look for but don't exist - this should give us an idea
             // what sort of commands people expect but either don't exist, or maybe should be installed by default.
             // The StartsWith is to avoid logging telemetry when suggestion mode checks the
@@ -567,81 +564,6 @@ namespace Microsoft.PowerShell.Commands
                 Telemetry.Internal.TelemetryAPI.ReportGetCommandFailed(Name, _timer.ElapsedMilliseconds);
             }
 #endif
-        }
-
-        /// <summary>
-        /// Creates the syntax output based on if the command is an alias, script, application or command.
-        /// </summary>
-        /// <param name="command">
-        /// CommandInfo object containing the syntax to be output.
-        /// </param>
-        /// <returns>
-        /// Syntax string cast as a PSObject for outputting.
-        /// </returns>
-        private PSObject GetSyntaxObject(CommandInfo command)
-        {
-            PSObject syntax = PSObject.AsPSObject(command.Syntax);
-
-            // This is checking if the command name that's been passed in is one that was specified by a user,
-            // if not then we have to assume they specified an alias or a wildcard and do some extra formatting for those,
-            // if it is then just go with the default formatting.
-            // So if a user runs Get-Command -Name del -Syntax the code will find del and the command it resolves to as Remove-Item
-            // and attempt to return that, but as the user specified del we want to fiddle with the output a bit to make it clear
-            // that's an alias but still give the Remove-Item syntax.
-            if (this.Name != null && !Array.Exists(this.Name, name => name.Equals(command.Name, StringComparison.InvariantCultureIgnoreCase)))
-            {
-                string aliasName = _nameContainsWildcard ? command.Name : this.Name[0];
-
-                IDictionary<string, AliasInfo> aliasTable = SessionState.Internal.GetAliasTable();
-                foreach (KeyValuePair<string, AliasInfo> tableEntry in aliasTable)
-                {
-                    if ((Array.Exists(this.Name, name => name.Equals(tableEntry.Key, StringComparison.InvariantCultureIgnoreCase)) &&
-                        tableEntry.Value.Definition == command.Name) ||
-                        (_nameContainsWildcard && tableEntry.Value.Definition == command.Name))
-                    {
-                        aliasName = tableEntry.Key;
-                        break;
-                    }
-                }
-
-                string replacedSyntax = string.Empty;
-                switch (command)
-                {
-                    case ExternalScriptInfo externalScript:
-                        replacedSyntax = string.Format(
-                            "{0} (alias) -> {1}{2}{3}",
-                            aliasName,
-                            string.Format("{0}{1}", externalScript.Path, Environment.NewLine),
-                            Environment.NewLine,
-                            command.Syntax.Replace(command.Name, aliasName));
-                        break;
-                    case ApplicationInfo app:
-                        replacedSyntax = app.Path;
-                        break;
-                    default:
-                        if (aliasName.Equals(command.Name))
-                        {
-                            replacedSyntax = command.Syntax;
-                        }
-                        else
-                        {
-                            replacedSyntax = string.Format(
-                                "{0} (alias) -> {1}{2}{3}",
-                                aliasName,
-                                command.Name,
-                                Environment.NewLine,
-                                command.Syntax.Replace(command.Name, aliasName));
-                        }
-
-                        break;
-                }
-
-                syntax = PSObject.AsPSObject(replacedSyntax);
-            }
-
-            syntax.IsHelpObject = true;
-
-            return syntax;
         }
 
         /// <summary>
@@ -716,7 +638,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 else
                 {
-                    if (_modulePatterns.Count > 0 || _moduleSpecifications.Length > 0)
+                    if (_modulePatterns.Count > 0 || _moduleSpecifications.Any())
                     {
                         // Its not a match if we are filtering on a PSSnapin/Module name but the cmdlet doesn't have one.
                         break;
@@ -950,7 +872,7 @@ namespace Microsoft.PowerShell.Commands
             bool resultFound = false;
             isDuplicate = false;
 
-            while (true)
+            do
             {
                 try
                 {
@@ -1057,7 +979,7 @@ namespace Microsoft.PowerShell.Commands
                         break;
                     }
                 }
-            }
+            } while (true);
 
             if (All)
             {
@@ -1302,37 +1224,31 @@ namespace Microsoft.PowerShell.Commands
 
                 if (isCommandMatch)
                 {
-                    if (Syntax.IsPresent && current is AliasInfo ai)
+                    if (ArgumentList != null)
                     {
-                        // If the matching command was an alias, then use the resolved command
-                        // instead of the alias...
-                        current = ai.ResolvedCommand ?? CommandDiscovery.LookupCommandInfo(
-                            ai.UnresolvedCommandName,
-                            this.MyInvocation.CommandOrigin,
-                            this.Context);
-
-                        // there are situations where both ResolvedCommand and UnresolvedCommandName
-                        // are both null (often due to multiple versions of modules with aliases)
-                        // therefore we need to exit early.
-                        if (current == null)
+                        AliasInfo ai = current as AliasInfo;
+                        if (ai != null)
                         {
-                            return false;
+                            // If the matching command was an alias, then use the resolved command
+                            // instead of the alias...
+                            current = ai.ResolvedCommand;
+                            if (current == null)
+                            {
+                                return false;
+                            }
                         }
-                    }
-
-                    if (ArgumentList != null
-                        && current is not CmdletInfo
-                        && current is not IScriptCommandInfo)
-                    {
-                        // If current is not a cmdlet or script, we need to throw a terminating error.
-                        ThrowTerminatingError(
-                            new ErrorRecord(
-                                PSTraceSource.NewArgumentException(
-                                    "ArgumentList",
-                                    DiscoveryExceptions.CommandArgsOnlyForSingleCmdlet),
-                                "CommandArgsOnlyForSingleCmdlet",
-                                ErrorCategory.InvalidArgument,
-                                current));
+                        else if (!(current is CmdletInfo || current is IScriptCommandInfo))
+                        {
+                            // If current is not a cmdlet or script, we need to throw a terminating error.
+                            ThrowTerminatingError(
+                                new ErrorRecord(
+                                    PSTraceSource.NewArgumentException(
+                                        "ArgumentList",
+                                        DiscoveryExceptions.CommandArgsOnlyForSingleCmdlet),
+                                    "CommandArgsOnlyForSingleCmdlet",
+                                    ErrorCategory.InvalidArgument,
+                                    current));
+                        }
                     }
 
                     // If the command implements dynamic parameters
@@ -1423,7 +1339,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 PSModuleInfo module = null;
 
-                if (!Context.EngineSessionState.ModuleTable.TryGetValue(Context.EngineSessionState.ModuleTableKeys[i], out module))
+                if (Context.EngineSessionState.ModuleTable.TryGetValue(Context.EngineSessionState.ModuleTableKeys[i], out module) == false)
                 {
                     Dbg.Assert(false, "ModuleTableKeys should be in sync with ModuleTable");
                 }
@@ -1446,13 +1362,15 @@ namespace Microsoft.PowerShell.Commands
                             // Look in function table
                             if ((this.CommandType & (CommandTypes.Function | CommandTypes.Filter | CommandTypes.Configuration)) != 0)
                             {
-                                foreach ((string functionName, FunctionInfo functionInfo) in module.SessionState.Internal.GetFunctionTable())
+                                foreach (DictionaryEntry function in module.SessionState.Internal.GetFunctionTable())
                                 {
-                                    if (matcher.IsMatch(functionName) && functionInfo.IsImported)
+                                    FunctionInfo func = (FunctionInfo)function.Value;
+
+                                    if (matcher.IsMatch((string)function.Key) && func.IsImported)
                                     {
                                         // make sure function doesn't come from the current module's nested module
-                                        if (functionInfo.Module.Path.Equals(module.Path, StringComparison.OrdinalIgnoreCase))
-                                            yield return functionInfo;
+                                        if (func.Module.Path.Equals(module.Path, StringComparison.OrdinalIgnoreCase))
+                                            yield return (CommandInfo)function.Value;
                                     }
                                 }
                             }
@@ -1489,31 +1407,22 @@ namespace Microsoft.PowerShell.Commands
         private bool IsCommandInResult(CommandInfo command)
         {
             bool isPresent = false;
-
-            if (command.Module is not null)
+            bool commandHasModule = command.Module != null;
+            foreach (CommandInfo commandInfo in _accumulatedResults)
             {
-                foreach (CommandInfo commandInfo in _accumulatedResults)
+                if ((command.CommandType == commandInfo.CommandType &&
+                     (string.Compare(command.Name, commandInfo.Name, StringComparison.OrdinalIgnoreCase) == 0 ||
+                      // If the command has been imported with a prefix, then just checking the names for duplication will not be enough.
+                      // Hence, an additional check is done with the prefix information
+                      string.Compare(ModuleCmdletBase.RemovePrefixFromCommandName(commandInfo.Name, commandInfo.Prefix), command.Name, StringComparison.OrdinalIgnoreCase) == 0)
+                    ) && commandInfo.Module != null && commandHasModule &&
+                    ( // We do reference equal comparison if both command are imported. If either one is not imported, we compare the module path
+                     (commandInfo.IsImported && command.IsImported && commandInfo.Module.Equals(command.Module)) ||
+                     ((!commandInfo.IsImported || !command.IsImported) && commandInfo.Module.Path.Equals(command.Module.Path, StringComparison.OrdinalIgnoreCase))
+                    ))
                 {
-                    if (commandInfo.Module is null || commandInfo.CommandType != command.CommandType)
-                    {
-                        continue;
-                    }
-
-                    // We do reference equal comparison if both command are imported. If either one is not imported, we compare the module path
-                    if ((!commandInfo.IsImported || !command.IsImported || !commandInfo.Module.Equals(command.Module))
-                        && ((commandInfo.IsImported && command.IsImported) || !commandInfo.Module.Path.Equals(command.Module.Path, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        continue;
-                    }
-
-                    // If the command has been imported with a prefix, then just checking the names for duplication will not be enough.
-                    // Hence, an additional check is done with the prefix information
-                    if (commandInfo.Name.Equals(command.Name, StringComparison.OrdinalIgnoreCase)
-                        || ModuleCmdletBase.RemovePrefixFromCommandName(commandInfo.Name, commandInfo.Prefix).Equals(command.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        isPresent = true;
-                        break;
-                    }
+                    isPresent = true;
+                    break;
                 }
             }
 
@@ -1524,7 +1433,7 @@ namespace Microsoft.PowerShell.Commands
 
         #region Members
 
-        private readonly Dictionary<string, CommandInfo> _commandsWritten =
+        private Dictionary<string, CommandInfo> _commandsWritten =
             new Dictionary<string, CommandInfo>(StringComparer.OrdinalIgnoreCase);
 
         private List<CommandInfo> _accumulatedResults = new List<CommandInfo>();
@@ -1534,9 +1443,8 @@ namespace Microsoft.PowerShell.Commands
         private Collection<WildcardPattern> _nounPatterns;
         private Collection<WildcardPattern> _modulePatterns;
 
-#if LEGACYTELEMETRY
         private Stopwatch _timer = new Stopwatch();
-#endif
+
         #endregion
 
         #region ShowCommandInfo support
@@ -1612,7 +1520,7 @@ namespace Microsoft.PowerShell.Commands
 
                 bool hasParameterSet = false;
                 IList<string> validValues = new List<string>();
-                var validateSetAttribute = parameter.Attributes.OfType<ValidateSetAttribute>().LastOrDefault();
+                var validateSetAttribute = parameter.Attributes.Where(x => (x is ValidateSetAttribute)).Cast<ValidateSetAttribute>().LastOrDefault();
                 if (validateSetAttribute != null)
                 {
                     hasParameterSet = true;
@@ -1641,7 +1549,8 @@ namespace Microsoft.PowerShell.Commands
                 new ArrayList(Enum.GetValues(parameterType)) : new ArrayList();
             returnParameterType.Properties.Add(new PSNoteProperty("EnumValues", enumValues));
 
-            bool hasFlagAttribute = (isArray) && ((parameterType.GetCustomAttributes(typeof(FlagsAttribute), true)).Length > 0);
+            bool hasFlagAttribute = (isArray) ?
+                ((parameterType.GetCustomAttributes(typeof(FlagsAttribute), true)).Count() > 0) : false;
             returnParameterType.Properties.Add(new PSNoteProperty("HasFlagAttribute", hasFlagAttribute));
 
             // Recurse into array elements.
@@ -1668,7 +1577,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (fakeBoundParameters == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(fakeBoundParameters));
+                throw PSTraceSource.NewArgumentNullException("fakeBoundParameters");
             }
 
             var commandInfo = new CmdletInfo("Get-Command", typeof(GetCommandCommand));

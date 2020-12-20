@@ -1,7 +1,7 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-$powershell = Join-Path -Path $PSHOME -ChildPath "pwsh"
+$powershell = Join-Path -Path $PsHome -ChildPath "pwsh"
 
 function Wait-JobPid {
     param (
@@ -9,9 +9,8 @@ function Wait-JobPid {
     )
 
     # This is to prevent hanging in the test.
-    # Some test environments (such as raspberry_pi) require more time for background job to run.
     $startTime = [DateTime]::Now
-    $TimeoutInMilliseconds = 60000
+    $TimeoutInMilliseconds = 10000
 
     # This will receive the pid of the Job process and nothing more since that was the only thing written to the pipeline.
     do {
@@ -40,7 +39,7 @@ function Invoke-PSHostProcessScript {
         $commandStr = @'
 Start-Sleep -Seconds {0}
 Enter-PSHostProcess {1} -ErrorAction Stop
-$PID
+$pid
 Exit-PSHostProcess
 '@ -f $i, $ArgumentString
 
@@ -69,10 +68,10 @@ Describe "Enter-PSHostProcess tests" -Tag Feature {
     Context "By Process Id" {
 
         BeforeEach {
-            # Start a normal job where the first thing it does is return $PID. After that, spin forever.
+            # Start a normal job where the first thing it does is return $pid. After that, spin forever.
             # We will use this job as the target process for Enter-PSHostProcess
             $pwshJob = Start-Job {
-                $PID
+                $pid
                 while ($true) {
                     Start-Sleep -Seconds 30 | Out-Null
                 }
@@ -98,10 +97,10 @@ Describe "Enter-PSHostProcess tests" -Tag Feature {
         }
 
         It "Can enter, exit, and re-enter another Windows PowerShell PSHost" -Skip:(!$IsWindows) {
-            # Start a PowerShell job where the first thing it does is return $PID. After that, spin forever.
+            # Start a Windows PowerShell job where the first thing it does is return $pid. After that, spin forever.
             # We will use this job as the target process for Enter-PSHostProcess
-            $powershellJob = Start-Job {
-                $PID
+            $powershellJob = Start-Job -PSVersion 5.1 {
+                $pid
                 while ($true) {
                     Start-Sleep -Seconds 30 | Out-Null
                 }
@@ -131,50 +130,13 @@ Describe "Enter-PSHostProcess tests" -Tag Feature {
 
                 $npInfo = [System.Management.Automation.Runspaces.NamedPipeConnectionInfo]::new($pwshId)
                 $rs = [runspacefactory]::CreateRunspace($npInfo)
-
-                # Try to open the runspace while tracing.
-                $splat = @{
-                    Name = "RunspaceInit"
-                    Expression = {$Input.Open()}
-                    PSHost = $true
-                    ListenerOption = [System.Diagnostics.TraceOptions]::Callstack
-                    FilePath = "$TestDrive/$([System.IO.Path]::GetRandomFileName()).log"
-                    InputObject = $rs
-                }
-                Trace-Command @splat
-
-                # If opening the runspace fails, then print out the trace with the callstack
-                Wait-UntilTrue { $rs.RunspaceStateInfo.State -eq [System.Management.Automation.Runspaces.RunspaceState]::Opened } |
-                    Should -BeTrue -Because (Get-Content $splat.FilePath -Raw)
-
+                $rs.Open()
                 $ps = [powershell]::Create()
                 $ps.Runspace = $rs
-                $ps.AddScript('$PID')
-
-                [int]$retry = 0
-                $result = $null
-                $errorMsg = "Exception: "
-                while ($retry -lt 5 -and $result -eq $null) {
-                    try {
-                        $result = $ps.Invoke()
-                    }
-                    catch [System.Management.Automation.Runspaces.InvalidRunspaceStateException] {
-                        $errorMsg += $_.Exception.InnerException.Message + "; "
-                        $retry++
-                        Start-Sleep -Milliseconds 100
-                    }
-                }
-
-                $result | Should -Be $pwshId -Because $errorMsg
+                $ps.AddScript('$pid').Invoke() | Should -Be $pwshId
             } finally {
-                # Clean up disposables
-                if ($rs) {
-                    $rs.Dispose()
-                }
-
-                if ($ps) {
-                    $ps.Dispose()
-                }
+                $rs.Dispose()
+                $ps.Dispose()
             }
         }
     }
@@ -185,12 +147,12 @@ Describe "Enter-PSHostProcess tests" -Tag Feature {
             $pipeName = [System.IO.Path]::GetRandomFileName()
             $pipePath = Get-PipePath -PipeName $pipeName
 
-            # Start a job where the first thing it does is set the custom pipe name, then return $PID.
+            # Start a job where the first thing it does is set the custom pipe name, then return $pid.
             # After that, spin forever.
             # We will use this job as the target process for Enter-PSHostProcess
             $pwshJob = Start-Job -ArgumentList $pipeName {
                 [System.Management.Automation.Remoting.RemoteSessionNamedPipeServer]::CreateCustomNamedPipeServer($args[0])
-                $PID
+                $pid
                 while ($true) { Start-Sleep -Seconds 30 | Out-Null }
             }
 

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -28,7 +28,7 @@ namespace System.Management.Automation.Internal
         {
             if (commandRuntime == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(commandRuntime));
+                throw PSTraceSource.NewArgumentNullException("commandRuntime");
             }
 
             _commandRuntime = commandRuntime;
@@ -108,12 +108,6 @@ namespace System.Management.Automation.Internal
         /// <remarks>
         /// This parameter tells the command what to do when an informational record occurs.
         /// </remarks>
-        /// <!--
-        /// NOTE: The "infa" alias name does not follow the same alias naming convention used
-        /// with other common parameter aliases that control stream functionality; however,
-        /// "ia" was already taken as a parameter alias in other commands when this parameter
-        /// was added to PowerShell, so "infa" was chosen instead.
-        /// -->
         [Parameter]
         [Alias("infa")]
         public ActionPreference InformationAction
@@ -234,7 +228,7 @@ namespace System.Management.Automation.Internal
 
         #endregion parameters
 
-        private readonly MshCommandRuntime _commandRuntime;
+        private MshCommandRuntime _commandRuntime;
 
         internal class ValidateVariableName : ValidateArgumentsAttribute
         {
@@ -261,3 +255,4 @@ namespace System.Management.Automation.Internal
         }
     }
 }
+

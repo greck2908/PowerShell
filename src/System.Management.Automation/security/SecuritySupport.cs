@@ -1,26 +1,25 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
 #pragma warning disable 56523
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Globalization;
+using Microsoft.PowerShell;
+using Microsoft.PowerShell.Commands;
+using System.Management.Automation.Security;
 using System.Management.Automation.Configuration;
 using System.Management.Automation.Internal;
-using System.Management.Automation.Security;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Globalization;
 
-using Microsoft.PowerShell;
-using Microsoft.PowerShell.Commands;
-
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using DWORD = System.UInt32;
 
 namespace Microsoft.PowerShell
@@ -63,7 +62,7 @@ namespace Microsoft.PowerShell
         /// Default - The most restrictive policy available.
         /// </summary>
         Default = Restricted
-    }
+    };
 
     /// <summary>
     /// Defines the available configuration scopes for an execution
@@ -143,20 +142,15 @@ namespace System.Management.Automation.Internal
             switch (policy)
             {
                 case ExecutionPolicy.Restricted:
-                    executionPolicy = "Restricted";
-                    break;
+                    executionPolicy = "Restricted"; break;
                 case ExecutionPolicy.AllSigned:
-                    executionPolicy = "AllSigned";
-                    break;
+                    executionPolicy = "AllSigned"; break;
                 case ExecutionPolicy.RemoteSigned:
-                    executionPolicy = "RemoteSigned";
-                    break;
+                    executionPolicy = "RemoteSigned"; break;
                 case ExecutionPolicy.Unrestricted:
-                    executionPolicy = "Unrestricted";
-                    break;
+                    executionPolicy = "Unrestricted"; break;
                 case ExecutionPolicy.Bypass:
-                    executionPolicy = "Bypass";
-                    break;
+                    executionPolicy = "Bypass"; break;
             }
 
             // Set the execution policy
@@ -365,18 +359,12 @@ namespace System.Management.Automation.Internal
         {
             switch (policy)
             {
-                case ExecutionPolicy.Bypass:
-                    return "Bypass";
-                case ExecutionPolicy.Unrestricted:
-                    return "Unrestricted";
-                case ExecutionPolicy.RemoteSigned:
-                    return "RemoteSigned";
-                case ExecutionPolicy.AllSigned:
-                    return "AllSigned";
-                case ExecutionPolicy.Restricted:
-                    return "Restricted";
-                default:
-                    return "Restricted";
+                case ExecutionPolicy.Bypass: return "Bypass";
+                case ExecutionPolicy.Unrestricted: return "Unrestricted";
+                case ExecutionPolicy.RemoteSigned: return "RemoteSigned";
+                case ExecutionPolicy.AllSigned: return "AllSigned";
+                case ExecutionPolicy.Restricted: return "Restricted";
+                default: return "Restricted";
             }
         }
 
@@ -607,7 +595,7 @@ namespace System.Management.Automation.Internal
         /// <returns>True on success, false otherwise.</returns>
         internal static bool CertIsGoodForSigning(X509Certificate2 c)
         {
-            if (!c.HasPrivateKey)
+            if (!CertHasPrivatekey(c))
             {
                 return false;
             }
@@ -630,33 +618,18 @@ namespace System.Management.Automation.Internal
                  CertHasKeyUsage(c, X509KeyUsageFlags.KeyEncipherment)));
         }
 
-        /// <summary>
-        /// Check to see if the specified cert is expiring by the time.
-        /// </summary>
-        /// <param name="c">Certificate object.</param>
-        /// <param name="expiring">Certificate expire time.</param>
-        /// <returns>True on success, false otherwise.</returns>
-        internal static bool CertExpiresByTime(X509Certificate2 c, DateTime expiring)
-        {
-            return c.NotAfter < expiring;
-        }
-
         private static bool CertHasOid(X509Certificate2 c, string oid)
         {
-            foreach (var extension in c.Extensions)
+            Collection<string> ekus = GetCertEKU(c);
+
+            foreach (string testOid in ekus)
             {
-                if (extension is X509EnhancedKeyUsageExtension ext)
+                if (testOid == oid)
                 {
-                    foreach (Oid ekuOid in ext.EnhancedKeyUsages)
-                    {
-                        if (ekuOid.Value == oid)
-                        {
-                            return true;
-                        }
-                    }
-                    break;
+                    return true;
                 }
             }
+
             return false;
         }
 
@@ -671,10 +644,22 @@ namespace System.Management.Automation.Internal
                     {
                         return true;
                     }
+
                     break;
                 }
             }
+
             return false;
+        }
+
+        /// <summary>
+        /// Check if the specified cert has a private key in it.
+        /// </summary>
+        /// <param name="cert">Certificate object.</param>
+        /// <returns>True on success, false otherwise.</returns>
+        internal static bool CertHasPrivatekey(X509Certificate2 cert)
+        {
+            return cert.HasPrivateKey;
         }
 
         /// <summary>
@@ -768,53 +753,175 @@ namespace System.Management.Automation.Internal
         }
 
         /// <summary>
-        /// Gets or sets purpose of a certificate.
+        /// Purpose of a certificate.
         /// </summary>
         internal CertificatePurpose Purpose
         {
-            get;
-            set;
-        } = CertificatePurpose.NotSpecified;
+            get { return _purpose; }
+
+            set { _purpose = value; }
+        }
 
         /// <summary>
-        /// Gets or sets SSL Server Authentication.
+        /// SSL Server Authentication.
         /// </summary>
         internal bool SSLServerAuthentication
         {
-            get;
+            get { return _sslServerAuthentication; }
 
-            set;
+            set { _sslServerAuthentication = value; }
         }
 
         /// <summary>
-        /// Gets or sets DNS name of a certificate.
+        /// DNS name of a certificate.
         /// </summary>
-        internal WildcardPattern DnsName
+        internal string DnsName
         {
-            get;
-            set;
+            set { _dnsName = value; }
         }
 
         /// <summary>
-        /// Gets or sets EKU OID list of a certificate.
+        /// EKU OID list of a certificate.
         /// </summary>
-        internal List<WildcardPattern> Eku
+        internal string[] Eku
         {
-            get;
-            set;
+            set { _eku = value; }
         }
 
         /// <summary>
-        /// Gets or sets validity time for a certificate.
+        /// Remaining validity period in days for a certificate.
         /// </summary>
-        internal DateTime Expiring
+        internal int ExpiringInDays
         {
-            get;
-            set;
-        } = DateTime.MinValue;
+            set { _expiringInDays = value; }
+        }
+
+        /// <summary>
+        /// Combine properties into a filter string.
+        /// </summary>
+        internal string FilterString
+        {
+            get
+            {
+                string filterString = string.Empty;
+
+                if (_dnsName != null)
+                {
+                    filterString = AppendFilter(filterString, "dns", _dnsName);
+                }
+
+                string ekuT = string.Empty;
+                if (_eku != null)
+                {
+                    for (int i = 0; i < _eku.Length; i++)
+                    {
+                        if (ekuT.Length != 0)
+                        {
+                            ekuT = ekuT + ",";
+                        }
+
+                        ekuT = ekuT + _eku[i];
+                    }
+                }
+
+                if (_purpose == CertificatePurpose.CodeSigning)
+                {
+                    if (ekuT.Length != 0)
+                    {
+                        ekuT = ekuT + ",";
+                    }
+
+                    ekuT = ekuT + CodeSigningOid;
+                }
+
+                if (_purpose == CertificatePurpose.DocumentEncryption)
+                {
+                    if (ekuT.Length != 0)
+                    {
+                        ekuT = ekuT + ",";
+                    }
+
+                    ekuT = ekuT + DocumentEncryptionOid;
+                }
+
+                if (_sslServerAuthentication)
+                {
+                    if (ekuT.Length != 0)
+                    {
+                        ekuT = ekuT + ",";
+                    }
+
+                    ekuT = ekuT + szOID_PKIX_KP_SERVER_AUTH;
+                }
+
+                if (ekuT.Length != 0)
+                {
+                    filterString = AppendFilter(filterString, "eku", ekuT);
+                    if (_purpose == CertificatePurpose.CodeSigning ||
+                        _sslServerAuthentication)
+                    {
+                        filterString = AppendFilter(filterString, "key", "*");
+                    }
+                }
+
+                if (_expiringInDays >= 0)
+                {
+                    filterString = AppendFilter(
+                                    filterString,
+                                    "ExpiringInDays",
+                                    _expiringInDays.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+
+                if (filterString.Length == 0)
+                {
+                    filterString = null;
+                }
+
+                return filterString;
+            }
+        }
+
+        private string AppendFilter(
+                            string filterString,
+                            string name,
+                            string value)
+        {
+            string newfilter = value;
+
+            // append a "name=value" filter to the existing filter string.
+            // insert a separating "&" if existing filter string is not empty.
+
+            // if the value is empty, do nothing.
+
+            if (newfilter.Length != 0)
+            {
+                // if the value contains an equal sign or an ampersand, throw
+                // an exception to avoid compromising the native code parser.
+
+                if (newfilter.Contains("=") || newfilter.Contains("&"))
+                {
+                    throw Marshal.GetExceptionForHR(
+                                    Security.NativeMethods.E_INVALID_DATA);
+                }
+
+                newfilter = name + "=" + newfilter;
+                if (filterString.Length != 0)
+                {
+                    newfilter = "&" + newfilter;
+                }
+            }
+
+            return filterString + newfilter;
+        }
+
+        private CertificatePurpose _purpose = 0;
+        private bool _sslServerAuthentication = false;
+        private string _dnsName = null;
+        private string[] _eku = null;
+        private int _expiringInDays = -1;
 
         internal const string CodeSigningOid = "1.3.6.1.5.5.7.3.3";
-        internal const string OID_PKIX_KP_SERVER_AUTH = "1.3.6.1.5.5.7.3.1";
+        internal const string szOID_PKIX_KP_SERVER_AUTH = "1.3.6.1.5.5.7.3.1";
 
         // The OID arc 1.3.6.1.4.1.311.80 is assigned to PowerShell. If we need
         // new OIDs, we can assign them under this branch.
@@ -910,11 +1017,11 @@ namespace System.Management.Automation
             return encodedContent;
         }
 
-        internal static readonly string BEGIN_CMS_SIGIL = "-----BEGIN CMS-----";
-        internal static readonly string END_CMS_SIGIL = "-----END CMS-----";
+        internal static string BEGIN_CMS_SIGIL = "-----BEGIN CMS-----";
+        internal static string END_CMS_SIGIL = "-----END CMS-----";
 
-        internal static readonly string BEGIN_CERTIFICATE_SIGIL = "-----BEGIN CERTIFICATE-----";
-        internal static readonly string END_CERTIFICATE_SIGIL = "-----END CERTIFICATE-----";
+        internal static string BEGIN_CERTIFICATE_SIGIL = "-----BEGIN CERTIFICATE-----";
+        internal static string END_CERTIFICATE_SIGIL = "-----END CERTIFICATE-----";
 
         /// <summary>
         /// Adds Ascii armour to a byte stream in Base64 format.
@@ -1032,10 +1139,8 @@ namespace System.Management.Automation
             // Process the certificate if that was supplied exactly
             if (_pendingCertificate != null)
             {
-                ProcessResolvedCertificates(
-                    purpose,
-                    new X509Certificate2Collection(_pendingCertificate),
-                    out error);
+                ProcessResolvedCertificates(purpose,
+                    new List<X509Certificate2> { _pendingCertificate }, out error);
                 if ((error != null) || (Certificates.Count != 0))
                 {
                     return;
@@ -1058,8 +1163,15 @@ namespace System.Management.Automation
                     return;
                 }
 
-                // Then by cert store
-                ResolveFromStoreById(purpose, out error);
+                // Then by thumbprint
+                ResolveFromThumbprint(sessionState, purpose, out error);
+                if ((error != null) || (Certificates.Count != 0))
+                {
+                    return;
+                }
+
+                // Then by Subject Name
+                ResolveFromSubjectName(sessionState, purpose, out error);
                 if ((error != null) || (Certificates.Count != 0))
                 {
                     return;
@@ -1104,7 +1216,7 @@ namespace System.Management.Automation
                 return;
             }
 
-            var certificatesToProcess = new X509Certificate2Collection();
+            List<X509Certificate2> certificatesToProcess = new List<X509Certificate2>();
             try
             {
                 X509Certificate2 newCertificate = new X509Certificate2(messageBytes);
@@ -1178,7 +1290,7 @@ namespace System.Management.Automation
                     resolvedPaths.Remove(path);
                 }
 
-                var certificatesToProcess = new X509Certificate2Collection();
+                List<X509Certificate2> certificatesToProcess = new List<X509Certificate2>();
                 foreach (string path in resolvedPaths)
                 {
                     X509Certificate2 certificate = null;
@@ -1200,51 +1312,99 @@ namespace System.Management.Automation
             }
         }
 
-        private void ResolveFromStoreById(ResolutionPurpose purpose, out ErrorRecord error)
+        private void ResolveFromThumbprint(SessionState sessionState, ResolutionPurpose purpose, out ErrorRecord error)
         {
-            error = null;
-            WildcardPattern subjectNamePattern = WildcardPattern.Get(_identifier, WildcardOptions.IgnoreCase);
+            // Quickly check that this is a thumbprint-like pattern (just hex)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(_identifier, "^[a-f0-9]+$", Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                error = null;
+                return;
+            }
+
+            Collection<PSObject> certificates = new Collection<PSObject>();
 
             try
             {
-                var certificatesToProcess = new X509Certificate2Collection();
-
-                using (var storeCU = new X509Store("my", StoreLocation.CurrentUser))
+                // Get first from 'My' store
+                string certificatePath = sessionState.Path.Combine("Microsoft.PowerShell.Security\\Certificate::CurrentUser\\My", _identifier);
+                if (sessionState.InvokeProvider.Item.Exists(certificatePath))
                 {
-                    storeCU.Open(OpenFlags.ReadOnly);
-                    X509Certificate2Collection storeCerts = storeCU.Certificates;
-
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    foreach (PSObject certificateObject in sessionState.InvokeProvider.Item.Get(certificatePath))
                     {
-                        using (var storeLM = new X509Store("my", StoreLocation.LocalMachine))
-                        {
-                            storeLM.Open(OpenFlags.ReadOnly);
-                            storeCerts.AddRange(storeLM.Certificates);
-                        }
+                        certificates.Add(certificateObject);
                     }
+                }
 
-                    certificatesToProcess.AddRange(storeCerts.Find(X509FindType.FindByThumbprint, _identifier, validOnly: false));
-
-                    if (certificatesToProcess.Count == 0)
+                // Second from 'LocalMachine' store
+                certificatePath = sessionState.Path.Combine("Microsoft.PowerShell.Security\\Certificate::LocalMachine\\My", _identifier);
+                if (sessionState.InvokeProvider.Item.Exists(certificatePath))
+                {
+                    foreach (PSObject certificateObject in sessionState.InvokeProvider.Item.Get(certificatePath))
                     {
-                        foreach (var cert in storeCerts)
-                        {
-                            if (subjectNamePattern.IsMatch(cert.Subject) || subjectNamePattern.IsMatch(cert.GetNameInfo(X509NameType.SimpleName, forIssuer: false)))
-                            {
-                                certificatesToProcess.Add(cert);
-                            }
-                        }
+                        certificates.Add(certificateObject);
                     }
-
-                    ProcessResolvedCertificates(purpose, certificatesToProcess, out error);
                 }
             }
             catch (SessionStateException)
             {
+                // If we got an ItemNotFound / etc., then this didn't represent a valid path.
             }
+
+            List<X509Certificate2> certificatesToProcess = new List<X509Certificate2>();
+            foreach (PSObject certificateObject in certificates)
+            {
+                X509Certificate2 certificate = certificateObject.BaseObject as X509Certificate2;
+                if (certificate != null)
+                {
+                    certificatesToProcess.Add(certificate);
+                }
+            }
+
+            ProcessResolvedCertificates(purpose, certificatesToProcess, out error);
         }
 
-        private void ProcessResolvedCertificates(ResolutionPurpose purpose, X509Certificate2Collection certificatesToProcess, out ErrorRecord error)
+        private void ResolveFromSubjectName(SessionState sessionState, ResolutionPurpose purpose, out ErrorRecord error)
+        {
+            Collection<PSObject> certificates = new Collection<PSObject>();
+            WildcardPattern subjectNamePattern = WildcardPattern.Get(_identifier, WildcardOptions.IgnoreCase);
+
+            try
+            {
+                // Get first from 'My' store, then 'LocalMachine'
+                string[] certificatePaths = new string[] {
+                        "Microsoft.PowerShell.Security\\Certificate::CurrentUser\\My",
+                        "Microsoft.PowerShell.Security\\Certificate::LocalMachine\\My" };
+
+                foreach (string certificatePath in certificatePaths)
+                {
+                    foreach (PSObject certificateObject in sessionState.InvokeProvider.ChildItem.Get(certificatePath, false))
+                    {
+                        if (subjectNamePattern.IsMatch(certificateObject.Properties["Subject"].Value.ToString()))
+                        {
+                            certificates.Add(certificateObject);
+                        }
+                    }
+                }
+            }
+            catch (SessionStateException)
+            {
+                // If we got an ItemNotFound / etc., then this didn't represent a valid path.
+            }
+
+            List<X509Certificate2> certificatesToProcess = new List<X509Certificate2>();
+            foreach (PSObject certificateObject in certificates)
+            {
+                X509Certificate2 certificate = certificateObject.BaseObject as X509Certificate2;
+                if (certificate != null)
+                {
+                    certificatesToProcess.Add(certificate);
+                }
+            }
+
+            ProcessResolvedCertificates(purpose, certificatesToProcess, out error);
+        }
+
+        private void ProcessResolvedCertificates(ResolutionPurpose purpose, List<X509Certificate2> certificatesToProcess, out ErrorRecord error)
         {
             error = null;
             HashSet<string> processedThumbprints = new HashSet<string>();
@@ -1259,14 +1419,9 @@ namespace System.Management.Automation
                     {
                         error = new ErrorRecord(
                             new ArgumentException(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    SecuritySupportStrings.CertificateCannotBeUsedForEncryption,
-                                    certificate.Thumbprint,
-                                    CertificateFilterInfo.DocumentEncryptionOid)),
-                            "CertificateCannotBeUsedForEncryption",
-                            ErrorCategory.InvalidData,
-                            certificate);
+                                string.Format(CultureInfo.InvariantCulture,
+                                    SecuritySupportStrings.CertificateCannotBeUsedForEncryption, certificate.Thumbprint, CertificateFilterInfo.DocumentEncryptionOid)),
+                            "CertificateCannotBeUsedForEncryption", ErrorCategory.InvalidData, certificate);
                         return;
                     }
                     else
@@ -1301,14 +1456,9 @@ namespace System.Management.Automation
                     {
                         error = new ErrorRecord(
                             new ArgumentException(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    SecuritySupportStrings.IdentifierMustReferenceSingleCertificate,
-                                    _identifier,
-                                    arg1: "To")),
-                            "IdentifierMustReferenceSingleCertificate",
-                            ErrorCategory.LimitsExceeded,
-                            certificatesToProcess);
+                                string.Format(CultureInfo.InvariantCulture,
+                                    SecuritySupportStrings.IdentifierMustReferenceSingleCertificate, _identifier, "To")),
+                            "IdentifierMustReferenceSingleCertificate", ErrorCategory.LimitsExceeded, certificatesToProcess);
                         Certificates.Clear();
                         return;
                     }
@@ -1508,12 +1658,11 @@ namespace System.Management.Automation
 
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private static IntPtr s_amsiContext = IntPtr.Zero;
-
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private static IntPtr s_amsiSession = IntPtr.Zero;
 
         private static bool s_amsiInitFailed = false;
-        private static object s_amsiLockObject = new object();
+        private static object s_amsiLockObject = new Object();
 
         /// <summary>
         /// Reset the AMSI session (used to track related script invocations)
@@ -1565,9 +1714,6 @@ namespace System.Management.Automation
                     {
                         CloseSession();
 
-                        // Unregister the event handler.
-                        AppDomain.CurrentDomain.ProcessExit -= CurrentDomain_ProcessExit;
-
                         // Uninitialize the AMSI interface.
                         AmsiCleanedUp = true;
                         AmsiNativeMethods.AmsiUninitialize(s_amsiContext);
@@ -1602,28 +1748,24 @@ namespace System.Management.Automation
             /// Return Type: HRESULT->LONG->int
             ///appName: LPCWSTR->WCHAR*
             ///amsiContext: HAMSICONTEXT*
-            [DefaultDllImportSearchPathsAttribute(DllImportSearchPath.System32)]
             [DllImportAttribute("amsi.dll", EntryPoint = "AmsiInitialize", CallingConvention = CallingConvention.StdCall)]
             internal static extern int AmsiInitialize(
-                [InAttribute()][MarshalAsAttribute(UnmanagedType.LPWStr)] string appName, ref System.IntPtr amsiContext);
+                [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string appName, ref System.IntPtr amsiContext);
 
             /// Return Type: void
             ///amsiContext: HAMSICONTEXT->HAMSICONTEXT__*
-            [DefaultDllImportSearchPathsAttribute(DllImportSearchPath.System32)]
             [DllImportAttribute("amsi.dll", EntryPoint = "AmsiUninitialize", CallingConvention = CallingConvention.StdCall)]
             internal static extern void AmsiUninitialize(System.IntPtr amsiContext);
 
             /// Return Type: HRESULT->LONG->int
             ///amsiContext: HAMSICONTEXT->HAMSICONTEXT__*
             ///amsiSession: HAMSISESSION*
-            [DefaultDllImportSearchPathsAttribute(DllImportSearchPath.System32)]
             [DllImportAttribute("amsi.dll", EntryPoint = "AmsiOpenSession", CallingConvention = CallingConvention.StdCall)]
             internal static extern int AmsiOpenSession(System.IntPtr amsiContext, ref System.IntPtr amsiSession);
 
             /// Return Type: void
             ///amsiContext: HAMSICONTEXT->HAMSICONTEXT__*
             ///amsiSession: HAMSISESSION->HAMSISESSION__*
-            [DefaultDllImportSearchPathsAttribute(DllImportSearchPath.System32)]
             [DllImportAttribute("amsi.dll", EntryPoint = "AmsiCloseSession", CallingConvention = CallingConvention.StdCall)]
             internal static extern void AmsiCloseSession(System.IntPtr amsiContext, System.IntPtr amsiSession);
 
@@ -1634,11 +1776,10 @@ namespace System.Management.Automation
             ///contentName: LPCWSTR->WCHAR*
             ///amsiSession: HAMSISESSION->HAMSISESSION__*
             ///result: AMSI_RESULT*
-            [DefaultDllImportSearchPathsAttribute(DllImportSearchPath.System32)]
             [DllImportAttribute("amsi.dll", EntryPoint = "AmsiScanBuffer", CallingConvention = CallingConvention.StdCall)]
             internal static extern int AmsiScanBuffer(
                 System.IntPtr amsiContext, System.IntPtr buffer, uint length,
-                [InAttribute()][MarshalAsAttribute(UnmanagedType.LPWStr)] string contentName, System.IntPtr amsiSession, ref AMSI_RESULT result);
+                [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string contentName, System.IntPtr amsiSession, ref AMSI_RESULT result);
 
             /// Return Type: HRESULT->LONG->int
             ///amsiContext: HAMSICONTEXT->HAMSICONTEXT__*
@@ -1646,11 +1787,10 @@ namespace System.Management.Automation
             ///contentName: LPCWSTR->WCHAR*
             ///amsiSession: HAMSISESSION->HAMSISESSION__*
             ///result: AMSI_RESULT*
-            [DefaultDllImportSearchPathsAttribute(DllImportSearchPath.System32)]
             [DllImportAttribute("amsi.dll", EntryPoint = "AmsiScanString", CallingConvention = CallingConvention.StdCall)]
             internal static extern int AmsiScanString(
-                System.IntPtr amsiContext, [InAttribute()][MarshalAsAttribute(UnmanagedType.LPWStr)] string @string,
-                [InAttribute()][MarshalAsAttribute(UnmanagedType.LPWStr)] string contentName, System.IntPtr amsiSession, ref AMSI_RESULT result);
+                System.IntPtr amsiContext, [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string @string,
+                [InAttribute()] [MarshalAsAttribute(UnmanagedType.LPWStr)] string contentName, System.IntPtr amsiSession, ref AMSI_RESULT result);
         }
     }
 }

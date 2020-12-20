@@ -1,7 +1,8 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
+using System.Linq;
 using System.Management.Automation;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -68,7 +69,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal static StringBuilder GetRawContentHeader(HttpResponseMessage response)
         {
-            StringBuilder raw = new();
+            StringBuilder raw = new StringBuilder();
 
             string protocol = WebResponseHelper.GetProtocol(response);
             if (!string.IsNullOrEmpty(protocol))
@@ -82,7 +83,7 @@ namespace Microsoft.PowerShell.Commands
             HttpHeaders[] headerCollections =
             {
                 response.Headers,
-                response.Content?.Headers
+                response.Content == null ? null : response.Content.Headers
             };
 
             foreach (var headerCollection in headerCollections)

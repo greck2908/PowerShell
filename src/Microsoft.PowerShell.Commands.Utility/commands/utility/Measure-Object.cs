@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
+
+using Microsoft.PowerShell.Commands.Internal.Format;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -18,7 +20,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Property name.
         /// </summary>
-        public string Property { get; set; }
+        public string Property { get; set; } = null;
     }
 
     /// <summary>
@@ -27,7 +29,7 @@ namespace Microsoft.PowerShell.Commands
     public sealed class GenericMeasureInfo : MeasureInfo
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="GenericMeasureInfo"/> class.
+        /// Default ctor.
         /// </summary>
         public GenericMeasureInfo()
         {
@@ -77,7 +79,6 @@ namespace Microsoft.PowerShell.Commands
     public sealed class GenericObjectMeasureInfo : MeasureInfo
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="GenericObjectMeasureInfo"/> class.
         /// Default ctor.
         /// </summary>
         public GenericObjectMeasureInfo()
@@ -123,7 +124,6 @@ namespace Microsoft.PowerShell.Commands
     public sealed class TextMeasureInfo : MeasureInfo
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="TextMeasureInfo"/> class.
         /// Default ctor.
         /// </summary>
         public TextMeasureInfo()
@@ -151,7 +151,7 @@ namespace Microsoft.PowerShell.Commands
     /// Measure object cmdlet.
     /// </summary>
     [Cmdlet(VerbsDiagnostic.Measure, "Object", DefaultParameterSetName = GenericParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096617", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113349", RemotingCapability = RemotingCapability.None)]
     [OutputType(typeof(GenericMeasureInfo), typeof(TextMeasureInfo), typeof(GenericObjectMeasureInfo))]
     public sealed class MeasureObjectCommand : PSCmdlet
     {
@@ -164,7 +164,6 @@ namespace Microsoft.PowerShell.Commands
             where V : new()
         {
             /// <summary>
-            /// Initializes a new instance of the <see cref="MeasureObjectDictionary{V}"/> class.
             /// Default ctor.
             /// </summary>
             internal MeasureObjectDictionary() : base(StringComparer.OrdinalIgnoreCase)
@@ -199,6 +198,7 @@ namespace Microsoft.PowerShell.Commands
         /// to maintain two sets of MeasureInfo and constantly checking
         /// what mode we're in.
         /// </summary>
+
         [SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses")]
         private class Statistics
         {
@@ -219,7 +219,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MeasureObjectCommand"/> class.
         /// Default constructor.
         /// </summary>
         public MeasureObjectCommand()
@@ -236,7 +235,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <value></value>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { get; set; } = AutomationNull.Value;
+        public PSObject InputObject { set; get; } = AutomationNull.Value;
 
         /// <summary>
         /// Properties to be examined.
@@ -244,7 +243,7 @@ namespace Microsoft.PowerShell.Commands
         /// <value></value>
         [ValidateNotNullOrEmpty]
         [Parameter(Position = 0)]
-        public PSPropertyExpression[] Property { get; set; }
+        public PSPropertyExpression[] Property { get; set; } = null;
 
         #endregion Common parameters in both sets
 
@@ -454,7 +453,7 @@ namespace Microsoft.PowerShell.Commands
         {
             get
             {
-                return string.Equals(ParameterSetName, GenericParameterSet, StringComparison.Ordinal);
+                return string.Compare(ParameterSetName, GenericParameterSet, StringComparison.Ordinal) == 0;
             }
         }
 
@@ -496,14 +495,14 @@ namespace Microsoft.PowerShell.Commands
         /// Analyze an object on a property-by-property basis instead
         /// of as a simple value.
         /// Side effects: Updates statistics.
-        /// </summary>
         /// <param name="inObj">The object to analyze.</param>
+        /// </summary>
         private void AnalyzeObjectProperties(PSObject inObj)
         {
             // Keep track of which properties are counted for an
             // input object so that repeated properties won't be
             // counted twice.
-            MeasureObjectDictionary<object> countedProperties = new();
+            MeasureObjectDictionary<object> countedProperties = new MeasureObjectDictionary<object>();
 
             // First iterate over the user-specified list of
             // properties...
@@ -556,9 +555,9 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Analyze a value for generic/text statistics.
         /// Side effects: Updates statistics. May set nonNumericError.
-        /// </summary>
         /// <param name="propertyName">The property this value corresponds to.</param>
         /// <param name="objValue">The value to analyze.</param>
+        /// </summary>
         private void AnalyzeValue(string propertyName, object objValue)
         {
             if (propertyName == null)
@@ -581,7 +580,7 @@ namespace Microsoft.PowerShell.Commands
                 if (!LanguagePrimitives.TryConvertTo(objValue, out numValue))
                 {
                     _nonNumericError = true;
-                    ErrorRecord errorRecord = new(
+                    ErrorRecord errorRecord = new ErrorRecord(
                         PSTraceSource.NewInvalidOperationException(MeasureObjectStrings.NonNumericInputObject, objValue),
                         "NonNumericInputObject",
                         ErrorCategory.InvalidType,
@@ -619,10 +618,11 @@ namespace Microsoft.PowerShell.Commands
         /// If true is passed in then the minimum of the two values would be returned.
         /// If false is passed in then maximum of the two values will be returned.</param>
         /// <returns></returns>
-        private static object Compare(object objValue, object statMinOrMaxValue, bool isMin)
+        private object Compare(object objValue, object statMinOrMaxValue, bool isMin)
         {
             object currentValue = objValue;
             object statValue = statMinOrMaxValue;
+            int factor = isMin ? 1 : -1;
 
             double temp;
             currentValue = ((objValue != null) && LanguagePrimitives.TryConvertTo<double>(objValue, out temp)) ? temp : currentValue;
@@ -634,15 +634,13 @@ namespace Microsoft.PowerShell.Commands
                 statValue = PSObject.AsPSObject(statValue).ToString();
             }
 
-            if (statValue == null)
+            if ((statValue == null) ||
+                ((LanguagePrimitives.Compare(statValue, currentValue, false, CultureInfo.CurrentCulture) * factor) > 0))
             {
                 return objValue;
             }
 
-            int comparisonResult = LanguagePrimitives.Compare(statValue, currentValue, ignoreCase: false, CultureInfo.CurrentCulture);
-            return (isMin ? comparisonResult : -comparisonResult) > 0
-                ? objValue
-                : statMinOrMaxValue;
+            return statMinOrMaxValue;
         }
 
         /// <summary>
@@ -747,9 +745,9 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// Update text statistics.
-        /// </summary>
         /// <param name="strValue">The text to analyze.</param>
         /// <param name="stat">The Statistics object to update.</param>
+        /// </summary>
         private void AnalyzeString(string strValue, Statistics stat)
         {
             if (_measureCharacters)
@@ -762,9 +760,9 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// Update number statistics.
-        /// </summary>
         /// <param name="numValue">The number to analyze.</param>
         /// <param name="stat">The Statistics object to update.</param>
+        /// </summary>
         private void AnalyzeNumber(double numValue, Statistics stat)
         {
             if (_measureSum || _measureAverage || _measureStandardDeviation)
@@ -791,7 +789,7 @@ namespace Microsoft.PowerShell.Commands
         private void WritePropertyNotFoundError(string propertyName, string errorId)
         {
             Diagnostics.Assert(Property != null, "no property and no InputObject should have been addressed");
-            ErrorRecord errorRecord = new(
+            ErrorRecord errorRecord = new ErrorRecord(
                     PSTraceSource.NewArgumentException("Property"),
                     errorId,
                     ErrorCategory.InvalidArgument,
@@ -853,10 +851,10 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// Create a MeasureInfo object for generic stats.
-        /// </summary>
         /// <param name="stat">The statistics to use.</param>
-        /// <param name="shouldUseGenericMeasureInfo"></param>
         /// <returns>A new GenericMeasureInfo object.</returns>
+        /// </summary>
+        /// <param name="shouldUseGenericMeasureInfo"></param>
         private MeasureInfo CreateGenericMeasureInfo(Statistics stat, bool shouldUseGenericMeasureInfo)
         {
             double? sum = null;
@@ -909,7 +907,7 @@ namespace Microsoft.PowerShell.Commands
 
             if (shouldUseGenericMeasureInfo)
             {
-                GenericMeasureInfo gmi = new();
+                GenericMeasureInfo gmi = new GenericMeasureInfo();
                 gmi.Count = stat.count;
                 gmi.Sum = sum;
                 gmi.Average = average;
@@ -928,7 +926,7 @@ namespace Microsoft.PowerShell.Commands
             }
             else
             {
-                GenericObjectMeasureInfo gomi = new();
+                GenericObjectMeasureInfo gomi = new GenericObjectMeasureInfo();
                 gomi.Count = stat.count;
                 gomi.Sum = sum;
                 gomi.Average = average;
@@ -941,12 +939,12 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// Create a MeasureInfo object for text stats.
-        /// </summary>
         /// <param name="stat">The statistics to use.</param>
         /// <returns>A new TextMeasureInfo object.</returns>
+        /// </summary>
         private TextMeasureInfo CreateTextMeasureInfo(Statistics stat)
         {
-            TextMeasureInfo tmi = new();
+            TextMeasureInfo tmi = new TextMeasureInfo();
 
             if (_measureCharacters)
                 tmi.Characters = stat.characters;
@@ -962,7 +960,7 @@ namespace Microsoft.PowerShell.Commands
         /// The observed statistics keyed by property name.
         /// If Property is not set, then the key used will be the value of thisObject.
         /// </summary>
-        private readonly MeasureObjectDictionary<Statistics> _statistics = new();
+        private MeasureObjectDictionary<Statistics> _statistics = new MeasureObjectDictionary<Statistics>();
 
         /// <summary>
         /// Whether or not a numeric conversion error occurred.

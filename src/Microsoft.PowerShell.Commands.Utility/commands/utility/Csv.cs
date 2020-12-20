@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -28,7 +28,7 @@ namespace Microsoft.PowerShell.Commands
         /// </param>
         internal Collection<string> ParseCsv(string csv)
         {
-            Collection<string> result = new();
+            Collection<string> result = new Collection<string>();
             string tempString = string.Empty;
             csv = csv.Trim();
             if (csv.Length == 0 || csv[0] == '#')

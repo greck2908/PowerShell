@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -13,9 +13,9 @@ namespace System.Management.Automation.Tracing
     internal static class PSEtwLog
     {
 #if UNIX
-        private static readonly PSSysLogProvider provider;
+        private static PSSysLogProvider provider;
 #else
-        private static readonly PSEtwLogProvider provider;
+        private static PSEtwLogProvider provider;
 #endif
 
         /// <summary>

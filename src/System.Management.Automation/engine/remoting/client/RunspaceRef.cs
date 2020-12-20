@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -22,10 +22,10 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Runspace ref.
         /// </summary>
-        private readonly ObjectRef<Runspace> _runspaceRef;
+        private ObjectRef<Runspace> _runspaceRef;
         private bool _stopInvoke;
-        private readonly object _localSyncObject;
-        private static readonly RobustConnectionProgress s_RCProgress = new RobustConnectionProgress();
+        private object _localSyncObject;
+        private static RobustConnectionProgress s_RCProgress = new RobustConnectionProgress();
 
         /// <summary>
         /// Constructor for RunspaceRef.
@@ -93,7 +93,7 @@ namespace System.Management.Automation.Remoting
                 // and if we are not in a loopback configuration mode, in which case we always force remote script commands
                 // to be parsed and evaluated on the remote session (not in the current local session).
                 RemoteRunspace remoteRunspace = _runspaceRef.Value as RemoteRunspace;
-                bool isConfiguredLoopback = remoteRunspace != null && remoteRunspace.IsConfiguredLoopBack;
+                bool isConfiguredLoopback = (remoteRunspace != null) ? remoteRunspace.IsConfiguredLoopBack : false;
                 bool isTrustedInput = !isConfiguredLoopback && (localRunspace.ExecutionContext.LanguageMode == PSLanguageMode.FullLanguage);
 
                 // Create PowerShell from ScriptBlock.
@@ -139,7 +139,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Creates the PSCommand when the runspace is not overridden.
         /// </summary>
-        private static PSCommand CreatePsCommandNotOverridden(string line, bool isScript, bool? useNewScope)
+        private PSCommand CreatePsCommandNotOverridden(string line, bool isScript, bool? useNewScope)
         {
             PSCommand command = new PSCommand();
 
@@ -222,7 +222,8 @@ namespace System.Management.Automation.Remoting
                 PowerShell shell = remotePipeline.PowerShell;
                 if (shell.RemotePowerShell != null)
                 {
-                    shell.RemotePowerShell.RCConnectionNotification += HandleRCConnectionNotification;
+                    shell.RemotePowerShell.RCConnectionNotification +=
+                        new EventHandler<PSConnectionRetryStatusEventArgs>(HandleRCConnectionNotification);
                 }
 
                 // Add callback to write robust connection errors from stream.
@@ -313,11 +314,12 @@ namespace System.Management.Automation.Remoting
                     powerShell.AddParameter("Name", new string[] { "Out-Default", "Exit-PSSession" });
                     powerShell.Runspace = _runspaceRef.Value;
 
-                    bool isReleaseCandidateBackcompatibilityMode = _runspaceRef.Value.GetRemoteProtocolVersion() == RemotingConstants.ProtocolVersionWin7RC;
+                    bool isReleaseCandidateBackcompatibilityMode =
+                        _runspaceRef.Value.GetRemoteProtocolVersion() == RemotingConstants.ProtocolVersionWin7RC;
                     powerShell.IsGetCommandMetadataSpecialPipeline = !isReleaseCandidateBackcompatibilityMode;
                     int expectedNumberOfResults = isReleaseCandidateBackcompatibilityMode ? 2 : 3;
 
-                    powerShell.RemotePowerShell.HostCallReceived += HandleHostCall;
+                    powerShell.RemotePowerShell.HostCallReceived += new EventHandler<RemoteDataEventArgs<RemoteHostCall>>(HandleHostCall);
 
                     IAsyncResult asyncResult = powerShell.BeginInvoke();
                     PSDataCollection<PSObject> results = new PSDataCollection<PSObject>();
@@ -407,7 +409,7 @@ namespace System.Management.Automation.Remoting
             }
         }
 
-        private static void StopProgressBar(
+        private void StopProgressBar(
             long sourceId)
         {
             s_RCProgress.StopProgress(sourceId);

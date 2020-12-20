@@ -1,22 +1,16 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Split-Path" -Tags "CI" {
 
     It "Should return a string object when invoked" {
-        try {
-            Push-Location TestDrive:
-            $result = Split-Path .
-            $result | Should -BeOfType String
+        $result = Split-Path .
+        $result | Should -BeOfType String
 
-            $result = Split-Path . -Leaf
-            $result | Should -BeOfType String
+        $result = Split-Path . -Leaf
+        $result | Should -BeOfType String
 
-            $result = Split-Path . -Resolve
-            $result | Should -BeOfType String
-        }
-        finally {
-            Pop-Location
-        }
+        $result = Split-Path . -Resolve
+        $result | Should -BeOfType String
     }
 
     It "Should return the name of the drive when the qualifier switch is used" {
@@ -27,10 +21,6 @@ Describe "Split-Path" -Tags "CI" {
     It "Should error when using the qualifier switch and no qualifier in the path" {
         { Split-Path -Qualifier -ErrorAction Stop /Users } | Should -Throw
 	{ Split-Path -Qualifier -ErrorAction Stop abcdef } | Should -Throw
-    }
-
-    It "Should error given positional parameter #2" {
-	    { Split-Path env: $NULL } | Should -Throw  -ErrorId 'PositionalParameterNotFound,Microsoft.PowerShell.Commands.SplitPathCommand'
     }
 
     It "Should return the path when the noqualifier switch is used" {
@@ -65,7 +55,7 @@ Describe "Split-Path" -Tags "CI" {
         $actual.Count                   | Should -Be 2
         $actual[0]                      | Should -BeExactly $testFile1
         $actual[1]                      | Should -BeExactly $testFile2
-        ,$actual                        | Should -BeOfType System.Array
+        ,$actual                        | Should -BeOfType "System.Array"
     }
 
     It "Should be able to tell if a given path is an absolute path" {

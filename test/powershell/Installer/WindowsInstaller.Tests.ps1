@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Windows Installer" -Tags "Scenario" {
 
@@ -13,16 +13,15 @@ Describe "Windows Installer" -Tags "Scenario" {
         )
     }
 
-    It "WiX (Windows Installer XML) file contains pre-requisites link $preRequisitesLink" -Skip:$skipTest {
+    It "WiX (Windows Installer XML) file contains pre-requisites link $preRequisitesLink" -skip:$skipTest {
         $wixProductFile = Join-Path -Path $PSScriptRoot -ChildPath "..\..\..\assets\Product.wxs"
-        (Get-Content $wixProductFile -Raw).Contains($preRequisitesLink) | Should -BeTrue
+        (Get-Content $wixProductFile -Raw).Contains($preRequisitesLink) | Should Be $true
     }
 
     ## Running 'Invoke-WebRequest' with WMF download URLs has been failing intermittently,
     ## because sometimes the URLs lead to a 'this download is no longer available' page.
     ## We use a retry logic here. Retry for 5 times with 1 second interval.
-    # It "Pre-Requisistes link for '<Name>' is reachable: <url>" -TestCases $linkCheckTestCases -Skip:$skipTest {
-    It "Pre-Requisistes link for '<Name>' is reachable: <url>" -TestCases $linkCheckTestCases -Pending {
+    It "Pre-Requisistes link for '<Name>' is reachable: <url>" -TestCases $linkCheckTestCases -skip:$skipTest {
         param ($Url)
 
         foreach ($i in 1..5) {

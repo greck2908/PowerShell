@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -12,14 +12,19 @@ namespace PSTests.Parallel
         [Fact]
         public static void TestScanContent()
         {
-            try
-            {
-                Assert.Equal(AmsiUtils.AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_NOT_DETECTED, AmsiUtils.ScanContent(string.Empty, string.Empty));
-            }
-            finally
-            {
-                AmsiUtils.Uninitialize();
-            }
+            Assert.Equal(AmsiUtils.AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_NOT_DETECTED, AmsiUtils.ScanContent(string.Empty, string.Empty));
+        }
+
+        [Fact]
+        public static void TestCloseSession()
+        {
+            AmsiUtils.CloseSession();
+        }
+
+        [Fact]
+        public static void TestUninitialize()
+        {
+            AmsiUtils.Uninitialize();
         }
     }
 }

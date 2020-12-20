@@ -1,7 +1,9 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -21,7 +23,7 @@ namespace Microsoft.PowerShell.Commands
     [Cmdlet(
         VerbsCommon.Show, "Markdown",
         DefaultParameterSetName = "Path",
-        HelpUri = "https://go.microsoft.com/fwlink/?linkid=2102329")]
+        HelpUri = "https://go.microsoft.com/fwlink/?linkid=2006266")]
     [OutputType(typeof(string))]
     public class ShowMarkdownCommand : PSCmdlet
     {
@@ -168,7 +170,7 @@ namespace Microsoft.PowerShell.Commands
 
                     try
                     {
-                        ProcessStartInfo startInfo = new();
+                        ProcessStartInfo startInfo = new ProcessStartInfo();
                         startInfo.FileName = tmpFilePath;
                         startInfo.UseShellExecute = true;
                         Process.Start(startInfo);

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Management.Automation;
 using System.Text;
+
+using Dbg = System.Management.Automation.Diagnostics;
 
 #pragma warning disable 1634, 1691 // Stops compiler from warning about unknown warnings
 
@@ -41,6 +43,7 @@ namespace Microsoft.PowerShell.Commands
         /// Abstract Property - Input Object which is written in Csv format.
         /// Derived as Different Attributes.In ConvertTo-CSV, This is a positional parameter. Export-CSV not a Positional behaviour.
         /// </summary>
+
         public abstract PSObject InputObject { get; set; }
 
         /// <summary>
@@ -108,15 +111,15 @@ namespace Microsoft.PowerShell.Commands
         {
             if (this.MyInvocation.BoundParameters.ContainsKey(nameof(QuoteFields)) && this.MyInvocation.BoundParameters.ContainsKey(nameof(UseQuotes)))
             {
-                InvalidOperationException exception = new(CsvCommandStrings.CannotSpecifyQuoteFieldsAndUseQuotes);
-                ErrorRecord errorRecord = new(exception, "CannotSpecifyQuoteFieldsAndUseQuotes", ErrorCategory.InvalidData, null);
+                InvalidOperationException exception = new InvalidOperationException(CsvCommandStrings.CannotSpecifyQuoteFieldsAndUseQuotes);
+                ErrorRecord errorRecord = new ErrorRecord(exception, "CannotSpecifyQuoteFieldsAndUseQuotes", ErrorCategory.InvalidData, null);
                 this.ThrowTerminatingError(errorRecord);
             }
 
             if (this.MyInvocation.BoundParameters.ContainsKey(nameof(IncludeTypeInformation)) && this.MyInvocation.BoundParameters.ContainsKey(nameof(NoTypeInformation)))
             {
-                InvalidOperationException exception = new(CsvCommandStrings.CannotSpecifyIncludeTypeInformationAndNoTypeInformation);
-                ErrorRecord errorRecord = new(exception, "CannotSpecifyIncludeTypeInformationAndNoTypeInformation", ErrorCategory.InvalidData, null);
+                InvalidOperationException exception = new InvalidOperationException(CsvCommandStrings.CannotSpecifyIncludeTypeInformationAndNoTypeInformation);
+                ErrorRecord errorRecord = new ErrorRecord(exception, "CannotSpecifyIncludeTypeInformationAndNoTypeInformation", ErrorCategory.InvalidData, null);
                 this.ThrowTerminatingError(errorRecord);
             }
 
@@ -135,7 +138,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implementation for the Export-Csv command.
     /// </summary>
-    [Cmdlet(VerbsData.Export, "Csv", SupportsShouldProcess = true, DefaultParameterSetName = "Delimiter", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096608")]
+    [Cmdlet(VerbsData.Export, "Csv", SupportsShouldProcess = true, DefaultParameterSetName = "Delimiter", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113299")]
     public sealed class ExportCsvCommand : BaseCsvWritingCommand, IDisposable
     {
         #region Command Line Parameters
@@ -214,21 +217,7 @@ namespace Microsoft.PowerShell.Commands
         [ArgumentToEncodingTransformationAttribute]
         [ArgumentEncodingCompletionsAttribute]
         [ValidateNotNullOrEmpty]
-        public Encoding Encoding
-        {
-            get
-            {
-                return _encoding;
-            }
-
-            set
-            {
-                EncodingConversion.WarnIfObsolete(this, value);
-                _encoding = value;
-            }
-        }
-
-        private Encoding _encoding = ClrFacade.GetDefaultEncoding();
+        public Encoding Encoding { get; set; } = ClrFacade.GetDefaultEncoding();
 
         /// <summary>
         /// Gets or sets property that sets append parameter.
@@ -258,8 +247,8 @@ namespace Microsoft.PowerShell.Commands
             // Validate that they don't provide both Path and LiteralPath, but have provided at least one.
             if (!(_specifiedPath ^ _isLiteralPath))
             {
-                InvalidOperationException exception = new(CsvCommandStrings.CannotSpecifyPathAndLiteralPath);
-                ErrorRecord errorRecord = new(exception, "CannotSpecifyPathAndLiteralPath", ErrorCategory.InvalidData, null);
+                InvalidOperationException exception = new InvalidOperationException(CsvCommandStrings.CannotSpecifyPathAndLiteralPath);
+                ErrorRecord errorRecord = new ErrorRecord(exception, "CannotSpecifyPathAndLiteralPath", ErrorCategory.InvalidData, null);
                 this.ThrowTerminatingError(errorRecord);
             }
 
@@ -358,7 +347,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 using (StreamReader streamReader = PathUtils.OpenStreamReader(this, this.Path, Encoding, _isLiteralPath))
                 {
-                    isCsvFileEmpty = streamReader.Peek() == -1;
+                    isCsvFileEmpty = streamReader.Peek() == -1 ? true : false;
                 }
             }
 
@@ -371,7 +360,7 @@ namespace Microsoft.PowerShell.Commands
 
                 using (StreamReader streamReader = PathUtils.OpenStreamReader(this, this.Path, Encoding, _isLiteralPath))
                 {
-                    ImportCsvHelper readingHelper = new(
+                    ImportCsvHelper readingHelper = new ImportCsvHelper(
                         this, this.Delimiter, null /* header */, null /* typeName */, streamReader);
                     readingHelper.ReadHeader();
                     _preexistingPropertyNames = readingHelper.Header;
@@ -446,7 +435,7 @@ namespace Microsoft.PowerShell.Commands
                 throw new InvalidOperationException(CsvCommandStrings.ReconcilePreexistingPropertyNamesMethodShouldOnlyGetCalledWhenPreexistingPropertyNamesHaveBeenReadSuccessfully);
             }
 
-            HashSet<string> appendedPropertyNames = new(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> appendedPropertyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string appendedPropertyName in _propertyNames)
             {
                 appendedPropertyNames.Add(appendedPropertyName);
@@ -463,8 +452,8 @@ namespace Microsoft.PowerShell.Commands
                             CsvCommandStrings.CannotAppendCsvWithMismatchedPropertyNames,
                             preexistingPropertyName,
                             this.Path);
-                        InvalidOperationException exception = new(errorMessage);
-                        ErrorRecord errorRecord = new(exception, "CannotAppendCsvWithMismatchedPropertyNames", ErrorCategory.InvalidData, preexistingPropertyName);
+                        InvalidOperationException exception = new InvalidOperationException(errorMessage);
+                        ErrorRecord errorRecord = new ErrorRecord(exception, "CannotAppendCsvWithMismatchedPropertyNames", ErrorCategory.InvalidData, preexistingPropertyName);
                         this.ThrowTerminatingError(errorRecord);
                     }
                 }
@@ -502,7 +491,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         public void Dispose()
         {
-            if (!_disposed)
+            if (_disposed == false)
             {
                 CleanUp();
             }
@@ -520,7 +509,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements Import-Csv command.
     /// </summary>
-    [Cmdlet(VerbsData.Import, "Csv", DefaultParameterSetName = "DelimiterPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097020")]
+    [Cmdlet(VerbsData.Import, "Csv", DefaultParameterSetName = "DelimiterPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113341")]
     public sealed class ImportCsvCommand : PSCmdlet
     {
         #region Command Line Parameters
@@ -603,21 +592,7 @@ namespace Microsoft.PowerShell.Commands
         [ArgumentToEncodingTransformationAttribute]
         [ArgumentEncodingCompletionsAttribute]
         [ValidateNotNullOrEmpty]
-        public Encoding Encoding
-        {
-            get
-            {
-                return _encoding;
-            }
-
-            set
-            {
-                EncodingConversion.WarnIfObsolete(this, value);
-                _encoding = value;
-            }
-        }
-
-        private Encoding _encoding = ClrFacade.GetDefaultEncoding();
+        public Encoding Encoding { get; set; } = ClrFacade.GetDefaultEncoding();
 
         /// <summary>
         /// Avoid writing out duplicate warning messages when there are one or more unspecified names.
@@ -644,8 +619,8 @@ namespace Microsoft.PowerShell.Commands
             // Validate that they don't provide both Path and LiteralPath, but have provided at least one.
             if (!(_specifiedPath ^ _isLiteralPath))
             {
-                InvalidOperationException exception = new(CsvCommandStrings.CannotSpecifyPathAndLiteralPath);
-                ErrorRecord errorRecord = new(exception, "CannotSpecifyPathAndLiteralPath", ErrorCategory.InvalidData, null);
+                InvalidOperationException exception = new InvalidOperationException(CsvCommandStrings.CannotSpecifyPathAndLiteralPath);
+                ErrorRecord errorRecord = new ErrorRecord(exception, "CannotSpecifyPathAndLiteralPath", ErrorCategory.InvalidData, null);
                 this.ThrowTerminatingError(errorRecord);
             }
 
@@ -655,7 +630,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     using (StreamReader streamReader = PathUtils.OpenStreamReader(this, path, this.Encoding, _isLiteralPath))
                     {
-                        ImportCsvHelper helper = new(this, Delimiter, Header, null /* typeName */, streamReader);
+                        ImportCsvHelper helper = new ImportCsvHelper(this, Delimiter, Header, null /* typeName */, streamReader);
 
                         try
                         {
@@ -663,7 +638,7 @@ namespace Microsoft.PowerShell.Commands
                         }
                         catch (ExtendedTypeSystemException exception)
                         {
-                            ErrorRecord errorRecord = new(exception, "AlreadyPresentPSMemberInfoInternalCollectionAdd", ErrorCategory.NotSpecified, null);
+                            ErrorRecord errorRecord = new ErrorRecord(exception, "AlreadyPresentPSMemberInfoInternalCollectionAdd", ErrorCategory.NotSpecified, null);
                             this.ThrowTerminatingError(errorRecord);
                         }
                     }
@@ -680,8 +655,8 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements ConvertTo-Csv command.
     /// </summary>
-    [Cmdlet(VerbsData.ConvertTo, "Csv", DefaultParameterSetName = "Delimiter",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096832", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.ConvertTo, "Csv", DefaultParameterSetName = "DelimiterPath",
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135203", RemotingCapability = RemotingCapability.None)]
     [OutputType(typeof(string))]
     public sealed class ConvertToCsvCommand : BaseCsvWritingCommand
     {
@@ -769,8 +744,8 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements ConvertFrom-Csv command.
     /// </summary>
-    [Cmdlet(VerbsData.ConvertFrom, "Csv", DefaultParameterSetName = "Delimiter",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096830", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.ConvertFrom, "Csv", DefaultParameterSetName = "DelimiterPath",
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135201", RemotingCapability = RemotingCapability.None)]
     public sealed class ConvertFromCsvCommand : PSCmdlet
     {
         #region Command Line Parameters
@@ -778,7 +753,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Property that sets delimiter.
         /// </summary>
-        [Parameter(Position = 1, ParameterSetName = "Delimiter")]
+        [Parameter(Position = 1, ParameterSetName = "DelimiterPath")]
         [ValidateNotNull]
         [ValidateNotNullOrEmpty]
         public char Delimiter { get; set; }
@@ -786,7 +761,8 @@ namespace Microsoft.PowerShell.Commands
         ///<summary>
         ///Culture switch for csv conversion
         ///</summary>
-        [Parameter(ParameterSetName = "UseCulture", Mandatory = true)]
+        [Parameter(ParameterSetName = "CulturePath", Mandatory = true)]
+        [Parameter(ParameterSetName = "CultureLiteralPath", Mandatory = true)]
         [ValidateNotNull]
         [ValidateNotNullOrEmpty]
         public SwitchParameter UseCulture { get; set; }
@@ -833,10 +809,10 @@ namespace Microsoft.PowerShell.Commands
         {
             foreach (PSObject inputObject in InputObject)
             {
-                using (MemoryStream memoryStream = new(Encoding.Unicode.GetBytes(inputObject.ToString())))
-                using (StreamReader streamReader = new(memoryStream, System.Text.Encoding.Unicode))
+                using (MemoryStream memoryStream = new MemoryStream(Encoding.Unicode.GetBytes(inputObject.ToString())))
+                using (StreamReader streamReader = new StreamReader(memoryStream, System.Text.Encoding.Unicode))
                 {
-                    ImportCsvHelper helper = new(this, Delimiter, Header, _typeName, streamReader);
+                    ImportCsvHelper helper = new ImportCsvHelper(this, Delimiter, Header, _typeName, streamReader);
 
                     try
                     {
@@ -844,7 +820,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     catch (ExtendedTypeSystemException exception)
                     {
-                        ErrorRecord errorRecord = new(exception, "AlreadyPresentPSMemberInfoInternalCollectionAdd", ErrorCategory.NotSpecified, null);
+                        ErrorRecord errorRecord = new ErrorRecord(exception, "AlreadyPresentPSMemberInfoInternalCollectionAdd", ErrorCategory.NotSpecified, null);
                         this.ThrowTerminatingError(errorRecord);
                     }
 
@@ -877,13 +853,13 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     internal class ExportCsvHelper : IDisposable
     {
-        private readonly char _delimiter;
-        private readonly BaseCsvWritingCommand.QuoteKind _quoteKind;
-        private readonly HashSet<string> _quoteFields;
-        private readonly StringBuilder _outputString;
+        private char _delimiter;
+        readonly private BaseCsvWritingCommand.QuoteKind _quoteKind;
+        readonly private HashSet<string> _quoteFields;
+        readonly private StringBuilder _outputString;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ExportCsvHelper"/> class.
+        /// Create ExportCsvHelper instance.
         /// </summary>
         /// <param name="delimiter">Delimiter char.</param>
         /// <param name="quoteKind">Kind of quoting.</param>
@@ -1038,7 +1014,7 @@ namespace Microsoft.PowerShell.Commands
                                 AppendStringWithEscapeAlways(_outputString, value);
                                 break;
                             case BaseCsvWritingCommand.QuoteKind.AsNeeded:
-                                if (value != null && value.Contains(_delimiter))
+                                if (value.Contains(_delimiter))
                                 {
                                     AppendStringWithEscapeAlways(_outputString, value);
                                 }
@@ -1169,7 +1145,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         public void Dispose()
         {
-            if (!_disposed)
+            if (_disposed == false)
             {
                 GC.SuppressFinalize(this);
             }
@@ -1384,7 +1360,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 else
                 {
-                    HashSet<string> headers = new(StringComparer.OrdinalIgnoreCase);
+                    HashSet<string> headers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     foreach (string currentHeader in names)
                     {
                         if (!string.IsNullOrEmpty(currentHeader))
@@ -1402,7 +1378,7 @@ namespace Microsoft.PowerShell.Commands
                                         ExtendedTypeSystem.MemberAlreadyPresent,
                                         currentHeader);
 
-                                ExtendedTypeSystemException exception = new(memberAlreadyPresentMsg);
+                                ExtendedTypeSystemException exception = new ExtendedTypeSystemException(memberAlreadyPresentMsg);
                                 throw exception;
                             }
                         }
@@ -1636,7 +1612,7 @@ namespace Microsoft.PowerShell.Commands
         /// </param>
         private void ReadTillNextDelimiter(StringBuilder current, ref bool endOfRecord, bool eatTrailingBlanks)
         {
-            StringBuilder temp = new();
+            StringBuilder temp = new StringBuilder();
 
             // Did we see any non-whitespace character
             bool nonWhiteSpace = false;
@@ -1684,7 +1660,7 @@ namespace Microsoft.PowerShell.Commands
 
         private PSObject BuildMshobject(string type, IList<string> names, List<string> values, char delimiter, bool preValidated = false)
         {
-            PSObject result = new(names.Count);
+            PSObject result = new PSObject(names.Count);
             char delimiterlocal = delimiter;
             int unspecifiedNameIndex = 1;
             for (int i = 0; i <= names.Count - 1; i++)
@@ -1763,7 +1739,7 @@ namespace Microsoft.PowerShell.Commands
                 case "UseCulture":
                 case "CulturePath":
                 case "CultureLiteralPath":
-                    if (useCulture)
+                    if (useCulture == true)
                     {
                         // ListSeparator is apparently always a character even though the property returns a string, checked via:
                         // [CultureInfo]::GetCultures("AllCultures") | % { ([CultureInfo]($_.Name)).TextInfo.ListSeparator } | ? Length -ne 1

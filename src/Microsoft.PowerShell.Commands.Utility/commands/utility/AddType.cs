@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -60,7 +60,7 @@ namespace Microsoft.PowerShell.Commands
     /// Adds a new type to the Application Domain.
     /// This version is based on CodeAnalysis (Roslyn).
     /// </summary>
-    [Cmdlet(VerbsCommon.Add, "Type", DefaultParameterSetName = FromSourceParameterSetName, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096601")]
+    [Cmdlet(VerbsCommon.Add, "Type", DefaultParameterSetName = FromSourceParameterSetName, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135195")]
     [OutputType(typeof(Type))]
     public sealed class AddTypeCommand : PSCmdlet
     {
@@ -153,7 +153,7 @@ namespace Microsoft.PowerShell.Commands
 
                 string[] pathValue = value;
 
-                List<string> resolvedPaths = new();
+                List<string> resolvedPaths = new List<string>();
 
                 // Verify that the paths are resolved and valid
                 foreach (string path in pathValue)
@@ -198,7 +198,7 @@ namespace Microsoft.PowerShell.Commands
                     return;
                 }
 
-                List<string> resolvedPaths = new();
+                List<string> resolvedPaths = new List<string>();
                 foreach (string path in value)
                 {
                     string literalPath = SessionState.Path.GetUnresolvedProviderPathFromPSPath(path);
@@ -230,7 +230,7 @@ namespace Microsoft.PowerShell.Commands
 
                     // Throw an error if it is an unrecognized extension
                     default:
-                        ErrorRecord errorRecord = new(
+                        ErrorRecord errorRecord = new ErrorRecord(
                             new Exception(
                                 StringUtil.Format(AddTypeStrings.FileExtensionNotSupported, currentExtension)),
                             "EXTENSION_NOT_SUPPORTED",
@@ -248,7 +248,7 @@ namespace Microsoft.PowerShell.Commands
                 else if (!string.Equals(activeExtension, currentExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     // All files must have the same extension otherwise throw.
-                    ErrorRecord errorRecord = new(
+                    ErrorRecord errorRecord = new ErrorRecord(
                         new Exception(
                             StringUtil.Format(AddTypeStrings.MultipleExtensionsNotSupported)),
                         "MULTIPLE_EXTENSION_NOT_SUPPORTED",
@@ -327,7 +327,7 @@ namespace Microsoft.PowerShell.Commands
 
                     // Try to resolve the path
                     ProviderInfo provider = null;
-                    Collection<string> newPaths = new();
+                    Collection<string> newPaths = new Collection<string>();
 
                     try
                     {
@@ -336,7 +336,7 @@ namespace Microsoft.PowerShell.Commands
                     // Ignore the ItemNotFound -- we handle it.
                     catch (ItemNotFoundException) { }
 
-                    ErrorRecord errorRecord = new(
+                    ErrorRecord errorRecord = new ErrorRecord(
                         new Exception(
                             StringUtil.Format(AddTypeStrings.OutputAssemblyDidNotResolve, _outputAssembly)),
                         "INVALID_OUTPUT_ASSEMBLY",
@@ -470,7 +470,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         // Get the -FromMember template for a given language
-        private static string GetMethodTemplate(Language language)
+        private string GetMethodTemplate(Language language)
         {
             switch (language)
             {
@@ -486,7 +486,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         // Get the -FromMember namespace template for a given language
-        private static string GetNamespaceTemplate(Language language)
+        private string GetNamespaceTemplate(Language language)
         {
             switch (language)
             {
@@ -502,7 +502,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         // Get the -FromMember namespace template for a given language
-        private static string GetUsingTemplate(Language language)
+        private string GetUsingTemplate(Language language)
         {
             switch (language)
             {
@@ -520,7 +520,7 @@ namespace Microsoft.PowerShell.Commands
         // Generate the code for the using statements
         private string GetUsingSet(Language language)
         {
-            StringBuilder usingNamespaceSet = new();
+            StringBuilder usingNamespaceSet = new StringBuilder();
 
             switch (language)
             {
@@ -551,21 +551,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 ThrowTerminatingError(
                     new ErrorRecord(
-                        new PSNotSupportedException(AddTypeStrings.CannotDefineNewType),
-                        nameof(AddTypeStrings.CannotDefineNewType),
-                        ErrorCategory.PermissionDenied,
-                        targetObject: null));
-            }
-
-            // 'ConsoleApplication' and 'WindowsApplication' types are currently not working in .NET Core
-            if (OutputType != OutputAssemblyType.Library)
-            {
-                ThrowTerminatingError(
-                    new ErrorRecord(
-                        new PSNotSupportedException(AddTypeStrings.AssemblyTypeNotSupported),
-                        nameof(AddTypeStrings.AssemblyTypeNotSupported),
-                        ErrorCategory.NotImplemented,
-                        targetObject: OutputType));
+                        new PSNotSupportedException(AddTypeStrings.CannotDefineNewType), "CannotDefineNewType", ErrorCategory.PermissionDenied, null));
             }
         }
 
@@ -578,7 +564,7 @@ namespace Microsoft.PowerShell.Commands
             // assembly type without an output assembly
             if (string.IsNullOrEmpty(_outputAssembly) && this.MyInvocation.BoundParameters.ContainsKey(nameof(OutputType)))
             {
-                ErrorRecord errorRecord = new(
+                ErrorRecord errorRecord = new ErrorRecord(
                     new Exception(
                         string.Format(
                             CultureInfo.CurrentCulture,
@@ -590,6 +576,7 @@ namespace Microsoft.PowerShell.Commands
                 ThrowTerminatingError(errorRecord);
                 return;
             }
+
 
             if (_loadAssembly)
             {
@@ -609,47 +596,31 @@ namespace Microsoft.PowerShell.Commands
 
         #region LoadAssembly
 
-        // We now ship .NET Core's reference assemblies with PowerShell, so that Add-Type can work
+        // We now ship .Net Core's reference assemblies with PowerShell, so that Add-Type can work
         // in a predictable way and won't be broken when we move to newer version of .NET Core.
-        // The reference assemblies are located at '$PSHOME\ref' for pwsh.
-        //
-        // For applications that host PowerShell, the 'ref' folder will be deployed to the 'publish'
-        // folder, not where 'System.Management.Automation.dll' is located. So here we should use
-        // the entry assembly's location to construct the path to the 'ref' folder.
-        // For pwsh, the entry assembly is 'pwsh.dll', so the entry assembly's location is still
-        // $PSHOME.
-        // However, 'Assembly.GetEntryAssembly()' returns null when the managed code is called from
-        // unmanaged code (PowerShell WSMan remoting scenario), so in that case, we continue to use
-        // the location of 'System.Management.Automation.dll'.
-        private static readonly string s_netcoreAppRefFolder = PathType.Combine(
-            PathType.GetDirectoryName(
-                (Assembly.GetEntryAssembly() ?? typeof(PSObject).Assembly).Location),
-            "ref");
-
-        // Path to the folder where .NET Core runtime assemblies are located.
+        // The reference assemblies are located at '$PSHOME\ref'.
+        private static readonly string s_netcoreAppRefFolder = PathType.Combine(PathType.GetDirectoryName(typeof(PSObject).Assembly.Location), "ref");
         private static readonly string s_frameworkFolder = PathType.GetDirectoryName(typeof(object).Assembly.Location);
 
         // These assemblies are always automatically added to ReferencedAssemblies.
-        private static readonly Lazy<PortableExecutableReference[]> s_autoReferencedAssemblies = new(InitAutoIncludedRefAssemblies);
+        private static readonly Lazy<PortableExecutableReference[]> s_autoReferencedAssemblies = new Lazy<PortableExecutableReference[]>(InitAutoIncludedRefAssemblies);
 
         // A HashSet of assembly names to be ignored if they are specified in '-ReferencedAssemblies'
-        private static readonly Lazy<HashSet<string>> s_refAssemblyNamesToIgnore = new(InitRefAssemblyNamesToIgnore);
+        private static readonly Lazy<HashSet<string>> s_refAssemblyNamesToIgnore = new Lazy<HashSet<string>>(InitRefAssemblyNamesToIgnore);
 
         // These assemblies are used, when ReferencedAssemblies parameter is not specified.
-        private static readonly Lazy<IEnumerable<PortableExecutableReference>> s_defaultAssemblies = new(InitDefaultRefAssemblies);
+        private static readonly Lazy<IEnumerable<PortableExecutableReference>> s_defaultAssemblies = new Lazy<IEnumerable<PortableExecutableReference>>(InitDefaultRefAssemblies);
 
         private bool InMemory { get { return string.IsNullOrEmpty(_outputAssembly); } }
 
         // These dictionaries prevent reloading already loaded and unchanged code.
         // We don't worry about unbounded growing of the cache because in .Net Core 2.0 we can not unload assemblies.
         // TODO: review if we will be able to unload assemblies after migrating to .Net Core 2.1.
-        private static readonly HashSet<string> s_sourceTypesCache = new();
-        private static readonly Dictionary<int, Assembly> s_sourceAssemblyCache = new();
+        private static readonly Dictionary<string, int> s_sourceTypesCache = new Dictionary<string, int>();
+        private static readonly Dictionary<int, Assembly> s_sourceAssemblyCache = new Dictionary<int, Assembly>();
 
         private static readonly string s_defaultSdkDirectory = Utils.DefaultPowerShellAppBase;
-
         private const ReportDiagnostic defaultDiagnosticOption = ReportDiagnostic.Error;
-
         private static readonly string[] s_writeInformationTags = new string[] { "PSHOST" };
         private int _syntaxTreesHash;
 
@@ -665,7 +636,11 @@ namespace Microsoft.PowerShell.Commands
             {
                 // CoreCLR doesn't allow re-load TPA assemblies with different API (i.e. we load them by name and now want to load by path).
                 // LoadAssemblyHelper helps us avoid re-loading them, if they already loaded.
-                Assembly assembly = LoadAssemblyHelper(assemblyName) ?? Assembly.LoadFrom(ResolveAssemblyName(assemblyName, false));
+                Assembly assembly = LoadAssemblyHelper(assemblyName);
+                if (assembly == null)
+                {
+                    assembly = Assembly.LoadFrom(ResolveAssemblyName(assemblyName, false));
+                }
 
                 if (PassThru)
                 {
@@ -679,25 +654,14 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private static IEnumerable<PortableExecutableReference> InitDefaultRefAssemblies()
         {
-            // Define number of reference assemblies distributed with PowerShell.
-            const int maxPowershellRefAssemblies = 160;
-
-            const int capacity = maxPowershellRefAssemblies + 1;
-            var defaultRefAssemblies = new List<PortableExecutableReference>(capacity);
+            // netcoreapp3.0 currently comes with 148 reference assemblies (maybe more in future), so we use a capacity of '150'.
+            var defaultRefAssemblies = new List<PortableExecutableReference>(150);
 
             foreach (string file in Directory.EnumerateFiles(s_netcoreAppRefFolder, "*.dll", SearchOption.TopDirectoryOnly))
             {
                 defaultRefAssemblies.Add(MetadataReference.CreateFromFile(file));
             }
-
-            // Add System.Management.Automation.dll
             defaultRefAssemblies.Add(MetadataReference.CreateFromFile(typeof(PSObject).Assembly.Location));
-
-            // We want to avoid reallocating the internal array, so we assert if the list capacity has increased.
-            Diagnostics.Assert(
-                defaultRefAssemblies.Capacity <= capacity,
-                $"defaultRefAssemblies was resized because of insufficient initial capacity! A capacity of {defaultRefAssemblies.Count} is required.");
-
             return defaultRefAssemblies;
         }
 
@@ -840,7 +804,7 @@ namespace Microsoft.PowerShell.Commands
         // However, this does give us a massive usability improvement, as users can just say
         // Add-Type -AssemblyName Forms (instead of System.Windows.Forms)
         // This is just long, not unmaintainable.
-        private static Assembly LoadAssemblyHelper(string assemblyName)
+        private Assembly LoadAssemblyHelper(string assemblyName)
         {
             Assembly loadedAssembly = null;
 
@@ -898,15 +862,18 @@ namespace Microsoft.PowerShell.Commands
 
         #region SourceCodeProcessing
 
-        private static OutputKind OutputAssemblyTypeToOutputKind(OutputAssemblyType outputType)
+        private OutputKind OutputAssemblyTypeToOutputKind(OutputAssemblyType outputType)
         {
             switch (outputType)
             {
                 case OutputAssemblyType.Library:
                     return OutputKind.DynamicallyLinkedLibrary;
-
+                case OutputAssemblyType.ConsoleApplication:
+                    return OutputKind.ConsoleApplication;
+                case OutputAssemblyType.WindowsApplication:
+                    return OutputKind.WindowsApplication;
                 default:
-                    throw PSTraceSource.NewNotSupportedException();
+                    throw new ArgumentOutOfRangeException("outputType");
             }
         }
 
@@ -914,11 +881,12 @@ namespace Microsoft.PowerShell.Commands
         {
             string sdkDirectory = s_defaultSdkDirectory;
             string baseDirectory = this.SessionState.Path.CurrentLocation.Path;
+            string additionalReferenceDirectories = null;
 
             switch (Language)
             {
                 case Language.CSharp:
-                    return CSharpCommandLineParser.Default.Parse(args, baseDirectory, sdkDirectory);
+                    return CSharpCommandLineParser.Default.Parse(args, baseDirectory, sdkDirectory, additionalReferenceDirectories);
 
                 default:
                     throw PSTraceSource.NewNotSupportedException();
@@ -995,7 +963,7 @@ namespace Microsoft.PowerShell.Commands
             }
 
             SourceText sourceText;
-            List<SyntaxTree> syntaxTrees = new();
+            List<SyntaxTree> syntaxTrees = new List<SyntaxTree>();
 
             switch (ParameterSetName)
             {
@@ -1074,12 +1042,12 @@ namespace Microsoft.PowerShell.Commands
 
         private void CheckDuplicateTypes(Compilation compilation, out ConcurrentBag<string> newTypes)
         {
-            AllNamedTypeSymbolsVisitor visitor = new();
+            AllNamedTypeSymbolsVisitor visitor = new AllNamedTypeSymbolsVisitor(_syntaxTreesHash);
             visitor.Visit(compilation.Assembly.GlobalNamespace);
 
             foreach (var symbolName in visitor.DuplicateSymbols)
             {
-                ErrorRecord errorRecord = new(
+                ErrorRecord errorRecord = new ErrorRecord(
                     new Exception(
                         string.Format(AddTypeStrings.TypeAlreadyExists, symbolName)),
                     "TYPE_ALREADY_EXISTS",
@@ -1088,9 +1056,9 @@ namespace Microsoft.PowerShell.Commands
                 WriteError(errorRecord);
             }
 
-            if (!visitor.DuplicateSymbols.IsEmpty)
+            if (visitor.DuplicateSymbols.Count > 0)
             {
-                ErrorRecord errorRecord = new(
+                ErrorRecord errorRecord = new ErrorRecord(
                     new InvalidOperationException(AddTypeStrings.CompilerErrors),
                     "COMPILER_ERRORS",
                     ErrorCategory.InvalidData,
@@ -1106,8 +1074,15 @@ namespace Microsoft.PowerShell.Commands
         // Visit symbols in all namespaces and collect duplicates.
         private class AllNamedTypeSymbolsVisitor : SymbolVisitor
         {
-            public readonly ConcurrentBag<string> DuplicateSymbols = new();
-            public readonly ConcurrentBag<string> UniqueSymbols = new();
+            private readonly int _hash;
+
+            public readonly ConcurrentBag<string> DuplicateSymbols = new ConcurrentBag<string>();
+            public readonly ConcurrentBag<string> UniqueSymbols = new ConcurrentBag<string>();
+
+            public AllNamedTypeSymbolsVisitor(int hash)
+            {
+                _hash = hash;
+            }
 
             public override void VisitNamespace(INamespaceSymbol symbol)
             {
@@ -1124,9 +1099,12 @@ namespace Microsoft.PowerShell.Commands
                 // It is namespace-fully-qualified name
                 var symbolFullName = symbol.ToString();
 
-                if (s_sourceTypesCache.TryGetValue(symbolFullName, out _))
+                if (s_sourceTypesCache.TryGetValue(symbolFullName, out int hash))
                 {
-                    DuplicateSymbols.Add(symbolFullName);
+                    if (hash == _hash)
+                    {
+                        DuplicateSymbols.Add(symbolFullName);
+                    }
                 }
                 else
                 {
@@ -1135,11 +1113,11 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private static void CacheNewTypes(ConcurrentBag<string> newTypes)
+        private void CacheNewTypes(ConcurrentBag<string> newTypes)
         {
             foreach (var typeName in newTypes)
             {
-                s_sourceTypesCache.Add(typeName);
+                s_sourceTypesCache.Add(typeName, _syntaxTreesHash);
             }
         }
 
@@ -1243,7 +1221,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     else
                     {
-                        ErrorRecord errorRecord = new(
+                        ErrorRecord errorRecord = new ErrorRecord(
                             new Exception(errorText),
                             "SOURCE_CODE_ERROR",
                             ErrorCategory.InvalidData,
@@ -1255,7 +1233,7 @@ namespace Microsoft.PowerShell.Commands
 
                 if (IsError)
                 {
-                    ErrorRecord errorRecord = new(
+                    ErrorRecord errorRecord = new ErrorRecord(
                         new InvalidOperationException(AddTypeStrings.CompilerErrors),
                         "COMPILER_ERRORS",
                         ErrorCategory.InvalidData,
@@ -1265,7 +1243,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private static string BuildErrorMessage(Diagnostic diagnisticRecord)
+        private string BuildErrorMessage(Diagnostic diagnisticRecord)
         {
             var location = diagnisticRecord.Location;
 
@@ -1288,7 +1266,7 @@ namespace Microsoft.PowerShell.Commands
                 var errorLineString = textLines[errorLineNumber].ToString();
                 var errorPosition = lineSpan.StartLinePosition.Character;
 
-                StringBuilder sb = new(diagnisticMessage.Length + errorLineString.Length * 2 + 4);
+                StringBuilder sb = new StringBuilder(diagnisticMessage.Length + errorLineString.Length * 2 + 4);
 
                 sb.AppendLine(diagnisticMessage);
                 sb.AppendLine(errorLineString);
@@ -1314,7 +1292,7 @@ namespace Microsoft.PowerShell.Commands
         private static int SyntaxTreeArrayGetHashCode(IEnumerable<SyntaxTree> sts)
         {
             // We use our extension method EnumerableExtensions.SequenceGetHashCode<T>().
-            List<int> stHashes = new();
+            List<int> stHashes = new List<int>();
             foreach (var st in sts)
             {
                 stHashes.Add(SyntaxTreeGetHashCode(st));

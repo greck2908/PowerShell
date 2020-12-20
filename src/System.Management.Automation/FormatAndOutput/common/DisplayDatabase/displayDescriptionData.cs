@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 // this file contains the data structures for the in memory database
@@ -102,19 +102,19 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         internal bool MultilineTables
         {
-            get
-            {
-                if (_multilineTables.HasValue)
-                    return _multilineTables.Value;
-                return false;
-            }
-
             set
             {
                 if (!_multilineTables.HasValue)
                 {
                     _multilineTables = value;
                 }
+            }
+
+            get
+            {
+                if (_multilineTables.HasValue)
+                    return _multilineTables.Value;
+                return false;
             }
         }
 
@@ -132,19 +132,19 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// </summary>
         internal bool ShowErrorsAsMessages
         {
-            get
-            {
-                if (_showErrorsAsMessages.HasValue)
-                    return _showErrorsAsMessages.Value;
-                return false;
-            }
-
             set
             {
                 if (!_showErrorsAsMessages.HasValue)
                 {
                     _showErrorsAsMessages = value;
                 }
+            }
+
+            get
+            {
+                if (_showErrorsAsMessages.HasValue)
+                    return _showErrorsAsMessages.Value;
+                return false;
             }
         }
 
@@ -156,19 +156,19 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// </summary>
         internal bool ShowErrorsInFormattedOutput
         {
-            get
-            {
-                if (_showErrorsInFormattedOutput.HasValue)
-                    return _showErrorsInFormattedOutput.Value;
-                return false;
-            }
-
             set
             {
                 if (!_showErrorsInFormattedOutput.HasValue)
                 {
                     _showErrorsInFormattedOutput = value;
                 }
+            }
+
+            get
+            {
+                if (_showErrorsInFormattedOutput.HasValue)
+                    return _showErrorsInFormattedOutput.Value;
+                return false;
             }
         }
 
@@ -191,19 +191,19 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         internal int PropertyCountForTable
         {
-            get
-            {
-                if (_propertyCountForTable.HasValue)
-                    return _propertyCountForTable.Value;
-                return 4;
-            }
-
             set
             {
                 if (!_propertyCountForTable.HasValue)
                 {
                     _propertyCountForTable = value;
                 }
+            }
+
+            get
+            {
+                if (_propertyCountForTable.HasValue)
+                    return _propertyCountForTable.Value;
+                return 4;
             }
         }
 
@@ -376,22 +376,22 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         {
             if (control is TableControlBody)
             {
-                return nameof(FormatShape.Table);
+                return FormatShape.Table.ToString();
             }
 
             if (control is ListControlBody)
             {
-                return nameof(FormatShape.List);
+                return FormatShape.List.ToString();
             }
 
             if (control is WideControlBody)
             {
-                return nameof(FormatShape.Wide);
+                return FormatShape.Wide.ToString();
             }
 
             if (control is ComplexControlBody)
             {
-                return nameof(FormatShape.Complex);
+                return FormatShape.Complex.ToString();
             }
 
             return string.Empty;
@@ -635,9 +635,9 @@ namespace System.Management.Automation
         public ExtendedTypeDefinition(string typeName, IEnumerable<FormatViewDefinition> viewDefinitions) : this()
         {
             if (string.IsNullOrEmpty(typeName))
-                throw PSTraceSource.NewArgumentNullException(nameof(typeName));
+                throw PSTraceSource.NewArgumentNullException("typeName");
             if (viewDefinitions == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(viewDefinitions));
+                throw PSTraceSource.NewArgumentNullException("viewDefinitions");
 
             TypeNames.Add(typeName);
             foreach (FormatViewDefinition definition in viewDefinitions)
@@ -653,7 +653,7 @@ namespace System.Management.Automation
         public ExtendedTypeDefinition(string typeName) : this()
         {
             if (string.IsNullOrEmpty(typeName))
-                throw PSTraceSource.NewArgumentNullException(nameof(typeName));
+                throw PSTraceSource.NewArgumentNullException("typeName");
 
             TypeNames.Add(typeName);
         }
@@ -672,10 +672,10 @@ namespace System.Management.Automation
     public sealed class FormatViewDefinition
     {
         /// <summary>Name of the formatting view as defined in the formatting file</summary>
-        public string Name { get; }
+        public string Name { get; private set; }
 
         /// <summary>The control defined by this formatting view can be one of table, list, wide, or custom</summary>
-        public PSControl Control { get; }
+        public PSControl Control { get; private set; }
 
         /// <summary>instance id of the original view this will be used to distinguish two views with the same name and control types</summary>
         internal Guid InstanceId { get; set; }
@@ -691,13 +691,12 @@ namespace System.Management.Automation
         public FormatViewDefinition(string name, PSControl control)
         {
             if (string.IsNullOrEmpty(name))
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             if (control == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(control));
+                throw PSTraceSource.NewArgumentNullException("control");
 
             Name = name;
             Control = control;
-            InstanceId = Guid.NewGuid();
         }
     }
 
@@ -774,7 +773,7 @@ namespace System.Management.Automation
                 return new PSControlGroupBy
                 {
                     Expression = new DisplayEntry(expressionToken),
-                    Label = groupBy.startGroup.labelTextToken?.text
+                    Label = (groupBy.startGroup.labelTextToken != null) ? groupBy.startGroup.labelTextToken.text : null
                 };
             }
 
@@ -800,7 +799,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(value))
                 if (value == null || type == DisplayEntryValueType.Property)
-                    throw PSTraceSource.NewArgumentNullException(nameof(value));
+                    throw PSTraceSource.NewArgumentNullException("value");
 
             Value = value;
             ValueType = type;

@@ -1,13 +1,17 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
+#if !SILVERLIGHT // ComObject
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+using System.Linq;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Management.Automation.Language;
 using System.Runtime.InteropServices.ComTypes;
+using System.Management.Automation.Language;
 
 namespace System.Management.Automation.ComInterop
 {
@@ -23,8 +27,6 @@ namespace System.Management.Automation.ComInterop
 
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
         {
-            Requires.NotNull(binder, nameof(binder));
-
             ComMethodDesc method = null;
 
             // See if this is actually a property set
@@ -63,9 +65,8 @@ namespace System.Management.Automation.ComInterop
 
         public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args)
         {
-            Requires.NotNull(binder, nameof(binder));
-
-            if (_self.TryGetGetItem(out ComMethodDesc method))
+            ComMethodDesc method;
+            if (_self.TryGetGetItem(out method))
             {
                 List<ParameterExpression> temps = new List<ParameterExpression>();
                 List<Expression> initTemps = new List<Expression>();
@@ -88,12 +89,12 @@ namespace System.Management.Automation.ComInterop
                 Expression.Constant(method),
                 Expression.Property(
                     Helpers.Convert(Expression, typeof(IDispatchComObject)),
-                    typeof(IDispatchComObject).GetProperty(nameof(IDispatchComObject.DispatchObject))
+                    typeof(IDispatchComObject).GetProperty("DispatchObject")
                 ),
                 method
             ).Invoke();
 
-            if (temps != null && temps.Count > 0)
+            if ((temps != null) && (temps.Any()))
             {
                 Expression invokeExpression = invoke.Expression;
                 Expression call = Expression.Block(invokeExpression.Type, temps, initTemps.Append(invokeExpression));
@@ -106,12 +107,13 @@ namespace System.Management.Automation.ComInterop
         public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
         {
             ComBinder.ComGetMemberBinder comBinder = binder as ComBinder.ComGetMemberBinder;
-            bool canReturnCallables = comBinder?._canReturnCallables ?? false;
+            bool canReturnCallables = comBinder == null ? false : comBinder._CanReturnCallables;
 
-            Requires.NotNull(binder, nameof(binder));
+            ComMethodDesc method;
+            ComEventDesc @event;
 
             // 1. Try methods
-            if (_self.TryGetMemberMethod(binder.Name, out ComMethodDesc method))
+            if (_self.TryGetMemberMethod(binder.Name, out method))
             {
                 if (((method.InvokeKind & INVOKEKIND.INVOKE_PROPERTYGET) ==
                     INVOKEKIND.INVOKE_PROPERTYGET) &&
@@ -122,7 +124,7 @@ namespace System.Management.Automation.ComInterop
             }
 
             // 2. Try events
-            if (_self.TryGetMemberEvent(binder.Name, out ComEventDesc @event))
+            if (_self.TryGetMemberEvent(binder.Name, out @event))
             {
                 return BindEvent(@event);
             }
@@ -160,7 +162,7 @@ namespace System.Management.Automation.ComInterop
 
             return new DynamicMetaObject(
                 Expression.Call(
-                    typeof(ComRuntimeHelpers).GetMethod(nameof(ComRuntimeHelpers.CreateDispCallable)),
+                    typeof(ComRuntimeHelpers).GetMethod("CreateDispCallable"),
                     Helpers.Convert(Expression, typeof(IDispatchComObject)),
                     Expression.Constant(method)
                 ),
@@ -168,15 +170,15 @@ namespace System.Management.Automation.ComInterop
             );
         }
 
-        private DynamicMetaObject BindEvent(ComEventDesc eventDesc)
+        private DynamicMetaObject BindEvent(ComEventDesc @event)
         {
             // BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
             Expression result =
                 Expression.Call(
-                    typeof(ComRuntimeHelpers).GetMethod(nameof(ComRuntimeHelpers.CreateComEvent)),
+                    typeof(ComRuntimeHelpers).GetMethod("CreateComEvent"),
                     ComObject.RcwFromComObject(Expression),
-                    Expression.Constant(eventDesc.SourceIID),
-                    Expression.Constant(eventDesc.Dispid)
+                    Expression.Constant(@event.sourceIID),
+                    Expression.Constant(@event.dispid)
                 );
 
             return new DynamicMetaObject(
@@ -187,9 +189,8 @@ namespace System.Management.Automation.ComInterop
 
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
         {
-            Requires.NotNull(binder, nameof(binder));
-
-            if (_self.TryGetGetItem(out ComMethodDesc getItem))
+            ComMethodDesc getItem;
+            if (_self.TryGetGetItem(out getItem))
             {
                 List<ParameterExpression> temps = new List<ParameterExpression>();
                 List<Expression> initTemps = new List<Expression>();
@@ -203,9 +204,8 @@ namespace System.Management.Automation.ComInterop
 
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
         {
-            Requires.NotNull(binder, nameof(binder));
-
-            if (_self.TryGetSetItem(out ComMethodDesc setItem))
+            ComMethodDesc setItem;
+            if (_self.TryGetSetItem(out setItem))
             {
                 List<ParameterExpression> temps = new List<ParameterExpression>();
                 List<Expression> initTemps = new List<Expression>();
@@ -214,15 +214,12 @@ namespace System.Management.Automation.ComInterop
                 isByRef = isByRef.AddLast(false);
 
                 // Convert the value to the target type
-                DynamicMetaObject updatedValue = new DynamicMetaObject(
-                    value.CastOrConvertMethodArgument(
-                        value.LimitType,
-                        setItem.Name,
-                        "SetIndex",
-                        allowCastingToByRefLikeType: false,
-                        temps,
-                        initTemps),
-                    value.Restrictions);
+                DynamicMetaObject updatedValue = new DynamicMetaObject(value.CastOrConvertMethodArgument(
+                                value.LimitType,
+                                setItem.Name,
+                                "SetIndex",
+                                temps,
+                                initTemps), value.Restrictions);
 
                 var result = BindComInvoke(indexes.AddLast(updatedValue), setItem, binder.CallInfo, isByRef, temps, initTemps);
 
@@ -238,8 +235,6 @@ namespace System.Management.Automation.ComInterop
 
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
         {
-            Requires.NotNull(binder, nameof(binder));
-
             return
                 // 1. Check for simple property put
                 TryPropertyPut(binder, value) ??
@@ -253,18 +248,19 @@ namespace System.Management.Automation.ComInterop
 
         private DynamicMetaObject TryPropertyPut(SetMemberBinder binder, DynamicMetaObject value)
         {
+            ComMethodDesc method;
             bool holdsNull = value.Value == null && value.HasValue;
-            if (_self.TryGetPropertySetter(binder.Name, out ComMethodDesc method, value.LimitType, holdsNull) ||
+            if (_self.TryGetPropertySetter(binder.Name, out method, value.LimitType, holdsNull) ||
                 _self.TryGetPropertySetterExplicit(binder.Name, out method, value.LimitType, holdsNull))
             {
                 BindingRestrictions restrictions = IDispatchRestriction();
                 Expression dispatch =
                     Expression.Property(
                         Helpers.Convert(Expression, typeof(IDispatchComObject)),
-                        typeof(IDispatchComObject).GetProperty(nameof(IDispatchComObject.DispatchObject))
+                        typeof(IDispatchComObject).GetProperty("DispatchObject")
                     );
 
-                DynamicMetaObject result = new ComInvokeBinder(
+                var result = new ComInvokeBinder(
                     new CallInfo(1),
                     new[] { value },
                     new bool[] { false },
@@ -286,7 +282,8 @@ namespace System.Management.Automation.ComInterop
 
         private DynamicMetaObject TryEventHandlerNoop(SetMemberBinder binder, DynamicMetaObject value)
         {
-            if (_self.TryGetMemberEvent(binder.Name, out _) && value.LimitType == typeof(BoundDispEvent))
+            ComEventDesc @event;
+            if (_self.TryGetMemberEvent(binder.Name, out @event) && value.LimitType == typeof(BoundDispEvent))
             {
                 // Drop the event property set.
                 return new DynamicMetaObject(
@@ -312,7 +309,7 @@ namespace System.Management.Automation.ComInterop
                     Expression.Equal(
                         Expression.Property(
                             Helpers.Convert(expr, typeof(IDispatchComObject)),
-                            typeof(IDispatchComObject).GetProperty(nameof(IDispatchComObject.ComTypeDesc))
+                            typeof(IDispatchComObject).GetProperty("ComTypeDesc")
                         ),
                         Expression.Constant(typeDesc)
                     )
@@ -330,3 +327,6 @@ namespace System.Management.Automation.ComInterop
         }
     }
 }
+
+#endif
+

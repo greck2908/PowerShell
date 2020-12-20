@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -93,6 +93,7 @@ namespace System.Management.Automation
         internal static readonly string RunspaceIdNoteProperty = "RunspaceId";
         internal static readonly string ShowComputerNameNoteProperty = "PSShowComputerName";
         internal static readonly string SourceJobInstanceId = "PSSourceJobInstanceId";
+        internal static readonly string SourceLength = "Length";
         internal static readonly string EventObject = "PSEventObject";
         // used by Custom Shell related cmdlets.
         internal const string PSSessionConfigurationNoun = "PSSessionConfiguration";
@@ -676,7 +677,11 @@ namespace System.Management.Automation
             dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.MinRunspaces, minRunspaces));
             dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.MaxRunspaces, maxRunspaces));
             dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.ThreadOptions, runspacePool.ThreadOptions));
+#if CORECLR // No ApartmentState In CoreCLR, default to MTA for outgoing objects
+            ApartmentState poolState = ApartmentState.MTA;
+#else
             ApartmentState poolState = runspacePool.ApartmentState;
+#endif
             dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.ApartmentState, poolState));
             dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.ApplicationArguments, applicationArguments));
 
@@ -1108,7 +1113,11 @@ namespace System.Management.Automation
                 hostInfo = new HostInfo(null);
                 hostInfo.UseRunspaceHost = true;
 
+#if CORECLR // No ApartmentState In CoreCLR, default to MTA for outgoing objects
+                ApartmentState passedApartmentState = ApartmentState.MTA;
+#else
                 ApartmentState passedApartmentState = rsPool.ApartmentState;
+#endif
                 dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.ApartmentState, passedApartmentState));
                 dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.RemoteStreamOptions, RemoteStreamOptions.AddInvocationInfo));
                 dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.AddToHistory, false));
@@ -1121,7 +1130,11 @@ namespace System.Management.Automation
                     hostInfo.UseRunspaceHost = true;
                 }
 
+#if CORECLR // No ApartmentState In CoreCLR, default to MTA for outgoing objects
+                ApartmentState passedApartmentState = ApartmentState.MTA;
+#else
                 ApartmentState passedApartmentState = settings.ApartmentState;
+#endif
                 dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.ApartmentState, passedApartmentState));
                 dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.RemoteStreamOptions, settings.RemoteStreamOptions));
                 dataAsPSObject.Properties.Add(new PSNoteProperty(RemoteDataNameStrings.AddToHistory, settings.AddToHistory));
@@ -1196,10 +1209,10 @@ namespace System.Management.Automation
             // Add Reason property
             if (stateInfo.Reason != null)
             {
-                PSNoteProperty exceptionProperty = GetExceptionProperty(
-                    exception: stateInfo.Reason,
-                    errorId: "RemoteRunspaceStateInfoReason",
-                    category: ErrorCategory.NotSpecified);
+                // If Reason is of not type IContainsErrorRecord, a new ErrorRecord is
+                // created using this errorId
+                string errorId = "RemoteRunspaceStateInfoReason";
+                PSNoteProperty exceptionProperty = GetExceptionProperty(stateInfo.Reason, errorId, ErrorCategory.NotSpecified);
                 dataAsPSObject.Properties.Add(exceptionProperty);
             }
 
@@ -1414,7 +1427,7 @@ namespace System.Management.Automation
         {
             if (progressRecord == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(progressRecord));
+                throw PSTraceSource.NewArgumentNullException("progressRecord");
             }
 
             return RemoteDataObject.CreateFrom(RemotingDestination.Client,
@@ -1447,7 +1460,7 @@ namespace System.Management.Automation
         {
             if (informationRecord == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(informationRecord));
+                throw PSTraceSource.NewArgumentNullException("informationRecord");
             }
 
             return RemoteDataObject.CreateFrom(RemotingDestination.Client,
@@ -1515,10 +1528,12 @@ namespace System.Management.Automation
             // Add exception property
             if (stateInfo.Reason != null)
             {
-                PSNoteProperty exceptionProperty = GetExceptionProperty(
-                    exception: stateInfo.Reason,
-                    errorId: "RemotePSInvocationStateInfoReason",
-                    category: ErrorCategory.NotSpecified);
+                // If Reason is of not type IContainsErrorRecord,
+                // a new ErrorRecord is created using this errorId
+                string errorId = "RemotePSInvocationStateInfoReason";
+                PSNoteProperty exceptionProperty =
+                    GetExceptionProperty(stateInfo.Reason, errorId,
+                        ErrorCategory.NotSpecified);
                 dataAsPSObject.Properties.Add(exceptionProperty);
             }
 
@@ -1539,7 +1554,7 @@ namespace System.Management.Automation
         /// <param name="exception"></param>
         /// <returns>
         /// ErrorRecord if exception is of type IContainsErrorRecord
-        /// Null if exception is not of type IContainsErrorRecord
+        /// Null if if exception is not of type IContainsErrorRecord
         /// </returns>
         internal static ErrorRecord GetErrorRecordFromException(Exception exception)
         {
@@ -1561,9 +1576,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets a Note Property for the exception.
         /// </summary>
-        /// <remarks>
-        /// If <paramref name="exception"/> is of not type IContainsErrorRecord, a new ErrorRecord is created.
-        /// </remarks>
         /// <param name="exception"></param>
         /// <param name="errorId">ErrorId to use if exception is not of type IContainsErrorRecord.</param>
         /// <param name="category">ErrorCategory to use if exception is not of type IContainsErrorRecord.</param>
@@ -1638,7 +1650,7 @@ namespace System.Management.Automation
         {
             if (propertyName == null) // comes from internal caller
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(propertyName));
+                throw PSTraceSource.NewArgumentNullException("propertyName");
             }
 
             if (typeof(T).IsEnum)
@@ -1746,12 +1758,12 @@ namespace System.Management.Automation
         {
             if (psObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(psObject));
+                throw PSTraceSource.NewArgumentNullException("psObject");
             }
 
             if (propertyName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(propertyName));
+                throw PSTraceSource.NewArgumentNullException("propertyName");
             }
 
             PSPropertyInfo property = psObject.Properties[propertyName];
@@ -1768,12 +1780,12 @@ namespace System.Management.Automation
         {
             if (psObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(psObject));
+                throw PSTraceSource.NewArgumentNullException("psObject");
             }
 
             if (propertyName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(propertyName));
+                throw PSTraceSource.NewArgumentNullException("propertyName");
             }
 
             PSPropertyInfo property = GetProperty(psObject, propertyName);
@@ -1785,12 +1797,12 @@ namespace System.Management.Automation
         {
             if (psObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(psObject));
+                throw PSTraceSource.NewArgumentNullException("psObject");
             }
 
             if (propertyName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(propertyName));
+                throw PSTraceSource.NewArgumentNullException("propertyName");
             }
 
             IEnumerable e = GetPropertyValue<IEnumerable>(psObject, propertyName);
@@ -1807,12 +1819,12 @@ namespace System.Management.Automation
         {
             if (psObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(psObject));
+                throw PSTraceSource.NewArgumentNullException("psObject");
             }
 
             if (propertyName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(propertyName));
+                throw PSTraceSource.NewArgumentNullException("propertyName");
             }
 
             Hashtable h = GetPropertyValue<Hashtable>(psObject, propertyName);
@@ -1837,7 +1849,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             RunspacePoolState state = GetPropertyValue<RunspacePoolState>(dataAsPSObject, RemoteDataNameStrings.RunspaceState);
@@ -1856,7 +1868,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             return GetPropertyValue<PSPrimitiveDictionary>(dataAsPSObject, RemoteDataNameStrings.ApplicationPrivateData);
@@ -1871,7 +1883,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             return GetPropertyValue<string>(dataAsPSObject, RemoteDataNameStrings.PublicKey);
@@ -1886,7 +1898,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             return GetPropertyValue<string>(dataAsPSObject, RemoteDataNameStrings.EncryptedSessionKey);
@@ -1902,7 +1914,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             int eventIdentifier = GetPropertyValue<int>(dataAsPSObject, RemoteDataNameStrings.PSEventArgsEventIdentifier);
@@ -1912,7 +1924,7 @@ namespace System.Management.Automation
             string computerName = GetPropertyValue<string>(dataAsPSObject, RemoteDataNameStrings.PSEventArgsComputerName);
             Guid runspaceId = GetPropertyValue<Guid>(dataAsPSObject, RemoteDataNameStrings.PSEventArgsRunspaceId);
 
-            var sourceArgs = new List<object>();
+            ArrayList sourceArgs = new ArrayList();
             foreach (object argument in RemotingDecoder.EnumerateListProperty<object>(dataAsPSObject, RemoteDataNameStrings.PSEventArgsSourceArgs))
             {
                 sourceArgs.Add(argument);
@@ -1942,7 +1954,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             return GetPropertyValue<int>(dataAsPSObject, RemoteDataNameStrings.MinRunspaces);
@@ -1958,7 +1970,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             return GetPropertyValue<int>(dataAsPSObject, RemoteDataNameStrings.MaxRunspaces);
@@ -1974,7 +1986,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             // rehydration might not work yet (there is no type table before a runspace is created)
@@ -1991,7 +2003,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             int maxRS = GetPropertyValue<int>(dataAsPSObject, RemoteDataNameStrings.MaxRunspaces);
@@ -2010,7 +2022,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             return GetPropertyValue<PSThreadOptions>(dataAsPSObject, RemoteDataNameStrings.ThreadOptions);
@@ -2026,7 +2038,7 @@ namespace System.Management.Automation
         {
             if (dataAsPSObject == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dataAsPSObject));
+                throw PSTraceSource.NewArgumentNullException("dataAsPSObject");
             }
 
             PSObject propertyValue = GetPropertyValue<PSObject>(dataAsPSObject, RemoteDataNameStrings.HostInfo);
@@ -2089,7 +2101,8 @@ namespace System.Management.Automation
         /// <returns>PSInvocationInfo.</returns>
         internal static PSInvocationStateInfo GetPowerShellStateInfo(object data)
         {
-            if (!(data is PSObject dataAsPSObject))
+            PSObject dataAsPSObject = data as PSObject;
+            if (dataAsPSObject == null)
             {
                 throw new PSRemotingDataStructureException(
                     RemotingErrorIdStrings.DecodingErrorForPowerShellStateInfo);
@@ -2109,7 +2122,7 @@ namespace System.Management.Automation
         {
             if (data == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(data));
+                throw PSTraceSource.NewArgumentNullException("data");
             }
 
             PSObject dataAsPSObject = data as PSObject;
@@ -2126,7 +2139,7 @@ namespace System.Management.Automation
         {
             if (data == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(data));
+                throw PSTraceSource.NewArgumentNullException("data");
             }
 
             return new WarningRecord((PSObject)data);
@@ -2139,7 +2152,7 @@ namespace System.Management.Automation
         {
             if (data == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(data));
+                throw PSTraceSource.NewArgumentNullException("data");
             }
 
             return new VerboseRecord((PSObject)data);
@@ -2152,7 +2165,7 @@ namespace System.Management.Automation
         {
             if (data == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(data));
+                throw PSTraceSource.NewArgumentNullException("data");
             }
 
             return new DebugRecord((PSObject)data);
@@ -2237,7 +2250,7 @@ namespace System.Management.Automation
             }
             else
             {
-                module = new string[] { string.Empty };
+                module = new string[] { "" };
             }
 
             ModuleSpecification[] fullyQualifiedName = null;
@@ -2281,7 +2294,7 @@ namespace System.Management.Automation
         /// Gets the NoInput setting from the specified data.
         /// </summary>
         /// <param name="data">Data to decode.</param>
-        /// <returns><see langword="true"/> if there is no pipeline input; <see langword="false"/> otherwise.</returns>
+        /// <returns><c>true</c> if there is no pipeline input; <c>false</c> otherwise.</returns>
         internal static bool GetNoInput(object data)
         {
             PSObject dataAsPSObject = PSObject.AsPSObject(data);
@@ -2298,7 +2311,7 @@ namespace System.Management.Automation
         /// Gets the AddToHistory setting from the specified data.
         /// </summary>
         /// <param name="data">Data to decode.</param>
-        /// <returns><see langword="true"/> if there is addToHistory data; <see langword="false"/> otherwise.</returns>
+        /// <returns><c>true</c> if there is addToHistory data; <c>false</c> otherwise.</returns>
         internal static bool GetAddToHistory(object data)
         {
             PSObject dataAsPSObject = PSObject.AsPSObject(data);
@@ -2315,7 +2328,7 @@ namespace System.Management.Automation
         /// Gets the IsNested setting from the specified data.
         /// </summary>
         /// <param name="data">Data to decode.</param>
-        /// <returns><see langword="true"/> if there is IsNested data; <see langword="false"/> otherwise.</returns>
+        /// <returns><c>true</c> if there is IsNested data; <c>false</c> otherwise.</returns>
         internal static bool GetIsNested(object data)
         {
             PSObject dataAsPSObject = PSObject.AsPSObject(data);
@@ -2328,6 +2341,7 @@ namespace System.Management.Automation
             return GetPropertyValue<bool>(dataAsPSObject, RemoteDataNameStrings.IsNested);
         }
 
+#if !CORECLR // No ApartmentState In CoreCLR
         /// <summary>
         /// Gets the invocation settings information from the message.
         /// </summary>
@@ -2338,7 +2352,7 @@ namespace System.Management.Automation
             PSObject dataAsPSObject = PSObject.AsPSObject(data);
             return GetPropertyValue<ApartmentState>(dataAsPSObject, RemoteDataNameStrings.ApartmentState);
         }
-
+#endif
         /// <summary>
         /// Gets the stream options from the message.
         /// </summary>
@@ -2357,7 +2371,9 @@ namespace System.Management.Automation
         /// <returns>RemoteSessionCapability object.</returns>
         internal static RemoteSessionCapability GetSessionCapability(object data)
         {
-            if (!(data is PSObject dataAsPSObject))
+            PSObject dataAsPSObject = data as PSObject;
+
+            if (dataAsPSObject == null)
             {
                 throw new PSRemotingDataStructureException(
                     RemotingErrorIdStrings.CantCastRemotingDataToPSObject, data.GetType().FullName);

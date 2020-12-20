@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -32,26 +32,25 @@ namespace System.Management.Automation.Remoting
     internal class ClientRemoteSessionDSHandlerStateMachine
     {
         [TraceSourceAttribute("CRSessionFSM", "CRSessionFSM")]
-        private static readonly PSTraceSource s_trace = PSTraceSource.GetTracer("CRSessionFSM", "CRSessionFSM");
+        private static PSTraceSource s_trace = PSTraceSource.GetTracer("CRSessionFSM", "CRSessionFSM");
 
         /// <summary>
         /// Event handling matrix. It defines what action to take when an event occur.
         /// [State,Event]=>Action.
         /// </summary>
-        private readonly EventHandler<RemoteSessionStateMachineEventArgs>[,] _stateMachineHandle;
-        private readonly Queue<RemoteSessionStateEventArgs> _clientRemoteSessionStateChangeQueue;
+        private EventHandler<RemoteSessionStateMachineEventArgs>[,] _stateMachineHandle;
+        private Queue<RemoteSessionStateEventArgs> _clientRemoteSessionStateChangeQueue;
 
         /// <summary>
         /// Current state of session.
         /// </summary>
         private RemoteSessionState _state;
 
-        private readonly Queue<RemoteSessionStateMachineEventArgs> _processPendingEventsQueue
+        private Queue<RemoteSessionStateMachineEventArgs> _processPendingEventsQueue
             = new Queue<RemoteSessionStateMachineEventArgs>();
-
         // all events raised through the state machine
         // will be queued in this
-        private readonly object _syncObject = new object();
+        private object _syncObject = new object();
         // object for synchronizing access to the above
         // queue
 
@@ -162,7 +161,7 @@ namespace System.Management.Automation.Remoting
         /// Unique identifier for this state machine. Used
         /// in tracing.
         /// </summary>
-        private readonly Guid _id;
+        private Guid _id;
 
         /// <summary>
         /// Handler to be used in cases, where setting the state is the
@@ -191,7 +190,7 @@ namespace System.Management.Automation.Remoting
                             "State can be set to NegotiationReceived only when RemoteSessionCapability is not null");
                         if (eventArgs.RemoteSessionCapability == null)
                         {
-                            throw PSTraceSource.NewArgumentException(nameof(eventArgs));
+                            throw PSTraceSource.NewArgumentException("eventArgs");
                         }
 
                         SetState(RemoteSessionState.NegotiationReceived, null);
@@ -278,7 +277,7 @@ namespace System.Management.Automation.Remoting
                         Dbg.Assert(_state >= RemoteSessionState.Established,
                             "Client can send a public key only after reaching the Established state");
 
-                        Dbg.Assert(!_keyExchanged, "Client should do key exchange only once");
+                        Dbg.Assert(_keyExchanged == false, "Client should do key exchange only once");
 
                         if (_state == RemoteSessionState.Established ||
                             _state == RemoteSessionState.EstablishedAndKeyRequested)
@@ -491,7 +490,7 @@ namespace System.Management.Automation.Remoting
                     _state == RemoteSessionState.EstablishedAndKeyReceived ||   // TODO - Client session would never get into this state... to be removed
                     _state == RemoteSessionState.EstablishedAndKeySent ||
                     _state == RemoteSessionState.Disconnecting ||               // There can be input data until disconnect has been completed
-                    _state == RemoteSessionState.Disconnected)                  // Data can arrive while state machine is transitioning to disconnected
+                    _state == RemoteSessionState.Disconnected)                  // Data can arrive while state machine is transitioning to disconnected, in a race.
                 {
                     return true;
                 }
@@ -555,7 +554,7 @@ namespace System.Management.Automation.Remoting
         {
             if (arg == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(arg));
+                throw PSTraceSource.NewArgumentNullException("arg");
             }
 
             EventHandler<RemoteSessionStateMachineEventArgs> handler = _stateMachineHandle[(int)State, (int)arg.StateEvent];
@@ -776,7 +775,7 @@ namespace System.Management.Automation.Remoting
 
         #endregion Event Handlers
 
-        private static void CleanAll()
+        private void CleanAll()
         {
         }
 

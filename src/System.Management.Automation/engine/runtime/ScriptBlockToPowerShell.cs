@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -16,7 +16,6 @@ namespace System.Management.Automation
         private readonly HashSet<string> _validVariables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         internal ScriptBlockAst ScriptBeingConverted { get; set; }
-
         internal bool UsesParameter { get; private set; }
 
         internal bool HasUsingExpr { get; private set; }
@@ -387,7 +386,8 @@ namespace System.Management.Automation
 
                     if (variables != null)
                     {
-                        if (!(usingAst.SubExpression is VariableExpressionAst variableAst))
+                        var variableAst = usingAst.SubExpression as VariableExpressionAst;
+                        if (variableAst == null)
                         {
                             throw InterpreterError.NewInterpreterException(null, typeof(RuntimeException),
                                 usingAst.Extent, "CantGetUsingExpressionValueWithSpecifiedVariableDictionary", AutomationExceptions.CantGetUsingExpressionValueWithSpecifiedVariableDictionary, usingAst.Extent.Text);
@@ -409,7 +409,10 @@ namespace System.Management.Automation
 
                     // Collect UsingExpression value as a dictionary
                     string usingAstKey = PsUtils.GetUsingExpressionKey(usingAst);
-                    usingValueMap.TryAdd(usingAstKey, value);
+                    if (!usingValueMap.ContainsKey(usingAstKey))
+                    {
+                        usingValueMap.Add(usingAstKey, value);
+                    }
                 }
             }
             catch (RuntimeException rte)
@@ -547,6 +550,7 @@ namespace System.Management.Automation
                 Diagnostics.Assert(commandAst.Redirections.Count == 1, "only 1 kind of redirection is supported");
                 Diagnostics.Assert(commandAst.Redirections[0] is MergingRedirectionAst, "unexpected redirection type");
 
+                PipelineResultTypes toType = PipelineResultTypes.Output;
                 PipelineResultTypes fromType;
                 switch (commandAst.Redirections[0].FromStream)
                 {
@@ -580,7 +584,7 @@ namespace System.Management.Automation
                         break;
                 }
 
-                command.MergeMyResults(fromType, toResult: PipelineResultTypes.Output);
+                command.MergeMyResults(fromType, toType);
             }
 
             _powershell.AddCommand(command);
@@ -613,7 +617,7 @@ namespace System.Management.Automation
                                 var arguments = usingValue as System.Collections.IEnumerable;
                                 if (arguments != null)
                                 {
-                                    foreach (object argument in arguments)
+                                    foreach (Object argument in arguments)
                                     {
                                         _powershell.AddArgument(argument);
                                     }
@@ -642,9 +646,7 @@ namespace System.Management.Automation
                     {
                         var constantExprAst = ast as ConstantExpressionAst;
                         object argument;
-                        if (constantExprAst != null
-                            && (LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(constantExprAst.StaticType))
-                            || constantExprAst.StaticType == typeof(System.Numerics.BigInteger)))
+                        if (constantExprAst != null && LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(constantExprAst.StaticType)))
                         {
                             var commandArgumentText = constantExprAst.Extent.Text;
                             argument = constantExprAst.Value;
@@ -747,7 +749,7 @@ namespace System.Management.Automation
             foreach (var splattedParameter in PipelineOps.Splat(splattedValue, variableAst))
             {
                 CommandParameter publicParameter = CommandParameter.FromCommandParameterInternal(splattedParameter);
-                _powershell.AddParameter(publicParameter);
+                _powershell.AddParameter(publicParameter.Name, publicParameter.Value);
             }
         }
 

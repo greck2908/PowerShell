@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -492,7 +492,7 @@ namespace System.Management.Automation
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-        public PSTypeName[] Type { get; }
+        public PSTypeName[] Type { get; private set; }
 
         /// <summary>
         /// Attributes implemented by a provider can use:
@@ -507,7 +507,7 @@ namespace System.Management.Automation
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public string[] ParameterSetName
         {
-            get => _parameterSetName ??= new[] { ParameterAttribute.AllParameterSets };
+            get => _parameterSetName ?? (_parameterSetName = new[] { ParameterAttribute.AllParameterSets });
 
             set => _parameterSetName = value;
         }
@@ -607,7 +607,6 @@ namespace System.Management.Automation
         public ExperimentAction ExperimentAction { get; }
 
         internal bool ToHide => EffectiveAction == ExperimentAction.Hide;
-
         internal bool ToShow => EffectiveAction == ExperimentAction.Show;
 
         /// <summary>
@@ -753,7 +752,7 @@ namespace System.Management.Automation
     {
         /// <summary>
         /// </summary>
-        public string PSTypeName { get; }
+        public string PSTypeName { get; private set; }
 
         /// <summary>
         /// Creates a new PSTypeNameAttribute.
@@ -840,7 +839,8 @@ namespace System.Management.Automation
         /// <exception cref="ArgumentException">For invalid arguments.</exception>
         protected override void ValidateElement(object element)
         {
-            if (!(element is string objectString))
+            string objectString = element as string;
+            if (objectString == null)
             {
                 throw new ValidationMetadataException(
                     "ValidateLengthNotString",
@@ -938,27 +938,27 @@ namespace System.Management.Automation
         /// </summary>
         public object MinRange { get; }
 
-        private readonly IComparable _minComparable;
+        private IComparable _minComparable;
 
         /// <summary>
         /// Gets the attribute's maximum range.
         /// </summary>
         public object MaxRange { get; }
 
-        private readonly IComparable _maxComparable;
+        private IComparable _maxComparable;
 
         /// <summary>
         /// The range values and the value to validate will all be converted to the promoted type.
         /// If minRange and maxRange are the same type,
         /// </summary>
-        private readonly Type _promotedType;
+        private Type _promotedType;
 
         /// <summary>
         /// Gets the name of the predefined range.
         /// </summary>
         internal ValidateRangeKind? RangeKind { get => _rangeKind; }
 
-        private readonly ValidateRangeKind? _rangeKind;
+        private ValidateRangeKind? _rangeKind;
 
         /// <summary>
         /// Validates that each parameter argument falls in the range specified by <see cref="MinRange"/>
@@ -1083,7 +1083,7 @@ namespace System.Management.Automation
             _rangeKind = kind;
         }
 
-        private static void ValidateRange(object element, ValidateRangeKind rangeKind)
+        private void ValidateRange(object element, ValidateRangeKind rangeKind)
         {
             Type commonType = GetCommonType(typeof(int), element.GetType());
             if (commonType == null)
@@ -1093,7 +1093,7 @@ namespace System.Management.Automation
                     innerException: null,
                     Metadata.ValidateRangeElementType,
                     element.GetType().Name,
-                    nameof(Int32));
+                    typeof(int).Name);
             }
 
             object resultValue;
@@ -1265,7 +1265,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets or sets the Regex options to be used in the validation.
         /// </summary>
-        public RegexOptions Options { get; set; } = RegexOptions.IgnoreCase;
+        public RegexOptions Options { set; get; } = RegexOptions.IgnoreCase;
 
         /// <summary>
         /// Gets or sets the custom error message pattern that is displayed to the user.
@@ -1432,7 +1432,7 @@ namespace System.Management.Automation
         /// </exception>
         protected override void Validate(object arguments, EngineIntrinsics engineIntrinsics)
         {
-            int len = 0;
+            UInt32 len = 0;
             if (arguments == null || arguments == AutomationNull.Value)
             {
                 // treat a nul list the same as an empty list
@@ -1441,11 +1441,11 @@ namespace System.Management.Automation
             }
             else if (arguments is IList il)
             {
-                len = il.Count;
+                len = (UInt32)il.Count;
             }
             else if (arguments is ICollection ic)
             {
-                len = ic.Count;
+                len = (UInt32)ic.Count;
             }
             else if (arguments is IEnumerable ie)
             {
@@ -1532,7 +1532,7 @@ namespace System.Management.Automation
     {
         // Cached valid values.
         private string[] _validValues;
-        private readonly int _validValuesCacheExpiration;
+        private int _validValuesCacheExpiration;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CachedValidValuesGeneratorBase"/> class.
@@ -1591,11 +1591,11 @@ namespace System.Management.Automation
     {
         // We can use either static '_validValues' or dynamic valid values list generated by instance
         // of 'validValuesGenerator'.
-        private readonly string[] _validValues;
-        private readonly IValidateSetValuesGenerator validValuesGenerator = null;
+        private string[] _validValues;
+        private IValidateSetValuesGenerator validValuesGenerator = null;
 
         // The valid values generator cache works across 'ValidateSetAttribute' instances.
-        private static readonly ConcurrentDictionary<Type, IValidateSetValuesGenerator> s_ValidValuesGeneratorCache =
+        private static ConcurrentDictionary<Type, IValidateSetValuesGenerator> s_ValidValuesGeneratorCache =
             new ConcurrentDictionary<Type, IValidateSetValuesGenerator>();
 
         /// <summary>
@@ -1619,7 +1619,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the valid values in the set.
         /// </summary>
-        [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "<Pending>")]
         public IList<string> ValidValues
         {
             get
@@ -1733,16 +1732,13 @@ namespace System.Management.Automation
     /// <summary>
     /// Allows dynamically generate set of values for <see cref="ValidateSetAttribute"/>
     /// </summary>
-#nullable enable
     public interface IValidateSetValuesGenerator
     {
         /// <summary>
         /// Gets valid values.
         /// </summary>
-        /// <returns>A non-null array of non-null strings.</returns>
         string[] GetValidValues();
     }
-#nullable restore
 
     /// <summary>
     /// Validates that each parameter argument is Trusted data.
@@ -1825,7 +1821,7 @@ namespace System.Management.Automation
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class ValidateDriveAttribute : ValidateArgumentsAttribute
     {
-        private readonly string[] _validRootDrives;
+        private string[] _validRootDrives;
 
         /// <summary>
         /// Gets the values in the set.
@@ -1861,7 +1857,8 @@ namespace System.Management.Automation
                     Metadata.ValidateNotNullFailure);
             }
 
-            if (!(arguments is string path))
+            var path = arguments as string;
+            if (path == null)
             {
                 throw new ValidationMetadataException(
                     "PathArgumentIsNotValid",

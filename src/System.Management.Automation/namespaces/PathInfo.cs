@@ -1,5 +1,7 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+
+using Dbg = System.Management.Automation;
 
 namespace System.Management.Automation
 {
@@ -76,7 +78,7 @@ namespace System.Management.Automation
         }
 
         private string _providerPath;
-        private readonly SessionState _sessionState;
+        private SessionState _sessionState;
 
         /// <summary>
         /// Gets the MSH path that this object represents.
@@ -89,9 +91,9 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly PSDriveInfo _drive;
-        private readonly ProviderInfo _provider;
-        private readonly string _path = string.Empty;
+        private PSDriveInfo _drive;
+        private ProviderInfo _provider;
+        private string _path = string.Empty;
 
         /// <summary>
         /// Gets a string representing the MSH path.
@@ -143,17 +145,17 @@ namespace System.Management.Automation
         {
             if (provider == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(provider));
+                throw PSTraceSource.NewArgumentNullException("provider");
             }
 
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             if (sessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sessionState));
+                throw PSTraceSource.NewArgumentNullException("sessionState");
             }
 
             _drive = drive;

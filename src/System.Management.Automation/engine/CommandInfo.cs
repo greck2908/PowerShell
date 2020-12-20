@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -112,7 +112,7 @@ namespace System.Management.Automation
 
             if (name == null)
             {
-                throw new ArgumentNullException(nameof(name));
+                throw new ArgumentNullException("name");
             }
 
             Name = name;
@@ -287,7 +287,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(newName))
             {
-                throw new ArgumentNullException(nameof(newName));
+                throw new ArgumentNullException("newName");
             }
 
             Name = newName;
@@ -583,7 +583,7 @@ namespace System.Management.Automation
 
         internal CommandMetadata ExternalCommandMetadata
         {
-            get { return _externalCommandMetadata ??= new CommandMetadata(this, true); }
+            get { return _externalCommandMetadata ?? (_externalCommandMetadata = new CommandMetadata(this, true)); }
 
             set { _externalCommandMetadata = value; }
         }
@@ -800,7 +800,7 @@ namespace System.Management.Automation
         {
             if (typeDefinitionAst == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(typeDefinitionAst));
+                throw PSTraceSource.NewArgumentNullException("typeDefinitionAst");
             }
 
             TypeDefinitionAst = typeDefinitionAst;
@@ -814,7 +814,7 @@ namespace System.Management.Automation
         {
             if (typeName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(typeName));
+                throw PSTraceSource.NewArgumentNullException("typeName");
             }
 
             _type = typeName.GetReflectionType();
@@ -889,7 +889,7 @@ namespace System.Management.Automation
         /// <summary>
         /// When a type is defined by PowerShell, the ast for that type.
         /// </summary>
-        public TypeDefinitionAst TypeDefinitionAst { get; }
+        public TypeDefinitionAst TypeDefinitionAst { get; private set; }
 
         private bool _typeWasCalculated;
 
@@ -904,7 +904,7 @@ namespace System.Management.Automation
     }
 
     [DebuggerDisplay("{PSTypeName} {Name}")]
-    internal readonly struct PSMemberNameAndType
+    internal struct PSMemberNameAndType
     {
         public readonly string Name;
 
@@ -960,7 +960,7 @@ namespace System.Management.Automation
             }
         }
 
-        private static bool IsPSTypeName(in PSMemberNameAndType member) => member.Name.Equals(nameof(PSTypeName), StringComparison.OrdinalIgnoreCase);
+        private static bool IsPSTypeName(PSMemberNameAndType member) => member.Name.Equals(nameof(PSTypeName), StringComparison.OrdinalIgnoreCase);
 
         private static string GetMemberTypeProjection(string typename, IList<PSMemberNameAndType> members)
         {
@@ -981,7 +981,7 @@ namespace System.Management.Automation
             {
                 if (!IsPSTypeName(m))
                 {
-                    builder.Append(m.Name).Append(':');
+                    builder.Append(m.Name).Append(":");
                 }
             }
 
@@ -992,7 +992,6 @@ namespace System.Management.Automation
         public IList<PSMemberNameAndType> Members { get; }
     }
 
-#nullable enable
     internal interface IScriptCommandInfo
     {
         ScriptBlock ScriptBlock { get; }

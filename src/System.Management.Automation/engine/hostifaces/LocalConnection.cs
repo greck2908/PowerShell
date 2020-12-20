@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -146,30 +146,30 @@ namespace System.Management.Automation.Runspaces
             {
                 lock (this.SyncRoot)
                 {
-                    if (value == _createThreadOptions)
+                    if (value != _createThreadOptions)
                     {
-                        return;
-                    }
-
-                    if (this.RunspaceStateInfo.State != RunspaceState.BeforeOpen)
-                    {
-                        if (!IsValidThreadOptionsConfiguration(value))
+                        if (this.RunspaceStateInfo.State != RunspaceState.BeforeOpen)
                         {
-                            throw new InvalidOperationException(StringUtil.Format(RunspaceStrings.InvalidThreadOptionsChange));
-                        }
-                    }
+#if CORECLR                 // No ApartmentState.STA Support In CoreCLR
+                            bool allowed = value == PSThreadOptions.ReuseThread;
+#else
+                            // if the runspace is already opened we only allow changing the options if
+                            // the apartment state is MTA and the new value is ReuseThread
+                            bool allowed = (this.ApartmentState == ApartmentState.MTA || this.ApartmentState == ApartmentState.Unknown) // Unknown is the same as MTA
+                                           &&
+                                           value == PSThreadOptions.ReuseThread;
+#endif
 
-                    _createThreadOptions = value;
+                            if (!allowed)
+                            {
+                                throw new InvalidOperationException(StringUtil.Format(RunspaceStrings.InvalidThreadOptionsChange));
+                            }
+                        }
+
+                        _createThreadOptions = value;
+                    }
                 }
             }
-        }
-
-        private bool IsValidThreadOptionsConfiguration(PSThreadOptions options)
-        {
-            // If the runspace is already opened, we only allow changing options when:
-            //  - The new value is ReuseThread, and
-            //  - The apartment state is not STA
-            return options == PSThreadOptions.ReuseThread && this.ApartmentState != ApartmentState.STA;
         }
 
         private PSThreadOptions _createThreadOptions = PSThreadOptions.Default;
@@ -363,8 +363,8 @@ namespace System.Management.Automation.Runspaces
             }
         }
 
-        private static readonly string s_debugPreferenceCachePath = Path.Combine(Path.Combine(Platform.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WindowsPowerShell"), "DebugPreference.clixml");
-        private static readonly object s_debugPreferenceLockObject = new object();
+        private static string s_debugPreferenceCachePath = Path.Combine(Path.Combine(Platform.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WindowsPowerShell"), "DebugPreference.clixml");
+        private static object s_debugPreferenceLockObject = new object();
 
         /// <summary>
         /// DebugPreference serves as a property bag to keep
@@ -770,7 +770,11 @@ namespace System.Management.Automation.Runspaces
         {
             if (_pipelineThread == null)
             {
+#if CORECLR     // No ApartmentState In CoreCLR
+                _pipelineThread = new PipelineThread();
+#else
                 _pipelineThread = new PipelineThread(this.ApartmentState);
+#endif
             }
 
             return _pipelineThread;
@@ -851,7 +855,7 @@ namespace System.Management.Automation.Runspaces
 
             // Generate the shutdown event
             if (Events != null)
-                Events.GenerateEvent(PSEngineEvent.Exiting, null, Array.Empty<object>(), null, true, false);
+                Events.GenerateEvent(PSEngineEvent.Exiting, null, new object[] { }, null, true, false);
 
             // Stop all running pipelines
             // Note:Do not perform the Cancel in lock. Reason is
@@ -941,7 +945,7 @@ namespace System.Management.Automation.Runspaces
         /// function.  If a remote runspace supports disconnect then it will be disconnected
         /// rather than closed.
         /// </summary>
-        private static void CloseOrDisconnectAllRemoteRunspaces(Func<List<RemoteRunspace>> getRunspaces)
+        private void CloseOrDisconnectAllRemoteRunspaces(Func<List<RemoteRunspace>> getRunspaces)
         {
             List<RemoteRunspace> runspaces = getRunspaces();
             if (runspaces.Count == 0) { return; }
@@ -950,7 +954,10 @@ namespace System.Management.Automation.Runspaces
             using (ManualResetEvent remoteRunspaceCloseCompleted = new ManualResetEvent(false))
             {
                 ThrottleManager throttleManager = new ThrottleManager();
-                throttleManager.ThrottleComplete += (object sender, EventArgs e) => remoteRunspaceCloseCompleted.Set();
+                throttleManager.ThrottleComplete += delegate (object sender, EventArgs e)
+                {
+                    remoteRunspaceCloseCompleted.Set();
+                };
 
                 foreach (RemoteRunspace remoteRunspace in runspaces)
                 {
@@ -976,12 +983,15 @@ namespace System.Management.Automation.Runspaces
             using (ManualResetEvent jobsStopCompleted = new ManualResetEvent(false))
             {
                 ThrottleManager throttleManager = new ThrottleManager();
-                throttleManager.ThrottleComplete += (object sender, EventArgs e) => jobsStopCompleted.Set();
+                throttleManager.ThrottleComplete += delegate (object sender, EventArgs e)
+                {
+                    jobsStopCompleted.Set();
+                };
 
                 foreach (Job job in this.JobRepository.Jobs)
                 {
                     // Only stop or disconnect PowerShell jobs.
-                    if (job is not PSRemotingJob)
+                    if (job is PSRemotingJob == false)
                     {
                         continue;
                     }
@@ -1010,7 +1020,10 @@ namespace System.Management.Automation.Runspaces
             }
 
             // Disconnect all disconnectable job runspaces found.
-            CloseOrDisconnectAllRemoteRunspaces(() => disconnectRunspaces);
+            CloseOrDisconnectAllRemoteRunspaces(() =>
+                {
+                    return disconnectRunspaces;
+                });
         }
 
         internal void ReleaseDebugger()
@@ -1303,13 +1316,14 @@ namespace System.Management.Automation.Runspaces
         private History _history;
 
         [TraceSource("RunspaceInit", "Initialization code for Runspace")]
-        private static readonly PSTraceSource s_runspaceInitTracer =
+        private static
+        PSTraceSource s_runspaceInitTracer =
             PSTraceSource.GetTracer("RunspaceInit", "Initialization code for Runspace", false);
 
         /// <summary>
         /// This ensures all processes have a server/listener.
         /// </summary>
-        private static readonly RemoteSessionNamedPipeServer s_IPCNamedPipeServer = RemoteSessionNamedPipeServer.IPCNamedPipeServer;
+        private static RemoteSessionNamedPipeServer s_IPCNamedPipeServer = RemoteSessionNamedPipeServer.IPCNamedPipeServer;
 
         #endregion private fields
     }
@@ -1321,7 +1335,7 @@ namespace System.Management.Automation.Runspaces
     /// </summary>
     internal sealed class StopJobOperationHelper : IThrottleOperation
     {
-        private readonly Job _job;
+        private Job _job;
 
         /// <summary>
         /// Internal constructor.
@@ -1330,7 +1344,7 @@ namespace System.Management.Automation.Runspaces
         internal StopJobOperationHelper(Job job)
         {
             _job = job;
-            _job.StateChanged += HandleJobStateChanged;
+            _job.StateChanged += new EventHandler<JobStateEventArgs>(HandleJobStateChanged);
         }
 
         /// <summary>
@@ -1382,7 +1396,7 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         private void RaiseOperationCompleteEvent()
         {
-            _job.StateChanged -= HandleJobStateChanged;
+            _job.StateChanged -= new EventHandler<JobStateEventArgs>(HandleJobStateChanged);
 
             OperationStateEventArgs operationStateArgs = new OperationStateEventArgs();
             operationStateArgs.OperationState = OperationState.StartComplete;
@@ -1398,7 +1412,7 @@ namespace System.Management.Automation.Runspaces
     /// </summary>
     internal sealed class CloseOrDisconnectRunspaceOperationHelper : IThrottleOperation
     {
-        private readonly RemoteRunspace _remoteRunspace;
+        private RemoteRunspace _remoteRunspace;
 
         /// <summary>
         /// Internal constructor.
@@ -1407,7 +1421,7 @@ namespace System.Management.Automation.Runspaces
         internal CloseOrDisconnectRunspaceOperationHelper(RemoteRunspace remoteRunspace)
         {
             _remoteRunspace = remoteRunspace;
-            _remoteRunspace.StateChanged += HandleRunspaceStateChanged;
+            _remoteRunspace.StateChanged += new EventHandler<RunspaceStateEventArgs>(HandleRunspaceStateChanged);
         }
 
         /// <summary>
@@ -1484,7 +1498,7 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         private void RaiseOperationCompleteEvent()
         {
-            _remoteRunspace.StateChanged -= HandleRunspaceStateChanged;
+            _remoteRunspace.StateChanged -= new EventHandler<RunspaceStateEventArgs>(HandleRunspaceStateChanged);
 
             OperationStateEventArgs operationStateEventArgs =
                     new OperationStateEventArgs();
@@ -1559,7 +1573,7 @@ namespace System.Management.Automation.Runspaces
             get { return _errors; }
         }
 
-        private readonly PSDataCollection<ErrorRecord> _errors;
+        private PSDataCollection<ErrorRecord> _errors;
 
         #region Serialization
         /// <summary>
@@ -1582,7 +1596,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             base.GetObjectData(info, context);
@@ -1593,3 +1607,4 @@ namespace System.Management.Automation.Runspaces
 
     #endregion Helper Class
 }
+

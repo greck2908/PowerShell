@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Concurrent;
@@ -25,7 +25,7 @@ namespace System.Management.Automation.Runspaces
     [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "FormatTable")]
     public class FormatTableLoadException : RuntimeException
     {
-        private readonly Collection<string> _errors;
+        private Collection<string> _errors;
 
         #region Constructors
 
@@ -87,7 +87,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             int errorCount = info.GetInt32("ErrorCount");
@@ -109,11 +109,12 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Streaming context.</param>
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             base.GetObjectData(info, context);
@@ -160,7 +161,7 @@ namespace System.Management.Automation.Runspaces
     {
         #region Private Data
 
-        private readonly TypeInfoDataBaseManager _formatDBMgr;
+        private TypeInfoDataBaseManager _formatDBMgr;
 
         #endregion
 
@@ -206,7 +207,7 @@ namespace System.Management.Automation.Runspaces
         public void AppendFormatData(IEnumerable<ExtendedTypeDefinition> formatData)
         {
             if (formatData == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(formatData));
+                throw PSTraceSource.NewArgumentNullException("formatData");
             _formatDBMgr.AddFormatData(formatData, false);
         }
 
@@ -225,7 +226,7 @@ namespace System.Management.Automation.Runspaces
         public void PrependFormatData(IEnumerable<ExtendedTypeDefinition> formatData)
         {
             if (formatData == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(formatData));
+                throw PSTraceSource.NewArgumentNullException("formatData");
             _formatDBMgr.AddFormatData(formatData, true);
         }
 
@@ -252,7 +253,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (formatFiles == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(formatFiles));
+                throw PSTraceSource.NewArgumentNullException("formatFiles");
             }
 
             _formatDBMgr = new TypeInfoDataBaseManager(formatFiles, true, authorizationManager, host);

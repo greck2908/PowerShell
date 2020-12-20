@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Import-Module HelpersRemoting
@@ -8,7 +8,7 @@ Describe "Remote runspace pool should expose commands in endpoint configuration"
 
     BeforeAll {
 
-        if ($IsWindows -and (Test-CanWriteToPsHome))
+        if ($isWindows -and (Test-CanWriteToPsHome))
         {
             $configName = "restrictedV"
             $configPath = Join-Path $TestDrive ($configName + ".pssc")

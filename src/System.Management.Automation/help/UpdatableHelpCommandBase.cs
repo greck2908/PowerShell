@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -31,7 +31,7 @@ namespace Microsoft.PowerShell.Commands
         internal bool _stopping;
 
         internal int activityId;
-        private readonly Dictionary<string, UpdatableHelpExceptionContext> _exceptions;
+        private Dictionary<string, UpdatableHelpExceptionContext> _exceptions;
 
         #region Parameters
 
@@ -161,7 +161,7 @@ namespace Microsoft.PowerShell.Commands
 
         #region Constructor
 
-        private static readonly Dictionary<string, string> s_metadataCache;
+        private static Dictionary<string, string> s_metadataCache;
 
         /// <summary>
         /// Static constructor
@@ -175,13 +175,13 @@ namespace Microsoft.PowerShell.Commands
 
             // TODO: assign real TechNet addresses
 
-            s_metadataCache.Add("Microsoft.PowerShell.Diagnostics", "https://aka.ms/powershell71-help");
-            s_metadataCache.Add("Microsoft.PowerShell.Core", "https://aka.ms/powershell71-help");
-            s_metadataCache.Add("Microsoft.PowerShell.Utility", "https://aka.ms/powershell71-help");
-            s_metadataCache.Add("Microsoft.PowerShell.Host", "https://aka.ms/powershell71-help");
-            s_metadataCache.Add("Microsoft.PowerShell.Management", "https://aka.ms/powershell71-help");
-            s_metadataCache.Add("Microsoft.PowerShell.Security", "https://aka.ms/powershell71-help");
-            s_metadataCache.Add("Microsoft.WSMan.Management", "https://aka.ms/powershell71-help");
+            s_metadataCache.Add("Microsoft.PowerShell.Diagnostics", "https://go.microsoft.com/fwlink/?linkid=855954");
+            s_metadataCache.Add("Microsoft.PowerShell.Core", "https://go.microsoft.com/fwlink/?linkid=855953");
+            s_metadataCache.Add("Microsoft.PowerShell.Utility", "https://go.microsoft.com/fwlink/?linkid=855960");
+            s_metadataCache.Add("Microsoft.PowerShell.Host", "https://go.microsoft.com/fwlink/?linkid=855956");
+            s_metadataCache.Add("Microsoft.PowerShell.Management", "https://go.microsoft.com/fwlink/?linkid=855958");
+            s_metadataCache.Add("Microsoft.PowerShell.Security", "https://go.microsoft.com/fwlink/?linkid=855959");
+            s_metadataCache.Add("Microsoft.WSMan.Management", "https://go.microsoft.com/fwlink/?linkid=855961");
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace Microsoft.PowerShell.Commands
             _commandType = commandType;
             _helpSystem = new UpdatableHelpSystem(this, _useDefaultCredentials);
             _exceptions = new Dictionary<string, UpdatableHelpExceptionContext>();
-            _helpSystem.OnProgressChanged += HandleProgressChanged;
+            _helpSystem.OnProgressChanged += new EventHandler<UpdatableHelpProgressEventArgs>(HandleProgressChanged);
 
             Random rand = new Random();
 
@@ -299,9 +299,9 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-            IEnumerable<WildcardPattern> patternList = SessionStateUtilities.CreateWildcardsFromStrings(
-                globPatterns: new[] { moduleNamePattern },
-                options: WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant);
+            // Match wildcards
+            WildcardOptions wildcardOptions = WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant;
+            IEnumerable<WildcardPattern> patternList = SessionStateUtilities.CreateWildcardsFromStrings(new string[1] { moduleNamePattern }, wildcardOptions);
 
             foreach (KeyValuePair<string, string> name in s_metadataCache)
             {
@@ -784,7 +784,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 yield return path;
 
-                foreach (string subDirectory in Directory.EnumerateDirectories(path))
+                foreach (string subDirectory in Directory.GetDirectories(path))
                 {
                     foreach (string subDirectory2 in RecursiveResolvePathHelper(subDirectory))
                     {
@@ -823,8 +823,12 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="message">Message to log.</param>
         internal void LogMessage(string message)
         {
-            List<string> details = new List<string>() { message };
+#if !CORECLR // TODO:CORECLR Uncomment when we add PSEtwLog support
+            List<string> details = new List<string>();
+
+            details.Add(message);
             PSEtwLog.LogPipelineExecutionDetailEvent(MshLog.GetLogContext(Context, Context.CurrentCommandProcessor.Command.MyInvocation), details);
+#endif
         }
 
         #endregion

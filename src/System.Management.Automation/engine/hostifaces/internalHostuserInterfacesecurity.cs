@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Host;
@@ -14,6 +14,7 @@ namespace System.Management.Automation.Internal.Host
         /// <summary>
         /// See base class.
         /// </summary>
+
         public override
         PSCredential
         PromptForCredential
@@ -33,6 +34,7 @@ namespace System.Management.Automation.Internal.Host
         /// <summary>
         /// See base class.
         /// </summary>
+
         public override
         PSCredential
         PromptForCredential
@@ -72,3 +74,4 @@ namespace System.Management.Automation.Internal.Host
         }
     }
 }
+

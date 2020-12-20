@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -12,6 +12,7 @@ using System.Threading;
 
 namespace Microsoft.Management.Infrastructure.CimCmdlets
 {
+
     /// <summary>
     /// <para>
     /// Subscription result event args
@@ -47,17 +48,25 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// subscription result
         /// </para>
         /// </summary>
-        public CimSubscriptionResult Result { get; }
+        public CimSubscriptionResult Result
+        {
+            get
+            {
+                return result;
+            }
+        }
+
+        private CimSubscriptionResult result;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimSubscriptionResultEventArgs"/> class.
+        /// <para>Constructor</para>
         /// </summary>
         /// <param name="theResult"></param>
         public CimSubscriptionResultEventArgs(
             CimSubscriptionResult theResult)
         {
             this.context = null;
-            this.Result = theResult;
+            this.result = theResult;
         }
     }
 
@@ -73,17 +82,25 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// subscription result
         /// </para>
         /// </summary>
-        public Exception Exception { get; }
+        public Exception Exception
+        {
+            get
+            {
+                return exception;
+            }
+        }
+
+        private Exception exception;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimSubscriptionExceptionEventArgs"/> class.
+        /// <para>Constructor</para>
         /// </summary>
         /// <param name="theResult"></param>
         public CimSubscriptionExceptionEventArgs(
             Exception theException)
         {
             this.context = null;
-            this.Exception = theException;
+            this.exception = theException;
         }
     }
 
@@ -102,7 +119,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public event EventHandler<CimSubscriptionEventArgs> OnNewSubscriptionResult;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimRegisterCimIndication"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         public CimRegisterCimIndication()
             : base()
@@ -151,7 +170,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             DebugHelper.WriteLogEx("queryDialect = '{0}'; queryExpression = '{1}'", 0, queryDialect, queryExpression);
             if (cimSession == null)
             {
-                throw new ArgumentNullException(string.Format(CultureInfo.CurrentUICulture, CimCmdletStrings.NullArgument, @"cimSession"));
+                throw new ArgumentNullException(string.Format(CultureInfo.CurrentUICulture, Strings.NullArgument, @"cimSession"));
             }
 
             this.TargetComputerName = cimSession.ComputerName;
@@ -201,7 +220,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             CimWriteError cimWriteError = actionArgs.Action as CimWriteError;
             if (cimWriteError != null)
             {
-                this.Exception = cimWriteError.Exception;
+                this.exception = cimWriteError.Exception;
                 if (!this.ackedEvent.IsSet)
                 {
                     // an exception happened
@@ -215,10 +234,10 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 {
                     DebugHelper.WriteLog("Raise an exception event", 2);
 
-                    temp(this, new CimSubscriptionExceptionEventArgs(this.Exception));
+                    temp(this, new CimSubscriptionExceptionEventArgs(this.exception));
                 }
 
-                DebugHelper.WriteLog("Got an exception: {0}", 2, Exception);
+                DebugHelper.WriteLog("Got an exception: {0}", 2, exception);
             }
 
             CimWriteResultObject cimWriteResultObject = actionArgs.Action as CimWriteResultObject;
@@ -258,7 +277,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         {
             DebugHelper.WriteLogEx();
             this.ackedEvent.Wait();
-            if (this.Exception != null)
+            if (this.exception != null)
             {
                 DebugHelper.WriteLogEx("error happened", 0);
                 if (this.Cmdlet != null)
@@ -267,14 +286,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
 
                     // throw terminating error
                     ErrorRecord errorRecord = ErrorToErrorRecord.ErrorRecordFromAnyException(
-                        new InvocationContext(this.TargetComputerName, null), this.Exception, null);
+                        new InvocationContext(this.TargetComputerName, null), this.exception, null);
                     this.Cmdlet.ThrowTerminatingError(errorRecord);
                 }
                 else
                 {
                     DebugHelper.WriteLogEx("Throw exception", 1);
                     // throw exception out
-                    throw this.Exception;
+                    throw this.exception;
                 }
             }
 
@@ -291,8 +310,8 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <param name="cmdlet"></param>
         internal Cmdlet Cmdlet
         {
-            get;
             set;
+            get;
         }
 
         /// <summary>
@@ -300,8 +319,8 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         internal string TargetComputerName
         {
-            get;
             set;
+            get;
         }
 
         #endregion
@@ -345,7 +364,15 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Exception occurred while start the subscription.
         /// </summary>
-        internal Exception Exception { get; private set; }
+        internal Exception Exception
+        {
+            get
+            {
+                return exception;
+            }
+        }
+
+        private Exception exception;
 
         #endregion
 

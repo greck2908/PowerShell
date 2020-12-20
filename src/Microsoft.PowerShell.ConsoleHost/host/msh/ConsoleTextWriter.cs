@@ -1,10 +1,15 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.IO;
 using System.Text;
+
+using ConsoleHandle = Microsoft.Win32.SafeHandles.SafeFileHandle;
 using Dbg = System.Management.Automation.Diagnostics;
+using DWORD = System.UInt32;
+using HRESULT = System.UInt32;
+using NakedWin32Handle = System.IntPtr;
 
 namespace Microsoft.PowerShell
 {
@@ -88,6 +93,6 @@ namespace Microsoft.PowerShell
             _ui.WriteToConsole(a, transcribeResult: true);
         }
 
-        private readonly ConsoleHostUserInterface _ui;
+        private ConsoleHostUserInterface _ui;
     }
 }

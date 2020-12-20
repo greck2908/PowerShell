@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
@@ -15,8 +15,7 @@ namespace System.Management.Automation
     public class ParseException : RuntimeException
     {
         private const string errorIdString = "Parse";
-
-        private readonly ParseError[] _errors;
+        private ParseError[] _errors;
 
         /// <summary>
         /// The list of parser errors.
@@ -48,7 +47,7 @@ namespace System.Management.Automation
         {
             if (info == null)
             {
-                throw new PSArgumentNullException(nameof(info));
+                throw new PSArgumentNullException("info");
             }
 
             base.GetObjectData(info, context);
@@ -133,7 +132,7 @@ namespace System.Management.Automation
         {
             if ((errors == null) || (errors.Length == 0))
             {
-                throw new ArgumentNullException(nameof(errors));
+                throw new ArgumentNullException("errors");
             }
 
             _errors = errors;

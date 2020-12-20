@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.IO;
@@ -84,7 +84,7 @@ namespace System.Management.Automation.Internal
         }
 
         /// <summary>
-        /// Finalizes an instance of the <see cref="CabinetExtractor"/> class.
+        /// Finalizer to ensure destruction of unmanaged resources.
         /// </summary>
         ~CabinetExtractor()
         {
@@ -152,7 +152,7 @@ namespace System.Management.Automation.Internal
         private void CleanUpDelegates()
         {
             // Free GCHandles so that the memory they point to may be unpinned (garbage collected)
-            if (_fdiAllocHandle.IsAllocated)
+            if (_fdiAllocHandle != null)
             {
                 _fdiAllocHandle.Free();
                 _fdiFreeHandle.Free();
@@ -164,7 +164,7 @@ namespace System.Management.Automation.Internal
                 _fdiNotifyHandle.Free();
             }
         }
-    }
+    };
 
     // CabinetExtractor loader implementation
     internal class CabinetExtractorLoader : ICabinetExtractorLoader
@@ -175,7 +175,7 @@ namespace System.Management.Automation.Internal
 
         internal static CabinetExtractorLoader GetInstance()
         {
-            if (System.Threading.Interlocked.CompareExchange(ref s_created, 1, 0) == 0)
+            if (0 == System.Threading.Interlocked.CompareExchange(ref s_created, 1, 0))
             {
                 s_instance = new CabinetExtractorLoader();
                 s_extractorInstance = new CabinetExtractor();
@@ -188,7 +188,7 @@ namespace System.Management.Automation.Internal
         {
             return s_extractorInstance;
         }
-    }
+    };
 
     internal static class CabinetNativeApi
     {
@@ -458,27 +458,27 @@ namespace System.Management.Automation.Internal
         {
             // Note: This is not done in a switch because the order of tests matters.
 
-            if ((oflag & (int)(OpFlags.Create | OpFlags.Excl)) == (int)(OpFlags.Create | OpFlags.Excl))
+            if ((int)(OpFlags.Create | OpFlags.Excl) == (oflag & (int)(OpFlags.Create | OpFlags.Excl)))
             {
                 return FileMode.CreateNew;
             }
-            else if ((oflag & (int)(OpFlags.Create | OpFlags.Truncate)) == (int)(OpFlags.Create | OpFlags.Truncate))
+            else if ((int)(OpFlags.Create | OpFlags.Truncate) == (oflag & (int)(OpFlags.Create | OpFlags.Truncate)))
             {
                 return FileMode.OpenOrCreate;
             }
-            else if ((oflag & (int)OpFlags.Append) != 0)
+            else if (0 != (oflag & (int)OpFlags.Append))
             {
                 return FileMode.Append;
             }
-            else if ((oflag & (int)OpFlags.Create) != 0)
+            else if (0 != (oflag & (int)OpFlags.Create))
             {
                 return FileMode.Create;
             }
-            else if ((oflag & (int)OpFlags.RdWr) != 0)
+            else if (0 != (oflag & (int)OpFlags.RdWr))
             {
                 return FileMode.Open;
             }
-            else if ((oflag & (int)OpFlags.Truncate) != 0)
+            else if (0 != (oflag & (int)OpFlags.Truncate))
             {
                 return FileMode.Truncate;
             }
@@ -497,15 +497,15 @@ namespace System.Management.Automation.Internal
         {
             // Note: This is not done in a switch because the order of tests matters.
 
-            if ((pmode & (int)(PermissionMode.Read | PermissionMode.Write)) == (int)(PermissionMode.Read | PermissionMode.Write))
+            if ((int)(PermissionMode.Read | PermissionMode.Write) == (pmode & (int)(PermissionMode.Read | PermissionMode.Write)))
             {
                 return FileAccess.ReadWrite;
             }
-            else if ((pmode & (int)PermissionMode.Read) != 0)
+            else if (0 != (pmode & (int)PermissionMode.Read))
             {
                 return FileAccess.Read;
             }
-            else if ((pmode & (int)PermissionMode.Write) != 0)
+            else if (0 != (pmode & (int)PermissionMode.Write))
             {
                 return FileAccess.Write;
             }
@@ -524,15 +524,15 @@ namespace System.Management.Automation.Internal
         {
             // Note: This is not done in a switch because the order of tests matters.
 
-            if ((pmode & (int)(PermissionMode.Read | PermissionMode.Write)) == (int)(PermissionMode.Read | PermissionMode.Write))
+            if ((int)(PermissionMode.Read | PermissionMode.Write) == (pmode & (int)(PermissionMode.Read | PermissionMode.Write)))
             {
                 return FileShare.ReadWrite;
             }
-            else if ((pmode & (int)PermissionMode.Read) != 0)
+            else if (0 != (pmode & (int)PermissionMode.Read))
             {
                 return FileShare.Read;
             }
-            else if ((pmode & (int)PermissionMode.Write) != 0)
+            else if (0 != (pmode & (int)PermissionMode.Write))
             {
                 return FileShare.Write;
             }
@@ -589,7 +589,7 @@ namespace System.Management.Automation.Internal
             internal short iCabinet; // USHORT
             internal short iFolder; // USHORT
             internal int fdie; // FDIERROR
-        }
+        };
 
         internal enum FdiNotificationType : int
         {
@@ -607,7 +607,7 @@ namespace System.Management.Automation.Internal
             internal int erfOper;
             internal int erfType;
             internal bool fError;
-        }
+        };
 
         internal sealed class FdiContextHandle : SafeHandleZeroOrMinusOneIsInvalid
         {

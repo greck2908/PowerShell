@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Describe "Tests Get-Command with relative paths and wildcards" -Tag "CI" {
@@ -34,15 +34,15 @@ Describe "Tests Get-Command with relative paths and wildcards" -Tag "CI" {
     }
 
     It "Test wildcard with relative directory path" {
-        Push-Location $TestDrive
+        push-location $TestDrive
         $result = Get-Command -Name .\WildCardCommandA*
-        Pop-Location
+        pop-location
         $result | Should -Not -BeNullOrEmpty
         $result | Should -Be WildCardCommandA.exe
     }
 
     It "Test with PowerShell wildcard and relative path" {
-        Push-Location $TestDrive
+        push-location $TestDrive
 
         # This should use the wildcard to find WildCardCommandA.exe
         $result = Get-Command -Name .\WildCardCommand[A].exe
@@ -59,7 +59,7 @@ Describe "Tests Get-Command with relative paths and wildcards" -Tag "CI" {
 
     It "Get-Command -ShowCommandInfo property field test" {
         $properties = ($commandInfo | Get-Member -MemberType NoteProperty)
-        $propertiesAsString =  $properties.name | Out-String
+        $propertiesAsString =  $properties.name | out-string
         $propertiesAsString | Should -MatchExactly 'CommandType'
         $propertiesAsString | Should -MatchExactly 'Definition'
         $propertiesAsString | Should -MatchExactly 'Module'
@@ -86,7 +86,7 @@ Describe "Tests Get-Command with relative paths and wildcards" -Tag "CI" {
 
     It "Get-Command -ShowCommandInfo ParameterSets property field test" {
         $properties = ($commandInfo.ParameterSets[0] | Get-Member -MemberType NoteProperty)
-        $propertiesAsString =  $properties.name | Out-String
+        $propertiesAsString =  $properties.name | out-string
         $propertiesAsString | Should -MatchExactly 'IsDefault'
         $propertiesAsString | Should -MatchExactly 'Name'
         $propertiesAsString | Should -MatchExactly 'Parameters'
@@ -94,7 +94,7 @@ Describe "Tests Get-Command with relative paths and wildcards" -Tag "CI" {
 
     It "Get-Command -ShowCommandInfo Parameters property field test" {
         $properties = ($commandInfo.ParameterSets[0].Parameters | Get-Member -MemberType NoteProperty)
-        $propertiesAsString =  $properties.name | Out-String
+        $propertiesAsString =  $properties.name | out-string
         $propertiesAsString | Should -MatchExactly 'HasParameterSet'
         $propertiesAsString | Should -MatchExactly 'IsMandatory'
         $propertiesAsString | Should -MatchExactly 'Name'

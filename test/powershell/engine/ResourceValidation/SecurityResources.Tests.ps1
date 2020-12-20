@@ -1,6 +1,6 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-. "$PSScriptRoot/TestRunner.ps1"
+. "$psscriptroot/TestRunner.ps1"
 
 $assemblyName = "Microsoft.PowerShell.Security"
 
@@ -8,7 +8,7 @@ $assemblyName = "Microsoft.PowerShell.Security"
 # entries in the csproj for the assembly
 $excludeList = @("SecurityMshSnapinResources.resx")
 # load the module since it isn't there by default
-Import-Module Microsoft.PowerShell.Security
+import-module Microsoft.PowerShell.Security
 
 # run the tests
 Test-ResourceStrings -AssemblyName $AssemblyName -ExcludeList $excludeList

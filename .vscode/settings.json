@@ -33,8 +33,5 @@
   "powershell.codeFormatting.whitespaceAroundOperator": true,
 
   // Adds a space after a separator (',' and ';').
-  "powershell.codeFormatting.whitespaceAfterSeparator": true,
-
-  // Omnisharp : Enable EditorConfig support
-  "omnisharp.enableEditorConfigSupport": true
+  "powershell.codeFormatting.whitespaceAfterSeparator": true
 }

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -44,7 +44,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     /// </summary>
     internal class XmlLoaderLoggerEntry
     {
-        internal enum EntryType { Error, Trace }
+        internal enum EntryType { Error, Trace };
 
         /// <summary>
         /// Type of information being logged.
@@ -81,7 +81,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         #region tracer
         // PSS/end-user tracer
         [TraceSource("FormatFileLoading", "Loading format files")]
-        private static readonly PSTraceSource s_formatFileLoadingtracer = PSTraceSource.GetTracer("FormatFileLoading", "Loading format files", false);
+        private static PSTraceSource s_formatFileLoadingtracer = PSTraceSource.GetTracer("FormatFileLoading", "Loading format files", false);
 
         #endregion tracer
         /// <summary>
@@ -100,7 +100,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 WriteToTracer(entry);
         }
 
-        private static void WriteToTracer(XmlLoaderLoggerEntry entry)
+        private void WriteToTracer(XmlLoaderLoggerEntry entry)
         {
             if (entry.entryType == XmlLoaderLoggerEntry.EntryType.Error)
             {
@@ -149,12 +149,12 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// If true, log entries to memory.
         /// </summary>
-        private readonly bool _saveInMemory = true;
+        private bool _saveInMemory = true;
 
         /// <summary>
         /// List of entries logged if saveInMemory is true.
         /// </summary>
-        private readonly List<XmlLoaderLoggerEntry> _entries = new List<XmlLoaderLoggerEntry>();
+        private List<XmlLoaderLoggerEntry> _entries = new List<XmlLoaderLoggerEntry>();
 
         /// <summary>
         /// True if we ever logged an error.
@@ -170,7 +170,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         #region tracer
         [TraceSource("XmlLoaderBase", "XmlLoaderBase")]
-        private static readonly PSTraceSource s_tracer = PSTraceSource.GetTracer("XmlLoaderBase", "XmlLoaderBase");
+        private static PSTraceSource s_tracer = PSTraceSource.GetTracer("XmlLoaderBase", "XmlLoaderBase");
         #endregion tracer
 
         /// <summary>
@@ -378,7 +378,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 // we differ only in case: flag this as an ERROR for the time being
                 // and accept the comparison
 
-                const string fmtString = "XML tag differ in case only {0} {1}";
+                string fmtString = "XML tag differ in case only {0} {1}";
                 ReportTrace(string.Format(CultureInfo.InvariantCulture, fmtString, n.Name, s));
 
                 match = true;
@@ -420,7 +420,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 // we differ only in case: flag this as an ERROR for the time being
                 // and accept the comparison
 
-                const string fmtString = "XML attribute differ in case only {0} {1}";
+                string fmtString = "XML attribute differ in case only {0} {1}";
                 ReportTrace(string.Format(CultureInfo.InvariantCulture, fmtString, a.Name, s));
                 return true;
             }
@@ -690,7 +690,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             _loadingInfo.isProductCode = isProductCode;
         }
 
-        private readonly DatabaseLoadingInfo _loadingInfo = new DatabaseLoadingInfo();
+        private DatabaseLoadingInfo _loadingInfo = new DatabaseLoadingInfo();
 
         protected DatabaseLoadingInfo LoadingInfo
         {
@@ -711,13 +711,13 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
         internal bool VerifyStringResources { get; } = true;
 
-        private readonly int _maxNumberOfErrors = 30;
+        private int _maxNumberOfErrors = 30;
 
         private int _currentErrorCount = 0;
 
-        private readonly bool _logStackActivity = false;
+        private bool _logStackActivity = false;
 
-        private readonly Stack<XmlLoaderStackFrame> _executionStack = new Stack<XmlLoaderStackFrame>();
+        private Stack<XmlLoaderStackFrame> _executionStack = new Stack<XmlLoaderStackFrame>();
 
         private XmlLoaderLogger _logger = new XmlLoaderLogger();
     }

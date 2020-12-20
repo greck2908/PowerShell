@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -182,13 +182,13 @@ namespace System.Management.Automation.Runspaces
         /// State of the runspace pool when exception was thrown.
         /// </summary>
         [NonSerialized]
-        private readonly RunspacePoolState _currentState = 0;
+        private RunspacePoolState _currentState = 0;
 
         /// <summary>
         /// State of the runspace pool expected in method which throws this exception.
         /// </summary>
         [NonSerialized]
-        private readonly RunspacePoolState _expectedState = 0;
+        private RunspacePoolState _expectedState = 0;
     }
     #endregion
 
@@ -504,13 +504,10 @@ namespace System.Management.Automation.Runspaces
     {
         #region Private Data
 
-        private readonly RunspacePoolInternal _internalPool;
-        private readonly object _syncObject = new object();
-
+        private RunspacePoolInternal _internalPool;
+        private object _syncObject = new object();
         private event EventHandler<RunspacePoolStateChangedEventArgs> InternalStateChanged = null;
-
         private event EventHandler<PSEventArgs> InternalForwardEvent = null;
-
         private event EventHandler<RunspaceCreatedEventArgs> InternalRunspaceCreated = null;
 
         #endregion
@@ -640,7 +637,7 @@ namespace System.Management.Automation.Runspaces
             TypeTable typeTable)
         {
             // Disconnect-Connect semantics are currently only supported in WSMan transport.
-            if (connectionInfo is not WSManConnectionInfo)
+            if (!(connectionInfo is WSManConnectionInfo))
             {
                 throw new NotSupportedException();
             }
@@ -750,7 +747,8 @@ namespace System.Management.Automation.Runspaces
                         // call any event handlers on this object, replacing the
                         // internalPool sender with 'this' since receivers
                         // are expecting a RunspacePool.
-                        _internalPool.StateChanged += OnStateChanged;
+                        _internalPool.StateChanged +=
+                            new EventHandler<RunspacePoolStateChangedEventArgs>(OnStateChanged);
                     }
                 }
             }
@@ -762,7 +760,8 @@ namespace System.Management.Automation.Runspaces
                     InternalStateChanged -= value;
                     if (InternalStateChanged == null)
                     {
-                        _internalPool.StateChanged -= OnStateChanged;
+                        _internalPool.StateChanged -=
+                            new EventHandler<RunspacePoolStateChangedEventArgs>(OnStateChanged);
                     }
                 }
             }
@@ -839,7 +838,12 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         private void OnEventForwarded(PSEventArgs e)
         {
-            InternalForwardEvent?.Invoke(this, e);
+            EventHandler<PSEventArgs> eh = InternalForwardEvent;
+
+            if (eh != null)
+            {
+                eh(this, e);
+            }
         }
 
         /// <summary>
@@ -1255,6 +1259,7 @@ namespace System.Management.Automation.Runspaces
             }
         }
 
+#if !CORECLR // No ApartmentState In CoreCLR
         /// <summary>
         /// ApartmentState of the thread used to execute commands within this RunspacePool.
         /// </summary>
@@ -1281,6 +1286,7 @@ namespace System.Management.Automation.Runspaces
                 _internalPool.ApartmentState = value;
             }
         }
+#endif
 
         /// <summary>
         /// Gets Runspace asynchronously from the runspace pool. The caller

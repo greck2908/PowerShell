@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -268,7 +268,7 @@ namespace System.Management.Automation
             }
         }
 
-        private static void GetModuleNameAndVersion(string psmodulePathRoot, string filePath, out string moduleName, out Version moduleVersion)
+        private void GetModuleNameAndVersion(string psmodulePathRoot, string filePath, out string moduleName, out Version moduleVersion)
         {
             moduleVersion = null;
             moduleName = null;
@@ -415,8 +415,9 @@ namespace System.Management.Automation
         ///
         /// This will avoid one help file getting loaded again and again.
         /// </summary>
-        private readonly Hashtable _helpFiles = new Hashtable();
+        private Hashtable _helpFiles = new Hashtable();
 
         #endregion
     }
 }
+

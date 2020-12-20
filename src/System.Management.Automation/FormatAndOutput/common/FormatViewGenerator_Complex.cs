@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -93,7 +93,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         {
             if (control == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(control));
+                throw PSTraceSource.NewArgumentNullException("control");
             }
 
             ExecuteFormatControl(new TraversalInfo(0, maxTreeDepth), control,
@@ -190,7 +190,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         {
             if (so == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(so));
+                throw PSTraceSource.NewArgumentNullException("so");
             }
 
             // guard against infinite loop
@@ -383,13 +383,13 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             return retVal;
         }
 
-        private readonly TypeInfoDataBase _db;
-        private readonly DatabaseLoadingInfo _loadingInfo;
-        private readonly PSPropertyExpressionFactory _expressionFactory;
-        private readonly List<ControlDefinition> _controlDefinitionList;
-        private readonly FormatErrorManager _errorManager;
-        private readonly TerminatingErrorContext _errorContext;
-        private readonly int _enumerationLimit;
+        private TypeInfoDataBase _db;
+        private DatabaseLoadingInfo _loadingInfo;
+        private PSPropertyExpressionFactory _expressionFactory;
+        private List<ControlDefinition> _controlDefinitionList;
+        private FormatErrorManager _errorManager;
+        private TerminatingErrorContext _errorContext;
+        private int _enumerationLimit;
     }
 
     internal class TraversalInfo
@@ -412,8 +412,8 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             }
         }
 
-        private readonly int _level;
-        private readonly int _maxDepth;
+        private int _level;
+        private int _maxDepth;
     }
 
     /// <summary>
@@ -771,12 +771,13 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Indentation added to each level in the recursion.
         /// </summary>
-        private readonly int _indentationStep = 2;
+        private int _indentationStep = 2;
 
-        private readonly FormatErrorManager _errorManager;
+        private FormatErrorManager _errorManager;
 
-        private readonly PSPropertyExpressionFactory _expressionFactory;
+        private PSPropertyExpressionFactory _expressionFactory;
 
-        private readonly int _enumerationLimit;
+        private int _enumerationLimit;
     }
 }
+

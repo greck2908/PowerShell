@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -8,10 +8,14 @@ using System.IO;
 using System.Linq;
 using System.Management.Automation.Language;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 using System.Xml;
+
+using Microsoft.Win32;
 
 namespace System.Management.Automation
 {
@@ -20,6 +24,8 @@ namespace System.Management.Automation
     /// </summary>
     internal static class PsUtils
     {
+        internal static string ArmArchitecture = "ARM";
+
         /// <summary>
         /// Safely retrieves the MainModule property of a
         /// process. Version 2.0 and below of the .NET Framework are
@@ -78,7 +84,7 @@ namespace System.Management.Automation
 
         // Cache of the current process' parentId
         private static int? s_currentParentProcessId;
-        private static readonly int s_currentProcessId = Environment.ProcessId;
+        private static readonly int s_currentProcessId = Process.GetCurrentProcess().Id;
 
         /// <summary>
         /// Retrieve the parent process of a process.
@@ -127,6 +133,41 @@ namespace System.Management.Automation
                 // has a parent process, but you cannot retrieve it.
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Returns processor architecture for the current process.
+        /// If powershell is running inside Wow64, then <see cref="ProcessorArchitecture.X86"/> is returned.
+        /// </summary>
+        /// <returns>Processor architecture for the current process.</returns>
+        internal static ProcessorArchitecture GetProcessorArchitecture(out bool isRunningOnArm)
+        {
+            var sysInfo = new NativeMethods.SYSTEM_INFO();
+            NativeMethods.GetSystemInfo(ref sysInfo);
+            ProcessorArchitecture result;
+            isRunningOnArm = false;
+            switch (sysInfo.wProcessorArchitecture)
+            {
+                case NativeMethods.PROCESSOR_ARCHITECTURE_IA64:
+                    result = ProcessorArchitecture.IA64;
+                    break;
+                case NativeMethods.PROCESSOR_ARCHITECTURE_AMD64:
+                    result = ProcessorArchitecture.Amd64;
+                    break;
+                case NativeMethods.PROCESSOR_ARCHITECTURE_INTEL:
+                    result = ProcessorArchitecture.X86;
+                    break;
+                case NativeMethods.PROCESSOR_ARCHITECTURE_ARM:
+                    result = ProcessorArchitecture.None;
+                    isRunningOnArm = true;
+                    break;
+
+                default:
+                    result = ProcessorArchitecture.None;
+                    break;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -192,6 +233,31 @@ namespace System.Management.Automation
 
         private static class NativeMethods
         {
+            internal const ushort PROCESSOR_ARCHITECTURE_INTEL = 0;
+            internal const ushort PROCESSOR_ARCHITECTURE_ARM = 5;
+            internal const ushort PROCESSOR_ARCHITECTURE_IA64 = 6;
+            internal const ushort PROCESSOR_ARCHITECTURE_AMD64 = 9;
+            internal const ushort PROCESSOR_ARCHITECTURE_UNKNOWN = 0xFFFF;
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct SYSTEM_INFO
+            {
+                public ushort wProcessorArchitecture;
+                public ushort wReserved;
+                public uint dwPageSize;
+                public IntPtr lpMinimumApplicationAddress;
+                public IntPtr lpMaximumApplicationAddress;
+                public UIntPtr dwActiveProcessorMask;
+                public uint dwNumberOfProcessors;
+                public uint dwProcessorType;
+                public uint dwAllocationGranularity;
+                public ushort wProcessorLevel;
+                public ushort wProcessorRevision;
+            };
+
+            [DllImport(PinvokeDllNames.GetSystemInfoDllName)]
+            internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
+
             [DllImport(PinvokeDllNames.GetCurrentThreadIdDllName)]
             internal static extern uint GetCurrentThreadId();
         }
@@ -298,11 +364,11 @@ namespace System.Management.Automation
                                      bool allowEnvironmentVariables,
                                      bool skipPathValidation)
         {
-            if (!skipPathValidation && string.IsNullOrEmpty(parameterName)) { throw PSTraceSource.NewArgumentNullException(nameof(parameterName)); }
+            if (!skipPathValidation && string.IsNullOrEmpty(parameterName)) { throw PSTraceSource.NewArgumentNullException("parameterName"); }
 
-            if (string.IsNullOrEmpty(psDataFilePath)) { throw PSTraceSource.NewArgumentNullException(nameof(psDataFilePath)); }
+            if (string.IsNullOrEmpty(psDataFilePath)) { throw PSTraceSource.NewArgumentNullException("psDataFilePath"); }
 
-            if (context == null) { throw PSTraceSource.NewArgumentNullException(nameof(context)); }
+            if (context == null) { throw PSTraceSource.NewArgumentNullException("context"); }
 
             string resolvedPath;
             if (skipPathValidation)
@@ -386,7 +452,8 @@ namespace System.Management.Automation
                          ex.Message);
             }
 
-            if (!(evaluationResult is Hashtable retResult))
+            var retResult = evaluationResult as Hashtable;
+            if (retResult == null)
             {
                 throw PSTraceSource.NewInvalidOperationException(
                          ParserStrings.InvalidPowerShellDataFile,
@@ -403,7 +470,6 @@ namespace System.Management.Automation
         internal static readonly string[] ManifestModuleVersionPropertyName = new[] { "ModuleVersion" };
         internal static readonly string[] ManifestGuidPropertyName = new[] { "GUID" };
         internal static readonly string[] ManifestPrivateDataPropertyName = new[] { "PrivateData" };
-
         internal static readonly string[] FastModuleManifestAnalysisPropertyNames = new[]
         {
             "AliasesToExport",
@@ -486,7 +552,7 @@ namespace System.Management.Automation
             // shell crashes if you pass an empty script block to a native command
             if (input == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(input));
+                throw PSTraceSource.NewArgumentNullException("input");
             }
 
             string base64 = Convert.ToBase64String
@@ -505,7 +571,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(base64))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(base64));
+                throw PSTraceSource.NewArgumentNullException("base64");
             }
 
             string output = new string(Encoding.Unicode.GetChars(Convert.FromBase64String(base64)));
@@ -521,7 +587,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(base64))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(base64));
+                throw PSTraceSource.NewArgumentNullException("base64");
             }
 
             string decoded = new string(Encoding.Unicode.GetChars(Convert.FromBase64String(base64)));
@@ -531,21 +597,23 @@ namespace System.Management.Automation
             object dso;
             Deserializer deserializer = new Deserializer(reader);
             dso = deserializer.Deserialize();
-            if (!deserializer.Done())
+            if (deserializer.Done() == false)
             {
                 // This helper function should move to host and it should provide appropriate
                 // error message there.
                 throw PSTraceSource.NewArgumentException(MinishellParameterBinderController.ArgsParameter);
             }
 
-            if (!(dso is PSObject mo))
+            PSObject mo = dso as PSObject;
+            if (mo == null)
             {
                 // This helper function should move the host. Provide appropriate error message.
                 // Format of args parameter is not correct.
                 throw PSTraceSource.NewArgumentException(MinishellParameterBinderController.ArgsParameter);
             }
 
-            if (!(mo.BaseObject is ArrayList argsList))
+            var argsList = mo.BaseObject as ArrayList;
+            if (argsList == null)
             {
                 // This helper function should move the host. Provide appropriate error message.
                 // Format of args parameter is not correct.
@@ -564,8 +632,7 @@ namespace System.Management.Automation
     {
         // CRC-32C polynomial representations
         private const uint polynomial = 0x1EDC6F41;
-
-        private static readonly uint[] table;
+        private static uint[] table;
 
         static CRC32Hash()
         {
@@ -645,3 +712,4 @@ namespace System.Management.Automation
 
     #endregion
 }
+

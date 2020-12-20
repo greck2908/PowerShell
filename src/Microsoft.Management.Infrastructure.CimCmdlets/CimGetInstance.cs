@@ -1,8 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
 
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Management.Automation;
@@ -51,7 +53,6 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal class CimGetInstance : CimAsyncOperation
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimGetInstance"/> class.
         /// <para>
         /// Constructor
         /// </para>
@@ -82,7 +83,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             IEnumerable<string> computerNames = ConstValue.GetComputerNames(
                 GetComputerName(cmdlet));
             string nameSpace;
-            List<CimSessionProxy> proxys = new();
+            List<CimSessionProxy> proxys = new List<CimSessionProxy>();
             bool isGetCimInstanceCommand = (cmdlet is GetCimInstanceCommand);
             CimInstance targetCimInstance = null;
             switch (cmdlet.ParameterSetName)
@@ -94,7 +95,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                         CimSessionProxy proxy = CreateSessionProxy(computerName, targetCimInstance, cmdlet);
                         if (isGetCimInstanceCommand)
                         {
-                            SetPreProcess(proxy, cmdlet as GetCimInstanceCommand);
+                            this.SetPreProcess(proxy, cmdlet as GetCimInstanceCommand);
                         }
 
                         proxys.Add(proxy);
@@ -109,7 +110,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                         CimSessionProxy proxy = CreateSessionProxy(computerName, cmdlet);
                         if (isGetCimInstanceCommand)
                         {
-                            SetPreProcess(proxy, cmdlet as GetCimInstanceCommand);
+                            this.SetPreProcess(proxy, cmdlet as GetCimInstanceCommand);
                         }
 
                         proxys.Add(proxy);
@@ -125,7 +126,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                         CimSessionProxy proxy = CreateSessionProxy(session, cmdlet);
                         if (isGetCimInstanceCommand)
                         {
-                            SetPreProcess(proxy, cmdlet as GetCimInstanceCommand);
+                            this.SetPreProcess(proxy, cmdlet as GetCimInstanceCommand);
                         }
 
                         proxys.Add(proxy);
@@ -302,10 +303,10 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             GetCimInstanceCommand cmd = cmdlet as GetCimInstanceCommand;
             if (cmd != null)
             {
-                StringBuilder propertyList = new();
+                StringBuilder propertyList = new StringBuilder();
                 if (cmd.SelectProperties == null)
                 {
-                    propertyList.Append('*');
+                    propertyList.Append("*");
                 }
                 else
                 {
@@ -313,7 +314,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                     {
                         if (propertyList.Length > 0)
                         {
-                            propertyList.Append(',');
+                            propertyList.Append(",");
                         }
 
                         propertyList.Append(property);
@@ -374,7 +375,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         /// <param name="proxy"></param>
         /// <param name="cmdlet"></param>
-        private static void SetSessionProxyProperties(
+        private void SetSessionProxyProperties(
             ref CimSessionProxy proxy,
             CimBaseCommand cmdlet)
         {
@@ -384,7 +385,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 proxy.KeyOnly = getCimInstance.KeyOnly;
                 proxy.Shallow = getCimInstance.Shallow;
                 proxy.OperationTimeout = getCimInstance.OperationTimeoutSec;
-                if (getCimInstance.ResourceUri != null)
+                if(getCimInstance.ResourceUri != null )
                 {
                     proxy.ResourceUri = getCimInstance.ResourceUri;
                 }
@@ -393,12 +394,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             {
                 RemoveCimInstanceCommand removeCimInstance = cmdlet as RemoveCimInstanceCommand;
                 proxy.OperationTimeout = removeCimInstance.OperationTimeoutSec;
-                if (removeCimInstance.ResourceUri != null)
+                if(removeCimInstance.ResourceUri != null )
                 {
                     proxy.ResourceUri = removeCimInstance.ResourceUri;
                 }
 
-                CimRemoveCimInstanceContext context = new(
+                CimRemoveCimInstanceContext context = new CimRemoveCimInstanceContext(
                     ConstValue.GetNamespace(removeCimInstance.Namespace),
                     proxy);
                 proxy.ContextObject = context;
@@ -407,12 +408,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             {
                 SetCimInstanceCommand setCimInstance = cmdlet as SetCimInstanceCommand;
                 proxy.OperationTimeout = setCimInstance.OperationTimeoutSec;
-                if (setCimInstance.ResourceUri != null)
+                if(setCimInstance.ResourceUri != null )
                 {
                     proxy.ResourceUri = setCimInstance.ResourceUri;
                 }
 
-                CimSetCimInstanceContext context = new(
+                CimSetCimInstanceContext context = new CimSetCimInstanceContext(
                     ConstValue.GetNamespace(setCimInstance.Namespace),
                     setCimInstance.Property,
                     proxy,
@@ -515,7 +516,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         /// <param name="proxy"></param>
         /// <param name="cmdlet"></param>
-        private static void SetPreProcess(CimSessionProxy proxy, GetCimInstanceCommand cmdlet)
+        private void SetPreProcess(CimSessionProxy proxy, GetCimInstanceCommand cmdlet)
         {
             if (cmdlet.KeyOnly || (cmdlet.SelectProperties != null))
             {

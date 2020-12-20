@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Describe "Resolve types in additional referenced assemblies" -Tag CI {
@@ -6,6 +6,6 @@ Describe "Resolve types in additional referenced assemblies" -Tag CI {
         @{ typename = "[System.DirectoryServices.AccountManagement.AdvancedFilters]"; name = "AdvancedFilters" }
     ){
         param ($typename, $name)
-        & "$PSHOME/pwsh" -noprofile -command "$typename.Name" | Should -BeExactly $name
+        pwsh -noprofile -command "$typename.Name" | Should -BeExactly $name
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #define TRACE
@@ -10,7 +10,7 @@ namespace System.Management.Automation
 {
     /// <summary>
     /// An PSTraceSource is a representation of a System.Diagnostics.TraceSource instance
-    /// that is used in the Monad components to produce trace output.
+    /// that is used the the Monad components to produce trace output.
     /// </summary>
     /// <remarks>
     /// It is permitted to subclass <see cref="PSTraceSource"/>
@@ -49,7 +49,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Lock object for the GetTracer method.
         /// </summary>
-        private static readonly object s_getTracerLock = new object();
+        private static object s_getTracerLock = new object();
 
         /// <summary>
         /// A helper to get an instance of the PSTraceSource class.
@@ -103,7 +103,7 @@ namespace System.Management.Automation
                 // 2005/04/13-JonN In theory this should be ArgumentException,
                 // but I don't want to deal with loading the string in this
                 // low-level code.
-                throw new ArgumentNullException(nameof(name));
+                throw new ArgumentNullException("name");
             }
 
             lock (PSTraceSource.s_getTracerLock)
@@ -230,7 +230,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(paramName))
             {
-                throw new ArgumentNullException(nameof(paramName));
+                throw new ArgumentNullException("paramName");
             }
 
             string message = StringUtil.Format(AutomationExceptions.ArgumentNull, paramName);
@@ -259,12 +259,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(paramName))
             {
-                throw NewArgumentNullException(nameof(paramName));
+                throw NewArgumentNullException("paramName");
             }
 
             if (string.IsNullOrEmpty(resourceString))
             {
-                throw NewArgumentNullException(nameof(resourceString));
+                throw NewArgumentNullException("resourceString");
             }
 
             string message = StringUtil.Format(resourceString, args);
@@ -289,7 +289,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(paramName))
             {
-                throw new ArgumentNullException(nameof(paramName));
+                throw new ArgumentNullException("paramName");
             }
 
             string message = StringUtil.Format(AutomationExceptions.Argument, paramName);
@@ -319,12 +319,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(paramName))
             {
-                throw NewArgumentNullException(nameof(paramName));
+                throw NewArgumentNullException("paramName");
             }
 
             if (string.IsNullOrEmpty(resourceString))
             {
-                throw NewArgumentNullException(nameof(resourceString));
+                throw NewArgumentNullException("resourceString");
             }
 
             string message = StringUtil.Format(resourceString, args);
@@ -366,7 +366,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(resourceString))
             {
-                throw NewArgumentNullException(nameof(resourceString));
+                throw NewArgumentNullException("resourceString");
             }
 
             string message = StringUtil.Format(resourceString, args);
@@ -396,7 +396,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(resourceString))
             {
-                throw NewArgumentNullException(nameof(resourceString));
+                throw NewArgumentNullException("resourceString");
             }
 
             string message = StringUtil.Format(resourceString, args);
@@ -438,7 +438,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(resourceString))
             {
-                throw NewArgumentNullException(nameof(resourceString));
+                throw NewArgumentNullException("resourceString");
             }
 
             string message = StringUtil.Format(resourceString, args);
@@ -479,7 +479,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(paramName))
             {
-                throw new ArgumentNullException(nameof(paramName));
+                throw new ArgumentNullException("paramName");
             }
 
             string message = StringUtil.Format(AutomationExceptions.ArgumentOutOfRange, paramName);
@@ -511,12 +511,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(paramName))
             {
-                throw NewArgumentNullException(nameof(paramName));
+                throw NewArgumentNullException("paramName");
             }
 
             if (string.IsNullOrEmpty(resourceString))
             {
-                throw NewArgumentNullException(nameof(resourceString));
+                throw NewArgumentNullException("resourceString");
             }
 
             string message = StringUtil.Format(resourceString, args);
@@ -542,7 +542,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(objectName))
             {
-                throw NewArgumentNullException(nameof(objectName));
+                throw NewArgumentNullException("objectName");
             }
 
             string message = StringUtil.Format(AutomationExceptions.ObjectDisposed, objectName);
@@ -554,3 +554,4 @@ namespace System.Management.Automation
         #endregion TraceFlags.New*Exception methods/helpers
     }
 }
+

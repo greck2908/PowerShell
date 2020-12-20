@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 // ----------------------------------------------------------------------
 //  Contents:  Entry points for managed PowerShell plugin worker used to
 //  host powershell in a WSMan service.
@@ -23,9 +22,9 @@ namespace System.Management.Automation.Remoting
         // the following variables are used to block thread from sending
         // data to the client until the client sends a receive request.
         private bool _isRequestPending;
-        private readonly object _syncObject;
-        private readonly ManualResetEvent _waitHandle;
-        private readonly Dictionary<Guid, WSManPluginServerTransportManager> _activeCmdTransportManagers;
+        private object _syncObject;
+        private ManualResetEvent _waitHandle;
+        private Dictionary<Guid, WSManPluginServerTransportManager> _activeCmdTransportManagers;
         private bool _isClosed;
         // used to keep track of last error..this will be used
         // for reporting operation complete to WSMan.
@@ -49,7 +48,7 @@ namespace System.Management.Automation.Remoting
             PSRemotingCryptoHelper cryptoHelper)
             : base(fragmentSize, cryptoHelper)
         {
-            _syncObject = new object();
+            _syncObject = new Object();
             _activeCmdTransportManagers = new Dictionary<Guid, WSManPluginServerTransportManager>();
             _waitHandle = new ManualResetEvent(false);
         }
@@ -158,7 +157,7 @@ namespace System.Management.Automation.Remoting
         /// </summary>
         internal override void ReportExecutionStatusAsRunning()
         {
-            if (_isClosed)
+            if (true == _isClosed)
             {
                 return;
             }
@@ -181,7 +180,7 @@ namespace System.Management.Automation.Remoting
                 }
             }
 
-            if (result != (int)WSManPluginErrorCodes.NoError)
+            if ((int)WSManPluginErrorCodes.NoError != result)
             {
                 ReportError(result, "WSManPluginReceiveResult");
             }
@@ -201,7 +200,7 @@ namespace System.Management.Automation.Remoting
             bool reportAsPending,
             bool reportAsDataBoundary)
         {
-            if (_isClosed)
+            if (true == _isClosed)
             {
                 return;
             }
@@ -247,7 +246,7 @@ namespace System.Management.Automation.Remoting
                 }
             }
 
-            if (result != (int)WSManPluginErrorCodes.NoError)
+            if ((int)WSManPluginErrorCodes.NoError != result)
             {
                 ReportError(result, "WSManPluginReceiveResult");
             }
@@ -304,7 +303,6 @@ namespace System.Management.Automation.Remoting
                 _activeCmdTransportManagers.Remove(cmdId);
             }
         }
-
         #endregion
         internal bool EnableTransportManagerSendDataToClient(
             WSManNativeApi.WSManPluginRequest requestDetails,
@@ -388,7 +386,7 @@ namespace System.Management.Automation.Remoting
 
     internal class WSManPluginCommandTransportManager : WSManPluginServerTransportManager
     {
-        private readonly WSManPluginServerTransportManager _serverTransportMgr;
+        private WSManPluginServerTransportManager _serverTransportMgr;
         private System.Guid _cmdId;
 
         // Create Cmd Transport Manager for this sessn transport manager
@@ -401,7 +399,7 @@ namespace System.Management.Automation.Remoting
 
         internal void Initialize()
         {
-            this.PowerShellGuidObserver += OnPowershellGuidReported;
+            this.PowerShellGuidObserver += new System.EventHandler(OnPowershellGuidReported);
             this.MigrateDataReadyEventHandlers(_serverTransportMgr);
         }
 
@@ -409,7 +407,7 @@ namespace System.Management.Automation.Remoting
         {
             _cmdId = (System.Guid)src;
             _serverTransportMgr.ReportTransportMgrForCmd(_cmdId, this);
-            this.PowerShellGuidObserver -= this.OnPowershellGuidReported;
+            this.PowerShellGuidObserver -= new System.EventHandler(this.OnPowershellGuidReported);
         }
     }
 }

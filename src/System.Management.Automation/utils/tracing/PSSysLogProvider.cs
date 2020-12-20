@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 #if UNIX
 
 using System.Diagnostics.Eventing;
@@ -16,7 +15,7 @@ namespace System.Management.Automation.Tracing
     /// </summary>
     internal class PSSysLogProvider : LogProvider
     {
-        private static readonly SysLogProvider s_provider;
+        private static SysLogProvider s_provider;
 
         // by default, do not include channel bits
         internal const PSKeyword DefaultKeywords = (PSKeyword) (0x00FFFFFFFFFFFFFF);
@@ -43,19 +42,19 @@ namespace System.Management.Automation.Tracing
         /// property to ensure correct thread initialization; otherwise, a null reference can occur.
         /// </remarks>
         [ThreadStatic]
-        private static StringBuilder t_payloadBuilder;
+        private static StringBuilder _payloadBuilder;
 
         private static StringBuilder PayloadBuilder
         {
             get
             {
-                if (t_payloadBuilder == null)
+                if (_payloadBuilder == null)
                 {
                     // NOTE: Thread static fields must be explicitly initialized for each thread.
-                    t_payloadBuilder = new StringBuilder(200);
+                    _payloadBuilder = new StringBuilder(200);
                 }
 
-                return t_payloadBuilder;
+                return _payloadBuilder;
             }
         }
 

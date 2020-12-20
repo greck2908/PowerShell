@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -29,12 +29,12 @@ namespace System.Management.Automation
         {
             if (locationStack == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(locationStack));
+                throw PSTraceSource.NewArgumentNullException("locationStack");
             }
 
             if (string.IsNullOrEmpty(stackName))
             {
-                throw PSTraceSource.NewArgumentException(nameof(stackName));
+                throw PSTraceSource.NewArgumentException("stackName");
             }
 
             Name = stackName;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -75,7 +75,7 @@ namespace System.Management.Automation.Language
         internal PipeObjectPair(string parameterName, Type pipeObjType)
         {
             if (parameterName == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterName));
+                throw PSTraceSource.NewArgumentNullException("parameterName");
 
             Parameter = null;
             ParameterArgumentType = AstParameterArgumentType.PipeObject;
@@ -96,9 +96,9 @@ namespace System.Management.Automation.Language
         internal AstArrayPair(string parameterName, ICollection<ExpressionAst> arguments)
         {
             if (parameterName == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterName));
+                throw PSTraceSource.NewArgumentNullException("parameterName");
             if (arguments == null || arguments.Count == 0)
-                throw PSTraceSource.NewArgumentNullException(nameof(arguments));
+                throw PSTraceSource.NewArgumentNullException("arguments");
 
             Parameter = null;
             ParameterArgumentType = AstParameterArgumentType.AstArray;
@@ -125,7 +125,7 @@ namespace System.Management.Automation.Language
         internal FakePair(CommandParameterAst parameterAst)
         {
             if (parameterAst == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterAst));
+                throw PSTraceSource.NewArgumentNullException("parameterAst");
 
             Parameter = parameterAst;
             ParameterArgumentType = AstParameterArgumentType.Fake;
@@ -145,7 +145,7 @@ namespace System.Management.Automation.Language
         internal SwitchPair(CommandParameterAst parameterAst)
         {
             if (parameterAst == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterAst));
+                throw PSTraceSource.NewArgumentNullException("parameterAst");
 
             Parameter = parameterAst;
             ParameterArgumentType = AstParameterArgumentType.Switch;
@@ -175,7 +175,7 @@ namespace System.Management.Automation.Language
         internal AstPair(CommandParameterAst parameterAst)
         {
             if (parameterAst == null || parameterAst.Argument == null)
-                throw PSTraceSource.NewArgumentException(nameof(parameterAst));
+                throw PSTraceSource.NewArgumentException("parameterAst");
 
             Parameter = parameterAst;
             ParameterArgumentType = AstParameterArgumentType.AstPair;
@@ -192,18 +192,18 @@ namespace System.Management.Automation.Language
         internal AstPair(CommandParameterAst parameterAst, ExpressionAst argumentAst)
         {
             if (parameterAst != null && parameterAst.Argument != null)
-                throw PSTraceSource.NewArgumentException(nameof(parameterAst));
+                throw PSTraceSource.NewArgumentException("parameterAst");
 
             if (parameterAst == null && argumentAst == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(argumentAst));
+                throw PSTraceSource.NewArgumentNullException("argumentAst");
 
             Parameter = parameterAst;
             ParameterArgumentType = AstParameterArgumentType.AstPair;
             ParameterSpecified = parameterAst != null;
             ArgumentSpecified = argumentAst != null;
-            ParameterName = parameterAst?.ParameterName;
-            ParameterText = parameterAst?.ParameterName;
-            ArgumentType = argumentAst?.StaticType;
+            ParameterName = parameterAst != null ? parameterAst.ParameterName : null;
+            ParameterText = parameterAst != null ? parameterAst.ParameterName : null;
+            ArgumentType = argumentAst != null ? argumentAst.StaticType : null;
 
             ParameterContainsArgument = false;
             Argument = argumentAst;
@@ -212,10 +212,10 @@ namespace System.Management.Automation.Language
         internal AstPair(CommandParameterAst parameterAst, CommandElementAst argumentAst)
         {
             if (parameterAst != null && parameterAst.Argument != null)
-                throw PSTraceSource.NewArgumentException(nameof(parameterAst));
+                throw PSTraceSource.NewArgumentException("parameterAst");
 
             if (parameterAst == null || argumentAst == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(argumentAst));
+                throw PSTraceSource.NewArgumentNullException("argumentAst");
 
             Parameter = parameterAst;
             ParameterArgumentType = AstParameterArgumentType.AstPair;
@@ -261,7 +261,8 @@ namespace System.Management.Automation.Language
         /// <returns>The StaticBindingResult that represents the binding.</returns>
         public static StaticBindingResult BindCommand(CommandAst commandAst)
         {
-            return BindCommand(commandAst, resolve: true);
+            bool resolve = true;
+            return BindCommand(commandAst, resolve);
         }
 
         /// <summary>
@@ -331,17 +332,17 @@ namespace System.Management.Automation.Language
             {
                 // Handle static binding from a non-PowerShell / C# application
                 // DefaultRunspace is a thread static field, so race condition will not happen because different threads will access different instances of "DefaultRunspace"
-                if (t_bindCommandRunspace == null)
+                if (s_bindCommandRunspace == null)
                 {
                     // Create a mini runspace by remove the types and formats
                     InitialSessionState minimalState = InitialSessionState.CreateDefault2();
                     minimalState.Types.Clear();
                     minimalState.Formats.Clear();
-                    t_bindCommandRunspace = RunspaceFactory.CreateRunspace(minimalState);
-                    t_bindCommandRunspace.Open();
+                    s_bindCommandRunspace = RunspaceFactory.CreateRunspace(minimalState);
+                    s_bindCommandRunspace.Open();
                 }
 
-                Runspace.DefaultRunspace = t_bindCommandRunspace;
+                Runspace.DefaultRunspace = s_bindCommandRunspace;
                 // Static binding always does argument binding (not argument or parameter completion).
                 pseudoBinding = new PseudoParameterBinder().DoPseudoParameterBinding(commandAst, null, null, PseudoParameterBinder.BindingType.ArgumentBinding);
                 Runspace.DefaultRunspace = null;
@@ -356,7 +357,7 @@ namespace System.Management.Automation.Language
         }
 
         [ThreadStatic]
-        private static Runspace t_bindCommandRunspace = null;
+        static Runspace s_bindCommandRunspace = null;
     }
 
     /// <summary>
@@ -781,12 +782,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The command element associated with the exception.
         /// </summary>
-        public CommandElementAst CommandElement { get; }
+        public CommandElementAst CommandElement { get; private set; }
 
         /// <summary>
         /// The ParameterBindingException that this command element caused.
         /// </summary>
-        public ParameterBindingException BindingException { get; }
+        public ParameterBindingException BindingException { get; private set; }
     }
 
     #region "PseudoBindingInfo"
@@ -948,7 +949,7 @@ namespace System.Management.Automation.Language
         {
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             // initialize/reset the private members
@@ -1150,12 +1151,12 @@ namespace System.Management.Automation.Language
             _bindableParameters = null;
 
             // reuse the collections/dictionaries
-            _arguments ??= new Collection<AstParameterArgumentPair>();
-            _boundParameters ??= new Dictionary<string, MergedCompiledCommandParameter>(StringComparer.OrdinalIgnoreCase);
-            _boundArguments ??= new Dictionary<string, AstParameterArgumentPair>(StringComparer.OrdinalIgnoreCase);
-            _unboundParameters ??= new List<MergedCompiledCommandParameter>();
-            _boundPositionalParameter ??= new Collection<string>();
-            _bindingExceptions ??= new Dictionary<CommandParameterAst, ParameterBindingException>();
+            _arguments = _arguments ?? new Collection<AstParameterArgumentPair>();
+            _boundParameters = _boundParameters ?? new Dictionary<string, MergedCompiledCommandParameter>(StringComparer.OrdinalIgnoreCase);
+            _boundArguments = _boundArguments ?? new Dictionary<string, AstParameterArgumentPair>(StringComparer.OrdinalIgnoreCase);
+            _unboundParameters = _unboundParameters ?? new List<MergedCompiledCommandParameter>();
+            _boundPositionalParameter = _boundPositionalParameter ?? new Collection<string>();
+            _bindingExceptions = _bindingExceptions ?? new Dictionary<CommandParameterAst, ParameterBindingException>();
 
             _arguments.Clear();
             _boundParameters.Clear();
@@ -1170,9 +1171,9 @@ namespace System.Management.Automation.Language
             _isPipelineInputExpected = false;
 
             // reuse the collections
-            _parametersNotFound ??= new Collection<CommandParameterAst>();
-            _ambiguousParameters ??= new Collection<CommandParameterAst>();
-            _duplicateParameters ??= new Collection<AstParameterArgumentPair>();
+            _parametersNotFound = _parametersNotFound ?? new Collection<CommandParameterAst>();
+            _ambiguousParameters = _ambiguousParameters ?? new Collection<CommandParameterAst>();
+            _duplicateParameters = _duplicateParameters ?? new Collection<AstParameterArgumentPair>();
 
             _parametersNotFound.Clear();
             _ambiguousParameters.Clear();

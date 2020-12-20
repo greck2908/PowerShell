@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Get-Runspace cmdlet tests" -Tag "CI" {
     BeforeAll {
@@ -7,24 +7,24 @@ Describe "Get-Runspace cmdlet tests" -Tag "CI" {
         $ExpectedId = $currentRunspace.Id
     }
     It "Get-Runspace should return the current runspace" {
-        $runspace = Get-Runspace |Sort-Object -Property id | Select-Object -First 1
+        $runspace = get-runspace |Sort-Object -property id | Select-Object -first 1
         $runspace.InstanceId | Should -Be $ExpectedInstanceId
     }
     It "Get-Runspace with runspace InstanceId should return the correct runspace" {
-        $runspace = Get-Runspace -InstanceId $CurrentRunspace.InstanceId
+        $runspace = get-runspace -instanceid $CurrentRunspace.InstanceId
         $runspace.InstanceId | Should -Be $ExpectedInstanceId
     }
     It "Get-Runspace with runspace name should return the correct runspace" {
-        $runspace = Get-Runspace -Name $currentRunspace.Name
+        $runspace = get-runspace -name $currentRunspace.Name
         $runspace.InstanceId | Should -Be $ExpectedInstanceId
     }
     It "Get-Runspace with runspace Id should return the correct runspace" {
-        $runspace = Get-Runspace -Id $CurrentRunspace.Id
+        $runspace = get-runspace -id $CurrentRunspace.Id
         $runspace.InstanceId | Should -Be $ExpectedInstanceId
     }
     Context "Multiple Runspaces" {
         BeforeAll {
-            $runspaceCount = @(Get-Runspace).count
+            $runspaceCount = @(get-runspace).count
             $r1 = [runspacefactory]::CreateRunspace()
             $r1.Open()
             $r2 = [runspacefactory]::CreateRunspace()
@@ -34,7 +34,7 @@ Describe "Get-Runspace cmdlet tests" -Tag "CI" {
             $r2.Dispose()
         }
         It "Get-Runspace should return the new runspaces" {
-            $result = Get-Runspace
+            $result = get-runspace
             # if the ids don't match, we'll get null passed to should
             $result.id | Where-Object {$_ -eq $r1.id } | Should -Be $r1.id
             $result.id | Where-Object {$_ -eq $r2.id } | Should -Be $r2.id

@@ -1,16 +1,18 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 
+using Dbg = System.Management.Automation;
+
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
     /// A command to get the property of an item at a specified path.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "ItemProperty", DefaultParameterSetName = "Path", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096493")]
+    [Cmdlet(VerbsCommon.Get, "ItemProperty", DefaultParameterSetName = "Path", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113320")]
     public class GetItemPropertyCommand : ItemPropertyCommandBase
     {
         #region Parameters
@@ -165,7 +167,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// A command to get the property value of an item at a specified path.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "ItemPropertyValue", DefaultParameterSetName = "Path", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096906")]
+    [Cmdlet(VerbsCommon.Get, "ItemPropertyValue", DefaultParameterSetName = "Path", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkId=389281")]
     public sealed class GetItemPropertyValueCommand : ItemPropertyCommandBase
     {
         #region Parameters

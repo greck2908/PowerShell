@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -86,7 +86,7 @@ namespace System.Management.Automation
         /// _uniqueMatches is used to track matches already found during the search process.
         /// This is useful for ignoring duplicates in the case of unique search.
         /// </summary>
-        private readonly Hashtable _uniqueMatches = new Hashtable(StringComparer.OrdinalIgnoreCase);
+        private Hashtable _uniqueMatches = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Search for files using the target, searchPaths member of this class.
@@ -113,12 +113,12 @@ namespace System.Management.Automation
             }
         }
 
-        private static string[] GetFiles(string path, string pattern)
+        private string[] GetFiles(string path, string pattern)
         {
 #if UNIX
             // On Linux, file names are case sensitive, so we need to add
             // extra logic to select the files that match the given pattern.
-            var result = new List<string>();
+            ArrayList result = new ArrayList();
             string[] files = Directory.GetFiles(path);
 
             var wildcardPattern = WildcardPattern.ContainsWildcardCharacters(pattern)
@@ -143,7 +143,7 @@ namespace System.Management.Automation
                 }
             }
 
-            return result.ToArray();
+            return (string[])result.ToArray(typeof(string));
 #else
             return Directory.GetFiles(path, pattern);
 #endif
@@ -372,3 +372,4 @@ namespace System.Management.Automation
         Unique
     }
 }
+

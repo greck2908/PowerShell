@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
@@ -237,7 +238,7 @@ namespace Microsoft.PowerShell.Commands
                         break;
                     }
 
-                    throw PSTraceSource.NewArgumentException(nameof(value));
+                    throw PSTraceSource.NewArgumentException("value");
                 } while (false);
 
                 if (writeItem && modifiedItem != null)
@@ -308,7 +309,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         internal override IDictionary GetSessionStateTable()
         {
-            return (IDictionary)SessionState.Internal.GetFunctionTable();
+            return SessionState.Internal.GetFunctionTable();
         }
 
         /// <summary>
@@ -384,3 +385,4 @@ namespace Microsoft.PowerShell.Commands
         private bool _optionsSet;
     }
 }
+

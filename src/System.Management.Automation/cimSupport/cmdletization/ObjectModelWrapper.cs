@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -19,22 +19,22 @@ namespace Microsoft.PowerShell.Cmdletization
         {
             if (cmdlet == null)
             {
-                throw new ArgumentNullException(nameof(cmdlet));
+                throw new ArgumentNullException("cmdlet");
             }
 
             if (string.IsNullOrEmpty(className))
             {
-                throw new ArgumentNullException(nameof(className));
+                throw new ArgumentNullException("className");
             }
 
             if (classVersion == null) // possible and ok to have classVersion==string.Empty
             {
-                throw new ArgumentNullException(nameof(classVersion));
+                throw new ArgumentNullException("classVersion");
             }
 
             if (privateData == null)
             {
-                throw new ArgumentNullException(nameof(privateData));
+                throw new ArgumentNullException("privateData");
             }
 
             _cmdlet = cmdlet;
@@ -127,7 +127,7 @@ namespace Microsoft.PowerShell.Cmdletization
         /// </summary>
         /// <param name="objectInstance">The object on which to invoke the method.</param>
         /// <param name="methodInvocationInfo">Method invocation details.</param>
-        /// <param name="passThru"><see langword="true"/> if successful method invocations should emit downstream the <paramref name="objectInstance"/> being operated on.</param>
+        /// <param name="passThru"><c>true</c> if successful method invocations should emit downstream the <paramref name="objectInstance"/> being operated on.</param>
         public virtual void ProcessRecord(TObjectInstance objectInstance, MethodInvocationInfo methodInvocationInfo, bool passThru)
         {
             throw new NotImplementedException();
@@ -138,7 +138,7 @@ namespace Microsoft.PowerShell.Cmdletization
         /// </summary>
         /// <param name="query">Query parameters.</param>
         /// <param name="methodInvocationInfo">Method invocation details.</param>
-        /// <param name="passThru"><see langword="true"/> if successful method invocations should emit downstream the object instance being operated on.</param>
+        /// <param name="passThru"><c>true</c> if successful method invocations should emit downstream the object instance being operated on.</param>
         public virtual void ProcessRecord(QueryBuilder query, MethodInvocationInfo methodInvocationInfo, bool passThru)
         {
             throw new NotImplementedException();
@@ -182,7 +182,7 @@ namespace Microsoft.PowerShell.Cmdletization
 
         /// <summary>
         /// Name of the class (from the object model handled by this ObjectModelWrapper) that is wrapped by the currently executing cmdlet.
-        /// This value can be <see langword="null"/> (i.e. when ClassVersion attribute is omitted in the ps1xml)
+        /// This value can be <c>null</c> (i.e. when ClassVersion attribute is omitted in the ps1xml)
         /// </summary>
         public string ClassVersion
         {

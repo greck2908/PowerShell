@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
@@ -8,7 +9,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Registers for an event on an object.
     /// </summary>
-    [Cmdlet(VerbsLifecycle.Register, "ObjectEvent", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096714")]
+    [Cmdlet(VerbsLifecycle.Register, "ObjectEvent", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135244")]
     [OutputType(typeof(PSEventJob))]
     public class RegisterObjectEventCommand : ObjectEventRegistrationBase
     {

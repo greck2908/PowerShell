@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -22,11 +22,11 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             this.TargetObject = targetObject ?? this.ClassName;
         }
 
-        public CimCmdletInvocationContext CmdletInvocationContext { get; }
+        public CimCmdletInvocationContext CmdletInvocationContext { get; private set; }
 
-        public CimSession Session { get; }
+        public CimSession Session { get; private set; }
 
-        public object TargetObject { get; }
+        public object TargetObject { get; private set; }
 
         public string ClassName
         {

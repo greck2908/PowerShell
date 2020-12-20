@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 <#
@@ -24,7 +24,7 @@ param
 
     [switch] $Unregister
 )
-Set-StrictMode -Version 3.0
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Start-NativeExecution([scriptblock]$sb, [switch]$IgnoreExitcode)

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 #Companion code for the blog https://cloudywindows.com

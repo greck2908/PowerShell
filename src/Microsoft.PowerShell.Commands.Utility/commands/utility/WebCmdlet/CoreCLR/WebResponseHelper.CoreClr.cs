@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -8,7 +8,7 @@ using System.Net.Http;
 
 namespace Microsoft.PowerShell.Commands
 {
-    internal static class WebResponseHelper
+    internal static partial class WebResponseHelper
     {
         internal static string GetCharacterSet(HttpResponseMessage response)
         {

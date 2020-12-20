@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -132,9 +132,9 @@ namespace System.Management.Automation
 
         #region Private Members
 
-        private readonly Dictionary<Guid, T> _repository = new Dictionary<Guid, T>();
-        private readonly object _syncObject = new object();      // object for synchronization
-        private readonly string _identifier;
+        private Dictionary<Guid, T> _repository = new Dictionary<Guid, T>();
+        private object _syncObject = new object();      // object for synchronization
+        private string _identifier;
 
         #endregion Private Members
     }

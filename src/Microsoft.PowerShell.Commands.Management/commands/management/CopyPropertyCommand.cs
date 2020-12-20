@@ -1,7 +1,9 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -9,7 +11,7 @@ namespace Microsoft.PowerShell.Commands
     /// A command to copy a property on an item.
     /// </summary>
     [Cmdlet(VerbsCommon.Copy, "ItemProperty", DefaultParameterSetName = "Path", SupportsShouldProcess = true, SupportsTransactions = true,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096589")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113293")]
     public class CopyItemPropertyCommand : PassThroughItemPropertyCommandBase
     {
         #region Parameters

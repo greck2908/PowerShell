@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -103,9 +103,9 @@ namespace System.Management.Automation
                     attributes = Ast.GetScriptBlockAttributes().ToArray();
                     foreach (var attribute in attributes)
                     {
-                        if (attribute is CmdletBindingAttribute c)
+                        if (attribute is CmdletBindingAttribute)
                         {
-                            cmdletBindingAttribute ??= c;
+                            cmdletBindingAttribute = cmdletBindingAttribute ?? (CmdletBindingAttribute)attribute;
                         }
                         else if (attribute is DebuggerHiddenAttribute)
                         {
@@ -121,8 +121,7 @@ namespace System.Management.Automation
                 }
 
                 bool automaticPosition = cmdletBindingAttribute == null || cmdletBindingAttribute.PositionalBinding;
-                var runtimeDefinedParameterDictionary =
-                    Ast.GetParameterMetadata(automaticPosition, ref _usesCmdletBinding);
+                var runtimeDefinedParameterDictionary = Ast.GetParameterMetadata(automaticPosition, ref _usesCmdletBinding);
 
                 // Initialize these fields last - if there were any exceptions, we don't want the partial results cached.
                 _attributes = attributes;
@@ -171,10 +170,7 @@ namespace System.Management.Automation
             {
                 var extent = _ast.Body.Extent;
                 var text = extent.Text;
-                ParserEventSource.Log.CompileStart(
-                    FileName: ParserEventSource.GetFileOrScript(extent.File, text),
-                    text.Length,
-                    optimize);
+                ParserEventSource.Log.CompileStart(ParserEventSource.GetFileOrScript(extent.File, text), text.Length, optimize);
             }
 
             PerformSecurityChecks();
@@ -193,7 +189,8 @@ namespace System.Management.Automation
 
         private void PerformSecurityChecks()
         {
-            if (!(Ast is ScriptBlockAst scriptBlockAst))
+            var scriptBlockAst = Ast as ScriptBlockAst;
+            if (scriptBlockAst == null)
             {
                 // Checks are only needed at the top level.
                 return;
@@ -202,8 +199,8 @@ namespace System.Management.Automation
             var scriptExtent = scriptBlockAst.Extent;
             var scriptFile = scriptExtent.File;
 
-            if (scriptFile != null
-                && scriptFile.EndsWith(StringLiterals.PowerShellDataFileExtension, StringComparison.OrdinalIgnoreCase)
+            if (scriptFile != null &&
+                scriptFile.EndsWith(StringLiterals.PowerShellDataFileExtension, StringComparison.OrdinalIgnoreCase)
                 && IsScriptBlockInFactASafeHashtable())
             {
                 // Skip the scan for .psd1 files if their content is in fact a safe HashtableAst.
@@ -215,19 +212,14 @@ namespace System.Management.Automation
 
             if (amsiResult == AmsiUtils.AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_DETECTED)
             {
-                var parseError = new ParseError(
-                    scriptExtent,
-                    "ScriptContainedMaliciousContent",
-                    ParserStrings.ScriptContainedMaliciousContent);
+                var parseError = new ParseError(scriptExtent, "ScriptContainedMaliciousContent", ParserStrings.ScriptContainedMaliciousContent);
                 throw new ParseException(new[] { parseError });
             }
-            else if (amsiResult >= AmsiUtils.AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_BLOCKED_BY_ADMIN_BEGIN
-                && amsiResult <= AmsiUtils.AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_BLOCKED_BY_ADMIN_END)
+            else if ((amsiResult >= AmsiUtils.AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_BLOCKED_BY_ADMIN_BEGIN) &&
+                     (amsiResult <= AmsiUtils.AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_BLOCKED_BY_ADMIN_END))
             {
                 // Certain policies set by an administrator blocked this content on this machine
-                var parseError = new ParseError(
-                    scriptExtent,
-                    "ScriptHasAdminBlockedContent",
+                var parseError = new ParseError(scriptExtent, "ScriptHasAdminBlockedContent",
                     StringUtil.Format(ParserStrings.ScriptHasAdminBlockedContent, amsiResult));
                 throw new ParseException(new[] { parseError });
             }
@@ -245,13 +237,10 @@ namespace System.Management.Automation
                 // are enhanced, such as new members added to 'ScriptBlockAst', the code here needs
                 // to be reviewed and changed accordingly.
 
-                if (scriptBlockAst.BeginBlock != null
-                    || scriptBlockAst.ProcessBlock != null
-                    || scriptBlockAst.ParamBlock != null
-                    || scriptBlockAst.DynamicParamBlock != null
-                    || scriptBlockAst.ScriptRequirements != null
-                    || scriptBlockAst.UsingStatements.Count > 0
-                    || scriptBlockAst.Attributes.Count > 0)
+                if (scriptBlockAst.BeginBlock != null || scriptBlockAst.ProcessBlock != null ||
+                    scriptBlockAst.ParamBlock != null || scriptBlockAst.DynamicParamBlock != null ||
+                    scriptBlockAst.ScriptRequirements != null || scriptBlockAst.UsingStatements.Count > 0 ||
+                    scriptBlockAst.Attributes.Count > 0)
                 {
                     return false;
                 }
@@ -262,12 +251,14 @@ namespace System.Management.Automation
                     return false;
                 }
 
-                if (!(endBlock.Statements[0] is PipelineAst pipelineAst))
+                PipelineAst pipelineAst = endBlock.Statements[0] as PipelineAst;
+                if (pipelineAst == null)
                 {
                     return false;
                 }
 
-                if (!(pipelineAst.GetPureExpression() is HashtableAst hashtableAst))
+                HashtableAst hashtableAst = pipelineAst.GetPureExpression() as HashtableAst;
+                if (hashtableAst == null)
                 {
                     return false;
                 }
@@ -280,8 +271,7 @@ namespace System.Management.Automation
 
         // We delay parsing scripts loaded on startup, so we save the text.
         private string _scriptText;
-
-        internal IParameterMetadataProvider Ast { get => _ast ?? DelayParseScriptText(); }
+        internal IParameterMetadataProvider Ast { get { return _ast ?? DelayParseScriptText(); } }
 
         private IParameterMetadataProvider _ast;
 
@@ -290,9 +280,7 @@ namespace System.Management.Automation
             lock (this)
             {
                 if (_ast != null)
-                {
                     return _ast;
-                }
 
                 ParseError[] errors;
                 _ast = (new Parser()).Parse(null, _scriptText, null, out errors, ParseMode.Default);
@@ -307,33 +295,21 @@ namespace System.Management.Automation
         }
 
         internal Type LocalsMutableTupleType { get; set; }
-
         internal Type UnoptimizedLocalsMutableTupleType { get; set; }
-
         internal Func<MutableTuple> LocalsMutableTupleCreator { get; set; }
-
         internal Func<MutableTuple> UnoptimizedLocalsMutableTupleCreator { get; set; }
-
         internal Dictionary<string, int> NameToIndexMap { get; set; }
 
         internal Action<FunctionContext> DynamicParamBlock { get; set; }
-
         internal Action<FunctionContext> UnoptimizedDynamicParamBlock { get; set; }
-
         internal Action<FunctionContext> BeginBlock { get; set; }
-
         internal Action<FunctionContext> UnoptimizedBeginBlock { get; set; }
-
         internal Action<FunctionContext> ProcessBlock { get; set; }
-
         internal Action<FunctionContext> UnoptimizedProcessBlock { get; set; }
-
         internal Action<FunctionContext> EndBlock { get; set; }
-
         internal Action<FunctionContext> UnoptimizedEndBlock { get; set; }
 
         internal IScriptExtent[] SequencePoints { get; set; }
-
         private RuntimeDefinedParameterDictionary _runtimeDefinedParameterDictionary;
         private Attribute[] _attributes;
         private bool _usesCmdletBinding;
@@ -341,18 +317,13 @@ namespace System.Management.Automation
         private bool _compiledUnoptimized;
         private bool _hasSuspiciousContent;
         private bool? _isProductCode;
-
         internal bool DebuggerHidden { get; set; }
-
         internal bool DebuggerStepThrough { get; set; }
-
         internal Guid Id { get; private set; }
 
         internal bool HasLogged { get; set; }
-
         internal bool SkipLogging { get; set; }
-
-        internal bool IsFilter { get; }
+        internal bool IsFilter { get; private set; }
 
         internal bool IsProductCode
         {
@@ -380,13 +351,11 @@ namespace System.Management.Automation
         {
             get
             {
-                Diagnostics.Assert(
-                    _compiledOptimized || _compiledUnoptimized,
-                    "HasSuspiciousContent is not set correctly before being compiled");
+                Diagnostics.Assert(_compiledOptimized || _compiledUnoptimized, "HasSuspiciousContent is not set correctly before being compiled");
                 return _hasSuspiciousContent;
             }
 
-            set => _hasSuspiciousContent = value;
+            set { _hasSuspiciousContent = value; }
         }
 
         private MergedCommandParameterMetadata _parameterMetadata;
@@ -398,9 +367,7 @@ namespace System.Management.Automation
                 InitializeMetadata();
             }
 
-            Diagnostics.Assert(
-                _attributes != null,
-                "after initialization, attributes is never null, must be an empty list if no attributes.");
+            Diagnostics.Assert(_attributes != null, "after initialization, attributes is never null, must be an empty list if no attributes.");
             return _attributes.ToList();
         }
 
@@ -439,9 +406,7 @@ namespace System.Management.Automation
                     InitializeMetadata();
                 }
 
-                return _usesCmdletBinding
-                    ? (CmdletBindingAttribute)Array.Find(_attributes, attr => attr is CmdletBindingAttribute)
-                    : null;
+                return _usesCmdletBinding ? (CmdletBindingAttribute)_attributes.FirstOrDefault(attr => attr is CmdletBindingAttribute) : null;
             }
         }
 
@@ -454,7 +419,7 @@ namespace System.Management.Automation
                     InitializeMetadata();
                 }
 
-                return (ObsoleteAttribute)Array.Find(_attributes, attr => attr is ObsoleteAttribute);
+                return (ObsoleteAttribute)_attributes.FirstOrDefault(attr => attr is ObsoleteAttribute);
             }
         }
 
@@ -487,10 +452,7 @@ namespace System.Management.Automation
                 {
                     if (_parameterMetadata == null)
                     {
-                        CommandMetadata metadata = new CommandMetadata(
-                            scriptBlock,
-                            string.Empty,
-                            LocalPipeline.GetExecutionContextFromTLS());
+                        CommandMetadata metadata = new CommandMetadata(scriptBlock, string.Empty, LocalPipeline.GetExecutionContextFromTLS());
                         _parameterMetadata = metadata.StaticCommandParameterMetadata;
                     }
                 }
@@ -506,7 +468,8 @@ namespace System.Management.Automation
                 return _scriptText;
             }
 
-            if (_ast is ScriptBlockAst sbAst)
+            var sbAst = _ast as ScriptBlockAst;
+            if (sbAst != null)
             {
                 return sbAst.ToStringForSerialization();
             }
@@ -570,7 +533,6 @@ namespace System.Management.Automation
 
         private static readonly ConcurrentDictionary<Tuple<string, string>, ScriptBlock> s_cachedScripts =
             new ConcurrentDictionary<Tuple<string, string>, ScriptBlock>();
-
         internal static ScriptBlock TryGetCachedScriptBlock(string fileName, string fileContents)
         {
             if (InternalTestHooks.IgnoreScriptBlockCache)
@@ -582,9 +544,8 @@ namespace System.Management.Automation
             var key = Tuple.Create(fileName, fileContents);
             if (s_cachedScripts.TryGetValue(key, out scriptBlock))
             {
-                Diagnostics.Assert(
-                    scriptBlock.SessionStateInternal == null,
-                    "A cached scriptblock should not have it's session state bound, that causes a memory leak.");
+                Diagnostics.Assert(scriptBlock.SessionStateInternal == null,
+                                   "A cached scriptblock should not have it's session state bound, that causes a memory leak.");
                 return scriptBlock.Clone();
             }
 
@@ -592,10 +553,16 @@ namespace System.Management.Automation
         }
 
         private static bool IsDynamicKeyword(Ast ast)
-            => ast is CommandAst cmdAst && cmdAst.DefiningKeyword != null;
+        {
+            var cmdAst = ast as CommandAst;
+            return (cmdAst != null && cmdAst.DefiningKeyword != null);
+        }
 
         private static bool IsUsingTypes(Ast ast)
-            => ast is UsingStatementAst cmdAst && cmdAst.IsUsingModuleOrAssembly();
+        {
+            var cmdAst = ast as UsingStatementAst;
+            return (cmdAst != null && cmdAst.IsUsingModuleOrAssembly());
+        }
 
         internal static void CacheScriptBlock(ScriptBlock scriptBlock, string fileName, string fileContents)
         {
@@ -604,16 +571,18 @@ namespace System.Management.Automation
                 return;
             }
 
+            //
             // Don't cache scriptblocks that have
             // a) dynamic keywords
             // b) 'using module' or 'using assembly'
             // The definition of the dynamic keyword could change, consequently changing how the source text should be parsed.
             // Exported types definitions from 'using module' could change, we need to do all parse-time checks again.
             // TODO(sevoroby): we can optimize it to ignore 'using' if there are no actual type usage in locally defined types.
+            //
 
             // using is always a top-level statements in scriptBlock, we don't need to search in child blocks.
-            if (scriptBlock.Ast.Find(ast => IsUsingTypes(ast), false) != null
-                || scriptBlock.Ast.Find(ast => IsDynamicKeyword(ast), true) != null)
+            if (scriptBlock.Ast.Find(ast => IsUsingTypes(ast), false) != null ||
+                scriptBlock.Ast.Find(ast => IsDynamicKeyword(ast), true) != null)
             {
                 return;
             }
@@ -635,8 +604,7 @@ namespace System.Management.Automation
             s_cachedScripts.Clear();
         }
 
-        internal static readonly ScriptBlock EmptyScriptBlock =
-            ScriptBlock.CreateDelayParsedScriptBlock(string.Empty, isProductCode: true);
+        internal static ScriptBlock EmptyScriptBlock = ScriptBlock.CreateDelayParsedScriptBlock(string.Empty, isProductCode: true);
 
         internal static ScriptBlock Create(Parser parser, string fileName, string fileContents)
         {
@@ -646,7 +614,8 @@ namespace System.Management.Automation
                 return scriptBlock;
             }
 
-            var ast = parser.Parse(fileName, fileContents, null, out ParseError[] errors, ParseMode.Default);
+            ParseError[] errors;
+            var ast = parser.Parse(fileName, fileContents, null, out errors, ParseMode.Default);
             if (errors.Length != 0)
             {
                 throw new ParseException(errors);
@@ -661,12 +630,18 @@ namespace System.Management.Automation
             return result.Clone();
         }
 
-        internal ScriptBlock Clone() => new ScriptBlock(_scriptBlockData);
+        internal ScriptBlock Clone()
+        {
+            return new ScriptBlock(_scriptBlockData);
+        }
 
         /// <summary>
         /// Returns the text of the script block.  The return value might not match the original text exactly.
         /// </summary>
-        public override string ToString() => _scriptBlockData.ToString();
+        public override string ToString()
+        {
+            return _scriptBlockData.ToString();
+        }
 
         /// <summary>
         /// Returns the text of the script block with the handling of $using expressions.
@@ -710,7 +685,7 @@ namespace System.Management.Automation
         {
             if (info == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(info));
+                throw PSTraceSource.NewArgumentNullException("info");
             }
 
             string serializedContent = this.ToString();
@@ -718,32 +693,21 @@ namespace System.Management.Automation
             info.SetType(typeof(ScriptBlockSerializationHelper));
         }
 
-        internal PowerShell GetPowerShellImpl(
-            ExecutionContext context,
-            Dictionary<string, object> variables,
-            bool isTrustedInput,
-            bool filterNonUsingVariables,
-            bool? createLocalScope,
-            params object[] args)
+        internal PowerShell GetPowerShellImpl(ExecutionContext context, Dictionary<string, object> variables, bool isTrustedInput,
+            bool filterNonUsingVariables, bool? createLocalScope, params object[] args)
         {
-            return AstInternal.GetPowerShell(
-                context,
-                variables,
-                isTrustedInput,
-                filterNonUsingVariables,
-                createLocalScope,
-                args);
+            return AstInternal.GetPowerShell(context, variables, isTrustedInput, filterNonUsingVariables, createLocalScope, args);
         }
 
         internal SteppablePipeline GetSteppablePipelineImpl(CommandOrigin commandOrigin, object[] args)
         {
-            var pipelineAst = GetSimplePipeline(
-                resourceString => throw PSTraceSource.NewInvalidOperationException(resourceString));
+            var pipelineAst = GetSimplePipeline(resourceString => { throw PSTraceSource.NewInvalidOperationException(resourceString); });
             Diagnostics.Assert(pipelineAst != null, "This should be checked by GetSimplePipeline");
 
-            if (pipelineAst.PipelineElements[0] is not CommandAst)
+            if (!(pipelineAst.PipelineElements[0] is CommandAst))
             {
-                throw PSTraceSource.NewInvalidOperationException(AutomationExceptions.CantConvertEmptyPipeline);
+                throw PSTraceSource.NewInvalidOperationException(
+                    AutomationExceptions.CantConvertEmptyPipeline);
             }
 
             return PipelineOps.GetSteppablePipeline(pipelineAst, commandOrigin, this, args);
@@ -751,7 +715,7 @@ namespace System.Management.Automation
 
         private PipelineAst GetSimplePipeline(Func<string, PipelineAst> errorHandler)
         {
-            errorHandler ??= (_ => null);
+            errorHandler = errorHandler ?? (_ => null);
 
             if (HasBeginBlock || HasProcessBlock)
             {
@@ -760,7 +724,7 @@ namespace System.Management.Automation
 
             var ast = AstInternal;
             var statements = ast.Body.EndBlock.Statements;
-            if (statements.Count == 0)
+            if (!statements.Any())
             {
                 return errorHandler(AutomationExceptions.CantConvertEmptyPipeline);
             }
@@ -770,12 +734,13 @@ namespace System.Management.Automation
                 return errorHandler(AutomationExceptions.CanOnlyConvertOnePipeline);
             }
 
-            if (ast.Body.EndBlock.Traps != null && ast.Body.EndBlock.Traps.Count > 0)
+            if (ast.Body.EndBlock.Traps != null && ast.Body.EndBlock.Traps.Any())
             {
                 return errorHandler(AutomationExceptions.CantConvertScriptBlockWithTrap);
             }
 
-            if (!(statements[0] is PipelineAst pipeAst))
+            var pipeAst = statements[0] as PipelineAst;
+            if (pipeAst == null)
             {
                 return errorHandler(AutomationExceptions.CanOnlyConvertOnePipeline);
             }
@@ -787,37 +752,59 @@ namespace System.Management.Automation
             return pipeAst;
         }
 
-        internal List<Attribute> GetAttributes() => _scriptBlockData.GetAttributes();
+        internal List<Attribute> GetAttributes()
+        {
+            return _scriptBlockData.GetAttributes();
+        }
 
-        internal string GetFileName() => AstInternal.Body.Extent.File;
+        internal string GetFileName()
+        {
+            return AstInternal.Body.Extent.File;
+        }
 
-        // GetAttributes() is asserted never return null
-        internal bool IsMetaConfiguration() => GetAttributes().OfType<DscLocalConfigurationManagerAttribute>().Any();
+        internal bool IsMetaConfiguration()
+        {
+            // GetAttributes() is asserted never return null
+            return GetAttributes().OfType<DscLocalConfigurationManagerAttribute>().Any();
+        }
 
-        internal PSToken GetStartPosition() => new PSToken(Ast.Extent);
+        internal PSToken GetStartPosition()
+        {
+            return new PSToken(Ast.Extent);
+        }
 
         internal MergedCommandParameterMetadata ParameterMetadata
         {
-            get => _scriptBlockData.GetParameterMetadata(this);
+            get { return _scriptBlockData.GetParameterMetadata(this); }
         }
 
-        internal bool UsesCmdletBinding { get => _scriptBlockData.UsesCmdletBinding; }
+        internal bool UsesCmdletBinding
+        {
+            get { return _scriptBlockData.UsesCmdletBinding; }
+        }
 
-        internal bool HasDynamicParameters { get => AstInternal.Body.DynamicParamBlock != null; }
+        internal bool HasDynamicParameters
+        {
+            get { return AstInternal.Body.DynamicParamBlock != null; }
+        }
 
         /// <summary>
         /// DebuggerHidden.
         /// </summary>
         public bool DebuggerHidden
         {
-            get => _scriptBlockData.DebuggerHidden;
-            set => _scriptBlockData.DebuggerHidden = value;
+            get { return _scriptBlockData.DebuggerHidden; }
+
+            set { _scriptBlockData.DebuggerHidden = value; }
         }
 
         /// <summary>
         /// The unique ID of this script block.
         /// </summary>
-        public Guid Id { get => _scriptBlockData.Id; }
+        public Guid Id
+        {
+            get { return _scriptBlockData.Id; }
+        }
 
         internal bool DebuggerStepThrough
         {
@@ -828,13 +815,14 @@ namespace System.Management.Automation
 
         internal RuntimeDefinedParameterDictionary RuntimeDefinedParameters
         {
-            get => _scriptBlockData.RuntimeDefinedParameters;
+            get { return _scriptBlockData.RuntimeDefinedParameters; }
         }
 
         internal bool HasLogged
         {
-            get => _scriptBlockData.HasLogged;
-            set => _scriptBlockData.HasLogged = value;
+            get { return _scriptBlockData.HasLogged; }
+
+            set { _scriptBlockData.HasLogged = value; }
         }
 
         internal bool SkipLogging
@@ -844,29 +832,18 @@ namespace System.Management.Automation
             set { _scriptBlockData.SkipLogging = value; }
         }
 
-        internal Assembly AssemblyDefiningPSTypes { get; set; }
+        internal Assembly AssemblyDefiningPSTypes { set; get; }
 
-        internal HelpInfo GetHelpInfo(
-            ExecutionContext context,
-            CommandInfo commandInfo,
-            bool dontSearchOnRemoteComputer,
-            Dictionary<Ast, Token[]> scriptBlockTokenCache,
-            out string helpFile,
-            out string helpUriFromDotLink)
+        internal HelpInfo GetHelpInfo(ExecutionContext context, CommandInfo commandInfo, bool dontSearchOnRemoteComputer,
+            Dictionary<Ast, Token[]> scriptBlockTokenCache, out string helpFile, out string helpUriFromDotLink)
         {
             helpUriFromDotLink = null;
 
             var commentTokens = HelpCommentsParser.GetHelpCommentTokens(AstInternal, scriptBlockTokenCache);
             if (commentTokens != null)
             {
-                return HelpCommentsParser.CreateFromComments(
-                    context,
-                    commandInfo,
-                    commentTokens.Item1,
-                    commentTokens.Item2,
-                    dontSearchOnRemoteComputer,
-                    out helpFile,
-                    out helpUriFromDotLink);
+                return HelpCommentsParser.CreateFromComments(context, commandInfo, commentTokens.Item1,
+                                                             commentTokens.Item2, dontSearchOnRemoteComputer, out helpFile, out helpUriFromDotLink);
             }
 
             helpFile = null;
@@ -883,10 +860,7 @@ namespace System.Management.Automation
         /// any variable will be allowed.
         /// </param>
         /// <param name="allowEnvironmentVariables">The environment variables that are allowed.</param>
-        public void CheckRestrictedLanguage(
-            IEnumerable<string> allowedCommands,
-            IEnumerable<string> allowedVariables,
-            bool allowEnvironmentVariables)
+        public void CheckRestrictedLanguage(IEnumerable<string> allowedCommands, IEnumerable<string> allowedVariables, bool allowEnvironmentVariables)
         {
             Parser parser = new Parser();
 
@@ -894,34 +868,28 @@ namespace System.Management.Automation
             if (HasBeginBlock || HasProcessBlock || ast.Body.ParamBlock != null)
             {
                 Ast errorAst = ast.Body.BeginBlock ?? (Ast)ast.Body.ProcessBlock ?? ast.Body.ParamBlock;
-                parser.ReportError(
-                    errorAst.Extent,
+                parser.ReportError(errorAst.Extent,
                     nameof(ParserStrings.InvalidScriptBlockInDataSection),
                     ParserStrings.InvalidScriptBlockInDataSection);
             }
 
             if (HasEndBlock)
             {
-                var rlc = new RestrictedLanguageChecker(
-                    parser,
-                    allowedCommands,
-                    allowedVariables,
-                    allowEnvironmentVariables);
-
-                StatementBlockAst.InternalVisit(
-                    rlc,
-                    ast.Body.EndBlock.Traps,
-                    ast.Body.EndBlock.Statements,
-                    AstVisitAction.Continue);
+                RestrictedLanguageChecker rlc = new RestrictedLanguageChecker(parser, allowedCommands, allowedVariables, allowEnvironmentVariables);
+                var endBlock = ast.Body.EndBlock;
+                StatementBlockAst.InternalVisit(rlc, endBlock.Traps, endBlock.Statements, AstVisitAction.Continue);
             }
 
-            if (parser.ErrorList.Count > 0)
+            if (parser.ErrorList.Any())
             {
                 throw new ParseException(parser.ErrorList.ToArray());
             }
         }
 
-        internal string GetWithInputHandlingForInvokeCommand() => AstInternal.GetWithInputHandlingForInvokeCommand();
+        internal string GetWithInputHandlingForInvokeCommand()
+        {
+            return AstInternal.GetWithInputHandlingForInvokeCommand();
+        }
 
         internal string GetWithInputHandlingForInvokeCommandWithUsingExpression(
             Tuple<List<VariableExpressionAst>, string> usingVariablesTuple)
@@ -930,61 +898,67 @@ namespace System.Management.Automation
                 AstInternal.GetWithInputHandlingForInvokeCommandWithUsingExpression(usingVariablesTuple);
 
             // result.Item1 is ParamText; result.Item2 is ScriptBlockText
-            return result.Item1 == null ? result.Item2 : result.Item1 + result.Item2;
+            if (result.Item1 == null)
+                return result.Item2;
+            return result.Item1 + result.Item2;
         }
 
-        internal bool IsUsingDollarInput() => AstSearcher.IsUsingDollarInput(this.Ast);
-
-        internal void InvokeWithPipeImpl(
-            bool createLocalScope,
-            Dictionary<string, ScriptBlock> functionsToDefine,
-            List<PSVariable> variablesToDefine,
-            ErrorHandlingBehavior errorHandlingBehavior,
-            object dollarUnder,
-            object input,
-            object scriptThis,
-            Pipe outputPipe,
-            InvocationInfo invocationInfo,
-            params object[] args)
+        internal bool IsUsingDollarInput()
         {
-            InvokeWithPipeImpl(
-                ScriptBlockClauseToInvoke.ProcessBlockOnly,
-                createLocalScope,
-                functionsToDefine,
-                variablesToDefine,
-                errorHandlingBehavior,
-                dollarUnder,
-                input,
-                scriptThis,
-                outputPipe,
-                invocationInfo,
-                args);
+            return AstSearcher.IsUsingDollarInput(this.Ast);
         }
 
-        internal void InvokeWithPipeImpl(
-            ScriptBlockClauseToInvoke clauseToInvoke,
-            bool createLocalScope,
-            Dictionary<string, ScriptBlock> functionsToDefine,
-            List<PSVariable> variablesToDefine,
-            ErrorHandlingBehavior errorHandlingBehavior,
-            object dollarUnder,
-            object input,
-            object scriptThis,
-            Pipe outputPipe,
-            InvocationInfo invocationInfo,
-            params object[] args)
+        internal void InvokeWithPipeImpl(bool createLocalScope,
+                                        Dictionary<string, ScriptBlock> functionsToDefine,
+                                        List<PSVariable> variablesToDefine,
+                                        ErrorHandlingBehavior errorHandlingBehavior,
+                                        object dollarUnder,
+                                        object input,
+                                        object scriptThis,
+                                        Pipe outputPipe,
+                                        InvocationInfo invocationInfo,
+                                        params object[] args)
         {
-            if ((clauseToInvoke == ScriptBlockClauseToInvoke.Begin && !HasBeginBlock)
-                || (clauseToInvoke == ScriptBlockClauseToInvoke.Process && !HasProcessBlock)
-                || (clauseToInvoke == ScriptBlockClauseToInvoke.End && !HasEndBlock))
+            InvokeWithPipeImpl(ScriptBlockClauseToInvoke.ProcessBlockOnly, createLocalScope,
+                                       functionsToDefine,
+                                       variablesToDefine,
+                                       errorHandlingBehavior,
+                                       dollarUnder,
+                                       input,
+                                       scriptThis,
+                                       outputPipe,
+                                       invocationInfo,
+                                       args);
+        }
+
+        internal void InvokeWithPipeImpl(ScriptBlockClauseToInvoke clauseToInvoke,
+                                                bool createLocalScope,
+                                                Dictionary<string, ScriptBlock> functionsToDefine,
+                                                List<PSVariable> variablesToDefine,
+                                                ErrorHandlingBehavior errorHandlingBehavior,
+                                                object dollarUnder,
+                                                object input,
+                                                object scriptThis,
+                                                Pipe outputPipe,
+                                                InvocationInfo invocationInfo,
+                                                params object[] args)
+        {
+            if (clauseToInvoke == ScriptBlockClauseToInvoke.Begin && !HasBeginBlock)
+            {
+                return;
+            }
+            else if (clauseToInvoke == ScriptBlockClauseToInvoke.Process && !HasProcessBlock)
+            {
+                return;
+            }
+            else if (clauseToInvoke == ScriptBlockClauseToInvoke.End && !HasEndBlock)
             {
                 return;
             }
 
             ExecutionContext context = GetContextFromTLS();
-            Diagnostics.Assert(
-                SessionStateInternal == null || SessionStateInternal.ExecutionContext == context,
-                "The scriptblock is being invoked in a runspace different than the one where it was created");
+            Diagnostics.Assert(SessionStateInternal == null || SessionStateInternal.ExecutionContext == context,
+                               "The scriptblock is being invoked in a runspace different than the one where it was created");
 
             if (context.CurrentPipelineStopping)
             {
@@ -992,24 +966,18 @@ namespace System.Management.Automation
             }
 
             // Validate at the arguments are consistent. The only public API that gets you here never sets createLocalScope to false...
-            Diagnostics.Assert(
-                createLocalScope || functionsToDefine == null,
-                "When calling ScriptBlock.InvokeWithContext(), if 'functionsToDefine' != null then 'createLocalScope' must be true");
-            Diagnostics.Assert(
-                createLocalScope || variablesToDefine == null,
-                "When calling ScriptBlock.InvokeWithContext(), if 'variablesToDefine' != null then 'createLocalScope' must be true");
+            Diagnostics.Assert(createLocalScope == true || functionsToDefine == null, "When calling ScriptBlock.InvokeWithContext(), if 'functionsToDefine' != null then 'createLocalScope' must be true");
+            Diagnostics.Assert(createLocalScope == true || variablesToDefine == null, "When calling ScriptBlock.InvokeWithContext(), if 'variablesToDefine' != null then 'createLocalScope' must be true");
 
             if (args == null)
             {
                 args = Array.Empty<object>();
             }
 
-            bool runOptimized = context._debuggingMode <= 0 && createLocalScope;
+            bool runOptimized = context._debuggingMode > 0 ? false : createLocalScope;
             var codeToInvoke = GetCodeToInvoke(ref runOptimized, clauseToInvoke);
             if (codeToInvoke == null)
-            {
                 return;
-            }
 
             if (outputPipe == null)
             {
@@ -1045,14 +1013,14 @@ namespace System.Management.Automation
             // change the language mode.
             PSLanguageMode? oldLanguageMode = null;
             PSLanguageMode? newLanguageMode = null;
-            if (this.LanguageMode.HasValue
-                && this.LanguageMode != context.LanguageMode)
+            if ((this.LanguageMode.HasValue) &&
+                (this.LanguageMode != context.LanguageMode))
             {
                 // Don't allow context: ConstrainedLanguage -> FullLanguage transition if
                 // this is dot sourcing into the current scope, unless it is within a trusted module scope.
-                if (this.LanguageMode != PSLanguageMode.FullLanguage
-                    || createLocalScope
-                    || context.EngineSessionState.Module?.LanguageMode == PSLanguageMode.FullLanguage)
+                if (this.LanguageMode != PSLanguageMode.FullLanguage ||
+                    createLocalScope ||
+                    (context.EngineSessionState.Module?.LanguageMode == PSLanguageMode.FullLanguage))
                 {
                     oldLanguageMode = context.LanguageMode;
                     newLanguageMode = this.LanguageMode;
@@ -1075,9 +1043,7 @@ namespace System.Management.Automation
                 locals.SetAutomaticVariable(AutomaticVariable.MyInvocation, myInvocationInfo, context);
 
                 if (SessionStateInternal != null)
-                {
                     context.EngineSessionState = SessionStateInternal;
-                }
 
                 // If we don't want errors written, hide the error pipe.
                 switch (errorHandlingBehavior)
@@ -1142,8 +1108,7 @@ namespace System.Management.Automation
                             }
 
                             string name = psvar.Name;
-                            Diagnostics.Assert(
-                                !(string.Equals(name, "this") || string.Equals(name, "_") || string.Equals(name, "input")),
+                            Diagnostics.Assert(!(string.Equals(name, "this") || string.Equals(name, "_") || string.Equals(name, "input")),
                                 "The list of variables to set in the scriptblock's scope cannot contain 'this', '_' or 'input'. These variables should be removed before passing the collection to this routine.");
                             index++;
                             newScope.Variables.Add(name, psvar);
@@ -1174,11 +1139,7 @@ namespace System.Management.Automation
 
                 args = BindArgumentsForScriptblockInvoke(
                     (RuntimeDefinedParameter[])RuntimeDefinedParameters.Data,
-                    args,
-                    context,
-                    !createLocalScope,
-                    backupWhenDotting,
-                    locals);
+                    args, context, !createLocalScope, backupWhenDotting, locals);
                 locals.SetAutomaticVariable(AutomaticVariable.Args, args, context);
 
                 context.EngineSessionState.CurrentScope.ScopeOrigin = CommandOrigin.Internal;
@@ -1258,15 +1219,11 @@ namespace System.Management.Automation
             MutableTuple locals;
             if (createLocalScope)
             {
-                locals = MutableTuple.MakeTuple(
-                    _scriptBlockData.LocalsMutableTupleType,
-                    _scriptBlockData.NameToIndexMap,
-                    _scriptBlockData.LocalsMutableTupleCreator);
+                locals = MutableTuple.MakeTuple(_scriptBlockData.LocalsMutableTupleType, _scriptBlockData.NameToIndexMap, _scriptBlockData.LocalsMutableTupleCreator);
             }
             else
             {
-                locals = MutableTuple.MakeTuple(
-                    _scriptBlockData.UnoptimizedLocalsMutableTupleType,
+                locals = MutableTuple.MakeTuple(_scriptBlockData.UnoptimizedLocalsMutableTupleType,
                     UsesCmdletBinding
                         ? Compiler.DottedScriptCmdletLocalsNameIndexMap
                         : Compiler.DottedLocalsNameIndexMap,
@@ -1315,8 +1272,7 @@ namespace System.Management.Automation
                 bool valueSet = false;
                 if (dotting && backupWhenDotting != null)
                 {
-                    backupWhenDotting[parameter.Name] =
-                        context.EngineSessionState.GetVariableAtScope(parameter.Name, "local");
+                    backupWhenDotting[parameter.Name] = context.EngineSessionState.GetVariableAtScope(parameter.Name, "local");
                 }
                 else
                 {
@@ -1325,11 +1281,7 @@ namespace System.Management.Automation
 
                 if (!valueSet)
                 {
-                    var variable = new PSVariable(
-                        parameter.Name,
-                        valueToBind,
-                        ScopedItemOptions.None,
-                        parameter.Attributes);
+                    var variable = new PSVariable(parameter.Name, valueToBind, ScopedItemOptions.None, parameter.Attributes);
                     context.EngineSessionState.SetVariable(variable, false, CommandOrigin.Internal);
                 }
 
@@ -1340,10 +1292,7 @@ namespace System.Management.Automation
                 }
             }
 
-            locals.SetAutomaticVariable(
-                AutomaticVariable.PSBoundParameters,
-                boundParameters.GetValueToBindToPSBoundParameters(),
-                context);
+            locals.SetAutomaticVariable(AutomaticVariable.PSBoundParameters, boundParameters.GetValueToBindToPSBoundParameters(), context);
 
             var leftOverArgs = args.Length - parameters.Length;
             if (leftOverArgs <= 0)
@@ -1357,12 +1306,13 @@ namespace System.Management.Automation
         }
 
         internal static void SetAutomaticVariable(AutomaticVariable variable, object value, MutableTuple locals)
-            => locals.SetValue((int)variable, value);
+        {
+            locals.SetValue((int)variable, value);
+        }
 
         private Action<FunctionContext> GetCodeToInvoke(ref bool optimized, ScriptBlockClauseToInvoke clauseToInvoke)
         {
-            if (clauseToInvoke == ScriptBlockClauseToInvoke.ProcessBlockOnly
-                && (HasBeginBlock || (HasEndBlock && HasProcessBlock)))
+            if (clauseToInvoke == ScriptBlockClauseToInvoke.ProcessBlockOnly && (HasBeginBlock || (HasEndBlock && HasProcessBlock)))
             {
                 throw PSTraceSource.NewInvalidOperationException(AutomationExceptions.ScriptBlockInvokeOnOneClauseOnly);
             }
@@ -1397,13 +1347,25 @@ namespace System.Management.Automation
             }
         }
 
-        internal CmdletBindingAttribute CmdletBindingAttribute { get => _scriptBlockData.CmdletBindingAttribute; }
+        internal CmdletBindingAttribute CmdletBindingAttribute
+        {
+            get { return _scriptBlockData.CmdletBindingAttribute; }
+        }
 
-        internal ObsoleteAttribute ObsoleteAttribute { get => _scriptBlockData.ObsoleteAttribute; }
+        internal ObsoleteAttribute ObsoleteAttribute
+        {
+            get { return _scriptBlockData.ObsoleteAttribute; }
+        }
 
-        internal ExperimentalAttribute ExperimentalAttribute { get => _scriptBlockData.ExperimentalAttribute; }
+        internal ExperimentalAttribute ExperimentalAttribute
+        {
+            get { return _scriptBlockData.ExperimentalAttribute; }
+        }
 
-        internal bool Compile(bool optimized) => _scriptBlockData.Compile(optimized);
+        internal bool Compile(bool optimized)
+        {
+            return _scriptBlockData.Compile(optimized);
+        }
 
         internal static void LogScriptBlockCreation(ScriptBlock scriptBlock, bool force)
         {
@@ -1418,8 +1380,8 @@ namespace System.Management.Automation
             {
                 // If script block logging is explicitly disabled, or it's from a trusted
                 // file or internal, skip logging.
-                if (logSetting?.EnableScriptBlockLogging == false
-                    || scriptBlock.ScriptBlockData.IsProductCode)
+                if (logSetting?.EnableScriptBlockLogging == false ||
+                    scriptBlock.ScriptBlockData.IsProductCode)
                 {
                     scriptBlock.SkipLogging = true;
                     return;
@@ -1468,8 +1430,7 @@ namespace System.Management.Automation
         {
             // See if we need to encrypt the event log message. This info is all cached by Utils.GetPolicySetting(),
             // so we're not hitting the configuration file for every script block we compile.
-            ProtectedEventLogging logSetting =
-                Utils.GetPolicySetting<ProtectedEventLogging>(Utils.SystemWideOnlyConfig);
+            ProtectedEventLogging logSetting = Utils.GetPolicySetting<ProtectedEventLogging>(Utils.SystemWideOnlyConfig);
             bool wasEncoded = false;
             if (logSetting != null)
             {
@@ -1484,20 +1445,15 @@ namespace System.Management.Automation
                         return false;
                     }
 
-                    // If we have recipients to encrypt to, then do so.
-                    // Otherwise, we'll just log the plain text version.
+                    // If we have recipients to encrypt to, then do so. Otherwise, we'll just log the plain text
+                    // version.
                     if (s_encryptionRecipients != null)
                     {
-                        // Encrypt the raw text from the scriptblock.
-                        // The user may have to deal with any control characters in the data.
+                        // Encrypt the raw Text from the scriptblock.  The user may have to deal with any control characters in the data.
                         ExecutionContext executionContext = LocalPipeline.GetExecutionContextFromTLS();
                         ErrorRecord error = null;
                         byte[] contentBytes = System.Text.Encoding.UTF8.GetBytes(textToLog);
-                        string encodedContent = CmsUtils.Encrypt(
-                            contentBytes,
-                            s_encryptionRecipients,
-                            executionContext.SessionState,
-                            out error);
+                        string encodedContent = CmsUtils.Encrypt(contentBytes, s_encryptionRecipients, executionContext.SessionState, out error);
 
                         // Can't cache the reporting of encryption errors, as they are likely content-based.
                         if (error != null)
@@ -1508,20 +1464,9 @@ namespace System.Management.Automation
                             // attacker seeing potentially sensitive data. Because if they aren't detected, then
                             // they can just wait on the compromised box and see the sensitive data eventually anyways.
 
-                            string errorMessage = StringUtil.Format(
-                                SecuritySupportStrings.CouldNotEncryptContent,
-                                textToLog,
-                                error.ToString());
-                            PSEtwLog.LogOperationalError(
-                                id: PSEventId.ScriptBlock_Compile_Detail,
-                                opcode: PSOpcode.Create,
-                                task: PSTask.ExecuteCommand,
-                                keyword: PSKeyword.UseAlwaysOperational,
-                                0,
-                                0,
-                                errorMessage,
-                                scriptBlock.Id.ToString(),
-                                scriptBlock.File ?? string.Empty);
+                            string errorMessage = StringUtil.Format(SecuritySupportStrings.CouldNotEncryptContent, textToLog, error.ToString());
+                            PSEtwLog.LogOperationalError(PSEventId.ScriptBlock_Compile_Detail, PSOpcode.Create, PSTask.ExecuteCommand, PSKeyword.UseAlwaysOperational,
+                                            0, 0, errorMessage, scriptBlock.Id.ToString(), scriptBlock.File ?? string.Empty);
                         }
                         else
                         {
@@ -1534,86 +1479,28 @@ namespace System.Management.Automation
 
             if (!wasEncoded)
             {
-                textToLog = FormatLogString(textToLog);
+                // The logging mechanism(s) cannot handle null and rendering may not be able to handle
+                // null as we have the string defined as a null terminated string in the manifest.
+                // So, replace null characters with the Unicode `SYMBOL FOR NULL`
+                // We don't just remove the characters to preserve the fact that a null character was there.
+                textToLog = textToLog.Replace('\u0000', '\u2400');
             }
 
             if (scriptBlock._scriptBlockData.HasSuspiciousContent)
             {
-                PSEtwLog.LogOperationalWarning(
-                    id: PSEventId.ScriptBlock_Compile_Detail,
-                    opcode: PSOpcode.Create,
-                    task: PSTask.ExecuteCommand,
-                    keyword: PSKeyword.UseAlwaysOperational,
-                    segment + 1,
-                    segments,
-                    textToLog,
-                    scriptBlock.Id.ToString(),
-                    scriptBlock.File ?? string.Empty);
+                PSEtwLog.LogOperationalWarning(PSEventId.ScriptBlock_Compile_Detail, PSOpcode.Create, PSTask.ExecuteCommand, PSKeyword.UseAlwaysOperational,
+                    segment + 1, segments, textToLog, scriptBlock.Id.ToString(), scriptBlock.File ?? string.Empty);
             }
             else
             {
-                PSEtwLog.LogOperationalVerbose(
-                    id: PSEventId.ScriptBlock_Compile_Detail,
-                    opcode: PSOpcode.Create,
-                    task: PSTask.ExecuteCommand,
-                    keyword: PSKeyword.UseAlwaysOperational,
-                    segment + 1,
-                    segments,
-                    textToLog,
-                    scriptBlock.Id.ToString(),
-                    scriptBlock.File ?? string.Empty);
+                PSEtwLog.LogOperationalVerbose(PSEventId.ScriptBlock_Compile_Detail, PSOpcode.Create, PSTask.ExecuteCommand, PSKeyword.UseAlwaysOperational,
+                    segment + 1, segments, textToLog, scriptBlock.Id.ToString(), scriptBlock.File ?? string.Empty);
             }
 
             return true;
         }
 
-        private static string FormatLogString(string textToLog)
-        {
-            const char NullControlChar = '\u0000';
-
-            // The null symbol - `␀`
-            const char NullSymbolChar = '\u2400';
-
-            // No logging mechanism(s) cannot handle null and rendering may not be able to handle
-            // null as we have the string defined as a null terminated string in the manifest.
-            // So, replace null characters with the Unicode `SYMBOL FOR NULL`
-            // We don't just remove the characters to preserve the fact that a null character was there.
-#if UNIX
-            const char LinefeedControlChar = '\u000A';
-            const char CarriageReturnControlChar = '\u000D';
-
-            // We chose the return symbol because we believe it is more associated with these concepts
-            // than the carriage return (␍), line feed (␊), or new line (␤) symbols.
-            // The return symbol - `⏎`
-            const char ReturnSymbolChar = '\u23CE';
-
-            if (Platform.IsLinux)
-            {
-                // Because the creation of the string builder is expensive
-                // We only do this on Linux where we are doing multiple replace operations
-                StringBuilder logBuilder = new StringBuilder(textToLog);
-
-                logBuilder.Replace(NullControlChar, NullSymbolChar);
-
-                // Syslog (only used on Linux) encodes CR and NL to their octal values.
-                // We will replace them with a unicode  'RETURN SYMBOL' (U+23CE) charater for easier viewing
-                logBuilder.Replace(LinefeedControlChar, ReturnSymbolChar);
-                logBuilder.Replace(CarriageReturnControlChar, ReturnSymbolChar);
-
-                return logBuilder.ToString();
-            }
-            else
-            {
-                return textToLog.Replace(NullControlChar, NullSymbolChar);
-            }
-#else
-            return textToLog.Replace(NullControlChar, NullSymbolChar);
-#endif
-        }
-
-        private static bool GetAndValidateEncryptionRecipients(
-            ScriptBlock scriptBlock,
-            ProtectedEventLogging logSetting)
+        private static bool GetAndValidateEncryptionRecipients(ScriptBlock scriptBlock, ProtectedEventLogging logSetting)
         {
             // See if protected event logging is enabled
             if (logSetting.EnableProtectedEventLogging == true)
@@ -1671,19 +1558,9 @@ namespace System.Management.Automation
                         // being able to detect that an attacker has compromised a box outweighs the danger of the
                         // attacker seeing potentially sensitive data. Because if they aren't detected, then
                         // they can just wait on the compromised box and see the sensitive data eventually anyways.
-                        string errorMessage = StringUtil.Format(
-                            SecuritySupportStrings.CouldNotUseCertificate,
-                            error.ToString());
-                        PSEtwLog.LogOperationalError(
-                            id: PSEventId.ScriptBlock_Compile_Detail,
-                            opcode: PSOpcode.Create,
-                            task: PSTask.ExecuteCommand,
-                            keyword: PSKeyword.UseAlwaysOperational,
-                            0,
-                            0,
-                            errorMessage,
-                            scriptBlock.Id.ToString(),
-                            scriptBlock.File ?? string.Empty);
+                        string errorMessage = StringUtil.Format(SecuritySupportStrings.CouldNotUseCertificate, error.ToString());
+                        PSEtwLog.LogOperationalError(PSEventId.ScriptBlock_Compile_Detail, PSOpcode.Create, PSTask.ExecuteCommand, PSKeyword.UseAlwaysOperational,
+                                        0, 0, errorMessage, scriptBlock.Id.ToString(), scriptBlock.File ?? string.Empty);
 
                         return true;
                     }
@@ -1706,19 +1583,9 @@ namespace System.Management.Automation
                                 certificateForLog = logSetting.EncryptionCertificate[1];
                             }
 
-                            string errorMessage = StringUtil.Format(
-                                SecuritySupportStrings.CertificateContainsPrivateKey,
-                                certificateForLog);
-                            PSEtwLog.LogOperationalError(
-                                id: PSEventId.ScriptBlock_Compile_Detail,
-                                opcode: PSOpcode.Create,
-                                task: PSTask.ExecuteCommand,
-                                keyword: PSKeyword.UseAlwaysOperational,
-                                0,
-                                0,
-                                errorMessage,
-                                scriptBlock.Id.ToString(),
-                                scriptBlock.File ?? string.Empty);
+                            string errorMessage = StringUtil.Format(SecuritySupportStrings.CertificateContainsPrivateKey, certificateForLog);
+                            PSEtwLog.LogOperationalError(PSEventId.ScriptBlock_Compile_Detail, PSOpcode.Create, PSTask.ExecuteCommand, PSKeyword.UseAlwaysOperational,
+                                            0, 0, errorMessage, scriptBlock.Id.ToString(), scriptBlock.File ?? string.Empty);
                         }
                     }
                 }
@@ -1727,12 +1594,11 @@ namespace System.Management.Automation
             return true;
         }
 
-        private static readonly object s_syncObject = new object();
+        private static object s_syncObject = new Object();
         private static string s_lastSeenCertificate = string.Empty;
         private static bool s_hasProcessedCertificate = false;
         private static CmsMessageRecipient[] s_encryptionRecipients = null;
-
-        private static readonly Lazy<ScriptBlockLogging> s_sbLoggingSettingCache = new Lazy<ScriptBlockLogging>(
+        private static Lazy<ScriptBlockLogging> s_sbLoggingSettingCache = new Lazy<ScriptBlockLogging>(
             () => Utils.GetPolicySetting<ScriptBlockLogging>(Utils.SystemWideThenCurrentUserConfig),
             isThreadSafe: true);
 
@@ -1769,12 +1635,12 @@ namespace System.Management.Automation
 
             if (scriptBlockAst.HasSuspiciousContent)
             {
-                Ast foundAst = scriptBlockAst.Find(
-                    ast =>
-                    {
-                        // Try to find the lowest AST that was not considered suspicious, but its parent was.
-                        return (!ast.HasSuspiciousContent) && ast.Parent.HasSuspiciousContent;
-                    }, true);
+                Ast foundAst = scriptBlockAst.Find(ast =>
+                {
+                    // Try to find the lowest AST that was not considered suspicious, but its parent
+                    // was.
+                    return (!ast.HasSuspiciousContent) && (ast.Parent.HasSuspiciousContent);
+                }, true);
 
                 if (foundAst != null)
                 {
@@ -1789,7 +1655,7 @@ namespace System.Management.Automation
             return null;
         }
 
-        private class SuspiciousContentChecker
+        class SuspiciousContentChecker
         {
             // Based on a (bad) random number generator, but good enough
             // for our simple needs.
@@ -1804,7 +1670,7 @@ namespace System.Management.Automation
             /// code - needed only to generate this switch statement below.)
             /// </summary>
             /// <returns>The string matching the hash, or null.</returns>
-            private static string LookupHash(uint h)
+            static string LookupHash(uint h)
             {
                 switch (h)
                 {
@@ -1964,18 +1830,13 @@ namespace System.Management.Automation
             private static string CheckForMatches(uint[] runningHash, int upTo)
             {
                 var upToMax = runningHash.Length;
-                if (upTo == 0 || upTo > upToMax)
-                {
-                    upTo = upToMax;
-                }
+                if (upTo == 0) upTo = upToMax;
+                else if (upTo > upToMax) upTo = upToMax;
 
                 for (var i = 0; i < upTo; i++)
                 {
                     var result = LookupHash(runningHash[i]);
-                    if (result != null)
-                    {
-                        return result;
-                    }
+                    if (result != null) return result;
                 }
 
                 return null;
@@ -2012,7 +1873,7 @@ namespace System.Management.Automation
                     uint h = text[i];
                     if (h >= 'A' && h <= 'Z')
                     {
-                        h |= 0x20; // ToLower
+                        h = h | 0x20; // ToLower
                     }
                     else if (!((h >= 'a' && h <= 'z') || h == '-'))
                     {
@@ -2065,8 +1926,7 @@ namespace System.Management.Automation
                 }
 
                 if (pattern.Length > 29) {
-                    throw new Exception(
-                        "Update runningHash in match for new longest string.\n" +
+                    throw new Exception("Update runningHash in match for new longest string.\n" +
                         "Also a longer maximum length could greatly affect the performance of this algorithm, so only increase with care.");
                 }
 
@@ -2096,13 +1956,8 @@ namespace System.Management.Automation
 
             if (GetScriptBlockLoggingSetting()?.EnableScriptBlockInvocationLogging == true)
             {
-                PSEtwLog.LogOperationalVerbose(
-                    id: PSEventId.ScriptBlock_Invoke_Start_Detail,
-                    opcode: PSOpcode.Create,
-                    task: PSTask.CommandStart,
-                    keyword: PSKeyword.UseAlwaysOperational,
-                    scriptBlock.Id.ToString(),
-                    runspaceId.ToString());
+                PSEtwLog.LogOperationalVerbose(PSEventId.ScriptBlock_Invoke_Start_Detail, PSOpcode.Create, PSTask.CommandStart, PSKeyword.UseAlwaysOperational,
+                    scriptBlock.Id.ToString(), runspaceId.ToString());
             }
         }
 
@@ -2110,48 +1965,43 @@ namespace System.Management.Automation
         {
             if (GetScriptBlockLoggingSetting()?.EnableScriptBlockInvocationLogging == true)
             {
-                PSEtwLog.LogOperationalVerbose(
-                    id: PSEventId.ScriptBlock_Invoke_Complete_Detail,
-                    opcode: PSOpcode.Create,
-                    task: PSTask.CommandStop,
-                    keyword: PSKeyword.UseAlwaysOperational,
-                    scriptBlock.Id.ToString(),
-                    runspaceId.ToString());
+                PSEtwLog.LogOperationalVerbose(PSEventId.ScriptBlock_Invoke_Complete_Detail, PSOpcode.Create, PSTask.CommandStop, PSKeyword.UseAlwaysOperational,
+                    scriptBlock.Id.ToString(), runspaceId.ToString());
             }
         }
 
-        internal CompiledScriptBlockData ScriptBlockData { get => _scriptBlockData; }
+        internal CompiledScriptBlockData ScriptBlockData { get { return _scriptBlockData; } }
 
         /// <summary>
         /// Returns the AST corresponding to the script block.
         /// </summary>
-        public Ast Ast { get => (Ast)_scriptBlockData.Ast; }
+        public Ast Ast { get { return (Ast)_scriptBlockData.Ast; } }
 
-        internal IParameterMetadataProvider AstInternal { get => _scriptBlockData.Ast; }
+        internal IParameterMetadataProvider AstInternal { get { return _scriptBlockData.Ast; } }
 
-        internal IScriptExtent[] SequencePoints { get => _scriptBlockData.SequencePoints; }
+        internal IScriptExtent[] SequencePoints { get { return _scriptBlockData.SequencePoints; } }
 
-        internal Action<FunctionContext> DynamicParamBlock { get => _scriptBlockData.DynamicParamBlock; }
+        internal Action<FunctionContext> DynamicParamBlock { get { return _scriptBlockData.DynamicParamBlock; } }
 
-        internal Action<FunctionContext> UnoptimizedDynamicParamBlock { get => _scriptBlockData.UnoptimizedDynamicParamBlock; }
+        internal Action<FunctionContext> UnoptimizedDynamicParamBlock { get { return _scriptBlockData.UnoptimizedDynamicParamBlock; } }
 
-        internal Action<FunctionContext> BeginBlock { get => _scriptBlockData.BeginBlock; }
+        internal Action<FunctionContext> BeginBlock { get { return _scriptBlockData.BeginBlock; } }
 
-        internal Action<FunctionContext> UnoptimizedBeginBlock { get => _scriptBlockData.UnoptimizedBeginBlock; }
+        internal Action<FunctionContext> UnoptimizedBeginBlock { get { return _scriptBlockData.UnoptimizedBeginBlock; } }
 
-        internal Action<FunctionContext> ProcessBlock { get => _scriptBlockData.ProcessBlock; }
+        internal Action<FunctionContext> ProcessBlock { get { return _scriptBlockData.ProcessBlock; } }
 
-        internal Action<FunctionContext> UnoptimizedProcessBlock { get => _scriptBlockData.UnoptimizedProcessBlock; }
+        internal Action<FunctionContext> UnoptimizedProcessBlock { get { return _scriptBlockData.UnoptimizedProcessBlock; } }
 
-        internal Action<FunctionContext> EndBlock { get => _scriptBlockData.EndBlock; }
+        internal Action<FunctionContext> EndBlock { get { return _scriptBlockData.EndBlock; } }
 
-        internal Action<FunctionContext> UnoptimizedEndBlock { get => _scriptBlockData.UnoptimizedEndBlock; }
+        internal Action<FunctionContext> UnoptimizedEndBlock { get { return _scriptBlockData.UnoptimizedEndBlock; } }
 
-        internal bool HasBeginBlock { get => AstInternal.Body.BeginBlock != null; }
+        internal bool HasBeginBlock { get { return AstInternal.Body.BeginBlock != null; } }
 
-        internal bool HasProcessBlock { get => AstInternal.Body.ProcessBlock != null; }
+        internal bool HasProcessBlock { get { return AstInternal.Body.ProcessBlock != null; } }
 
-        internal bool HasEndBlock { get => AstInternal.Body.EndBlock != null; }
+        internal bool HasEndBlock { get { return AstInternal.Body.EndBlock != null; } }
     }
 
     [Serializable]
@@ -2161,15 +2011,12 @@ namespace System.Management.Automation
 
         private ScriptBlockSerializationHelper(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            if (info == null) throw new ArgumentNullException("info");
 
             _scriptText = info.GetValue("ScriptText", typeof(string)) as string;
             if (_scriptText == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(info));
+                throw PSTraceSource.NewArgumentNullException("info");
             }
         }
 
@@ -2178,7 +2025,10 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="context">The streaming context for this instance.</param>
         /// <returns>A script block that corresponds to the version deserialized.</returns>
-        public object GetRealObject(StreamingContext context) => ScriptBlock.Create(_scriptText);
+        public object GetRealObject(StreamingContext context)
+        {
+            return ScriptBlock.Create(_scriptText);
+        }
 
         /// <summary>
         /// Implements the ISerializable contract for serializing a scriptblock.
@@ -2186,7 +2036,9 @@ namespace System.Management.Automation
         /// <param name="info">Serialization information for this instance.</param>
         /// <param name="context">The streaming context for this instance.</param>
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-            => throw new NotSupportedException();
+        {
+            throw new NotSupportedException();
+        }
     }
 
     internal sealed class PSScriptCmdlet : PSCmdlet, IDynamicParameters, IDisposable
@@ -2196,7 +2048,7 @@ namespace System.Management.Automation
         private readonly bool _fromScriptFile;
         private readonly bool _useLocalScope;
         private readonly bool _runOptimized;
-        private readonly bool _rethrowExitException;
+        private bool _rethrowExitException;
         private MshCommandRuntime _commandRuntime;
         private readonly MutableTuple _localsTuple;
         private bool _exitWasCalled;
@@ -2207,7 +2059,7 @@ namespace System.Management.Automation
             _scriptBlock = scriptBlock;
             _useLocalScope = useNewScope;
             _fromScriptFile = fromScriptFile;
-            _runOptimized = _scriptBlock.Compile(optimized: context._debuggingMode <= 0 && useNewScope);
+            _runOptimized = _scriptBlock.Compile(optimized: context._debuggingMode > 0 ? false : useNewScope);
             _localsTuple = _scriptBlock.MakeLocalsTuple(_runOptimized);
             _localsTuple.SetAutomaticVariable(AutomaticVariable.PSCmdlet, this, context);
             _scriptBlock.SetPSScriptRootAndPSCommandPath(_localsTuple, context);
@@ -2240,10 +2092,7 @@ namespace System.Management.Automation
 
             if (_scriptBlock.HasBeginBlock)
             {
-                RunClause(
-                    clause: _runOptimized ? _scriptBlock.BeginBlock : _scriptBlock.UnoptimizedBeginBlock,
-                    dollarUnderbar: AutomationNull.Value,
-                    inputToProcess: _input);
+                RunClause(_runOptimized ? _scriptBlock.BeginBlock : _scriptBlock.UnoptimizedBeginBlock, AutomationNull.Value, _input);
             }
         }
 
@@ -2267,10 +2116,7 @@ namespace System.Management.Automation
 
             if (_scriptBlock.HasProcessBlock)
             {
-                RunClause(
-                    clause: _runOptimized ? _scriptBlock.ProcessBlock : _scriptBlock.UnoptimizedProcessBlock,
-                    dollarUnderbar: dollarUnder,
-                    inputToProcess: _input);
+                RunClause(_runOptimized ? _scriptBlock.ProcessBlock : _scriptBlock.UnoptimizedProcessBlock, dollarUnder, _input);
                 _input.Clear();
             }
         }
@@ -2284,10 +2130,7 @@ namespace System.Management.Automation
 
             if (_scriptBlock.HasEndBlock)
             {
-                RunClause(
-                    clause: _runOptimized ? _scriptBlock.EndBlock : _scriptBlock.UnoptimizedEndBlock,
-                    dollarUnderbar: AutomationNull.Value,
-                    inputToProcess: _input.ToArray());
+                RunClause(_runOptimized ? _scriptBlock.EndBlock : _scriptBlock.UnoptimizedEndBlock, AutomationNull.Value, _input.ToArray());
             }
         }
 
@@ -2309,8 +2152,8 @@ namespace System.Management.Automation
             // change the language mode.
             PSLanguageMode? oldLanguageMode = null;
             PSLanguageMode? newLanguageMode = null;
-            if (_scriptBlock.LanguageMode.HasValue
-                && _scriptBlock.LanguageMode != Context.LanguageMode)
+            if ((_scriptBlock.LanguageMode.HasValue) &&
+                (_scriptBlock.LanguageMode != Context.LanguageMode))
             {
                 oldLanguageMode = Context.LanguageMode;
                 newLanguageMode = _scriptBlock.LanguageMode;
@@ -2380,9 +2223,7 @@ namespace System.Management.Automation
                 this.Context.SetVariable(SpecialVariables.LastExitCodeVarPath, exitCode);
 
                 if (exitCode != 0)
-                {
                     _commandRuntime.PipelineProcessor.ExecutionFailed = true;
-                }
             }
         }
 
@@ -2395,14 +2236,11 @@ namespace System.Management.Automation
                 var resultList = new List<object>();
                 Diagnostics.Assert(_functionContext._outputPipe == null, "Output pipe should not be set yet.");
                 _functionContext._outputPipe = new Pipe(resultList);
-                RunClause(
-                    clause: _runOptimized ? _scriptBlock.DynamicParamBlock : _scriptBlock.UnoptimizedDynamicParamBlock,
-                    dollarUnderbar: AutomationNull.Value,
-                    inputToProcess: AutomationNull.Value);
+                RunClause(_runOptimized ? _scriptBlock.DynamicParamBlock : _scriptBlock.UnoptimizedDynamicParamBlock,
+                          AutomationNull.Value, AutomationNull.Value);
                 if (resultList.Count > 1)
                 {
-                    throw PSTraceSource.NewInvalidOperationException(
-                        AutomationExceptions.DynamicParametersWrongType,
+                    throw PSTraceSource.NewInvalidOperationException(AutomationExceptions.DynamicParametersWrongType,
                         PSObject.ToStringParser(this.Context, resultList));
                 }
 
@@ -2424,36 +2262,38 @@ namespace System.Management.Automation
         /// <summary>
         /// If the script cmdlet is dotted, this method is used to push the locals to the 'DottedScopes' of the current scope.
         /// </summary>
-        internal void PushDottedScope(SessionStateScope scope) => scope.DottedScopes.Push(_localsTuple);
+        internal void PushDottedScope(SessionStateScope scope)
+        {
+            scope.DottedScopes.Push(_localsTuple);
+        }
 
         /// <summary>
         /// If the script cmdlet is dotted, this method is used to pop the locals from the 'DottedScopes' of the current scope.
         /// </summary>
-        internal void PopDottedScope(SessionStateScope scope) => scope.DottedScopes.Pop();
+        internal void PopDottedScope(SessionStateScope scope)
+        {
+            scope.DottedScopes.Pop();
+        }
 
         internal void PrepareForBinding(CommandLineParameters commandLineParameters)
         {
-            _localsTuple.SetAutomaticVariable(
-                AutomaticVariable.PSBoundParameters,
-                value: commandLineParameters.GetValueToBindToPSBoundParameters(),
-                this.Context);
-            _localsTuple.SetAutomaticVariable(AutomaticVariable.MyInvocation, value: MyInvocation, this.Context);
+            _localsTuple.SetAutomaticVariable(AutomaticVariable.PSBoundParameters,
+                                              commandLineParameters.GetValueToBindToPSBoundParameters(), this.Context);
+            _localsTuple.SetAutomaticVariable(AutomaticVariable.MyInvocation, MyInvocation, this.Context);
         }
 
         private void SetPreferenceVariables()
         {
             if (_commandRuntime.IsDebugFlagSet)
             {
-                _localsTuple.SetPreferenceVariable(
-                    PreferenceVariable.Debug,
-                    _commandRuntime.Debug ? ActionPreference.Continue : ActionPreference.SilentlyContinue);
+                _localsTuple.SetPreferenceVariable(PreferenceVariable.Debug,
+                                                   _commandRuntime.Debug ? ActionPreference.Continue : ActionPreference.SilentlyContinue);
             }
 
             if (_commandRuntime.IsVerboseFlagSet)
             {
-                _localsTuple.SetPreferenceVariable(
-                    PreferenceVariable.Verbose,
-                    _commandRuntime.Verbose ? ActionPreference.Continue : ActionPreference.SilentlyContinue);
+                _localsTuple.SetPreferenceVariable(PreferenceVariable.Verbose,
+                                                   _commandRuntime.Verbose ? ActionPreference.Continue : ActionPreference.SilentlyContinue);
             }
 
             if (_commandRuntime.IsErrorActionSet)
@@ -2478,9 +2318,8 @@ namespace System.Management.Automation
 
             if (_commandRuntime.IsConfirmFlagSet)
             {
-                _localsTuple.SetPreferenceVariable(
-                    PreferenceVariable.Confirm,
-                    _commandRuntime.Confirm ? ConfirmImpact.Low : ConfirmImpact.None);
+                _localsTuple.SetPreferenceVariable(PreferenceVariable.Confirm,
+                                                   _commandRuntime.Confirm ? ConfirmImpact.Low : ConfirmImpact.None);
             }
         }
 
@@ -2510,9 +2349,7 @@ namespace System.Management.Automation
         public void Dispose()
         {
             if (_disposed)
-            {
                 return;
-            }
 
             this.DisposingEvent.SafeInvoke(this, EventArgs.Empty);
             commandRuntime = null;

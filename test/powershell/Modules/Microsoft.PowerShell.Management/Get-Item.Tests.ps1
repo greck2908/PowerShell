@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Get-Item" -Tags "CI" {
     BeforeAll {
@@ -11,33 +11,33 @@ Describe "Get-Item" -Tags "CI" {
     }
     It "Should list all the items in the current working directory when asterisk is used" {
         $items = Get-Item (Join-Path -Path $PSScriptRoot -ChildPath "*")
-        ,$items | Should -BeOfType System.Object[]
+        ,$items | Should -BeOfType 'System.Object[]'
     }
 
     It "Should return the name of the current working directory when a dot is used" {
         $item = Get-Item $PSScriptRoot
-        $item | Should -BeOfType System.IO.DirectoryInfo
+        $item | Should -BeOfType 'System.IO.DirectoryInfo'
         $item.Name | Should -BeExactly (Split-Path $PSScriptRoot -Leaf)
     }
 
     It "Should return the proper Name and BaseType for directory objects vs file system objects" {
         $rootitem = Get-Item $PSScriptRoot
-        $rootitem | Should -BeOfType System.IO.DirectoryInfo
+        $rootitem | Should -BeOfType 'System.IO.DirectoryInfo'
         $childitem = (Get-Item (Join-Path -Path $PSScriptRoot -ChildPath Get-Item.Tests.ps1))
-        $childitem | Should -BeOfType System.IO.FileInfo
+        $childitem | Should -BeOfType 'System.IO.FileInfo'
     }
 
     It "Using -literalpath should find no additional files" {
         $null = New-Item -type file "$TESTDRIVE/file[abc].txt"
         $null = New-Item -type file "$TESTDRIVE/filea.txt"
         # if literalpath is not correct we would see filea.txt
-        $item = Get-Item -LiteralPath "$TESTDRIVE/file[abc].txt"
+        $item = Get-Item -literalpath "$TESTDRIVE/file[abc].txt"
         @($item).Count | Should -Be 1
         $item.Name | Should -BeExactly 'file[abc].txt'
     }
 
     It "Should have mode flags set" {
-        Get-ChildItem $PSScriptRoot | ForEach-Object { $_.Mode | Should -Not -BeNullOrEmpty }
+        Get-ChildItem $PSScriptRoot | foreach-object { $_.Mode | Should -Not -BeNullOrEmpty }
     }
 
     It "Should not return the item unless force is used if hidden" {
@@ -48,22 +48,8 @@ Describe "Get-Item" -Tags "CI" {
         }
         ${result} = Get-Item "${hiddenFile}" -ErrorAction SilentlyContinue
         ${result} | Should -BeNullOrEmpty
-        ${result} = Get-Item -Force "${hiddenFile}" -ErrorAction SilentlyContinue
+        ${result} = Get-Item -force "${hiddenFile}" -ErrorAction SilentlyContinue
         ${result}.FullName | Should -BeExactly ${item}.FullName
-    }
-
-    It "Should get properties for special reparse points" -Skip:$skipNotWindows {
-        $result = Get-Item -Path $HOME/Cookies -Force
-        $result.LinkType | Should -BeExactly "Junction"
-        $result.Target | Should -Not -BeNullOrEmpty
-        $result.Name | Should -BeExactly "Cookies"
-        $result.Mode | Should -BeExactly "l--hs"
-        $result.Exists | Should -BeTrue
-    }
-
-    It "Should return correct result for ToString() on root of drive" {
-        $root = $IsWindows ? "${env:SystemDrive}\" : "/"
-        (Get-Item -Path $root).ToString() | Should -BeExactly $root
     }
 
     Context "Test for Include, Exclude, and Filter" {
@@ -89,7 +75,7 @@ Describe "Get-Item" -Tags "CI" {
             $result.Name | Should -BeExactly "file2.txt"
         }
         It "Should respect combinations of filter, include, and exclude" {
-            $result = Get-Item "${testBaseDir}/*" -Filter *.txt -Include "file[12].txt" -Exclude file2.txt
+            $result = get-item "${testBaseDir}/*" -filter *.txt -include "file[12].txt" -exclude file2.txt
             ($result).Count | Should -Be 1
             $result.Name | Should -BeExactly "file1.txt"
         }
@@ -112,48 +98,26 @@ Describe "Get-Item" -Tags "CI" {
                 return
             }
             $altStreamPath = "$TESTDRIVE/altStream.txt"
-            $altStreamDirectory = "$TESTDRIVE/altstreamdir"
-            $noAltStreamDirectory = "$TESTDRIVE/noaltstreamdir"
             $stringData = "test data"
             $streamName = "test"
-            $absentStreamName = "noExist"
-            $null = New-Item -type file $altStreamPath
-            Set-Content -Path $altStreamPath -Stream $streamName -Value $stringData
-            $null = New-Item -type directory $altStreamDirectory
-            Set-Content -Path $altStreamDirectory -Stream $streamName -Value $stringData
-            $null = New-Item -type directory $noAltStreamDirectory
+            $item = new-item -type file $altStreamPath
+            Set-Content -path $altStreamPath -Stream $streamName -Value $stringData
         }
-        It "Should find an alternate stream on a file if present" -Skip:$skipNotWindows {
+        It "Should find an alternate stream if present" -skip:$skipNotWindows {
             $result = Get-Item $altStreamPath -Stream $streamName
             $result.Length | Should -Be ($stringData.Length + [Environment]::NewLine.Length)
             $result.Stream | Should -Be $streamName
         }
-        It "Should error if it cannot find alternate stream on an existing file" -Skip:$skipNotWindows {
-            { Get-Item $altStreamPath -Stream $absentStreamName -ErrorAction Stop } | Should -Throw -ErrorId "AlternateDataStreamNotFound,Microsoft.PowerShell.Commands.GetItemCommand"
-        }
-        It "Should find an alternate stream on a directory if present, and it should not be a container" -Skip:$skipNotWindows {
-            $result = Get-Item $altStreamDirectory -Stream $streamName
-            $result.Length | Should -Be ($stringData.Length + [Environment]::NewLine.Length )
-            $result.Stream | Should -Be $streamName
-            $result.PSIsContainer | Should -BeExactly $false
-        }
-        It "Should not find an alternate stream on a directory if not present" -Skip:$skipNotWindows {
-            { Get-Item $noAltStreamDirectory -Stream $absentStreamName -ErrorAction Stop } | Should -Throw -ErrorId "AlternateDataStreamNotFound,Microsoft.PowerShell.Commands.GetItemCommand"
-        }
-        It "Should find zero alt streams and not fail on a directory with a wildcard stream name if no alt streams are present" -Skip:$skipNotWindows {
-            $result = Get-Item $noAltStreamDirectory -Stream * -ErrorAction Stop
-            $result | Should -BeExactly $null
-        }
     }
 
     Context "Registry Provider" {
-        It "Can retrieve an item from registry" -Skip:$skipNotWindows {
+        It "Can retrieve an item from registry" -skip:$skipNotWindows {
             ${result} = Get-Item HKLM:/Software
-            ${result} | Should -BeOfType Microsoft.Win32.RegistryKey
+            ${result} | Should -BeOfType "Microsoft.Win32.RegistryKey"
         }
     }
 
-    Context "Environment provider" -Tag "CI" {
+    Context "Environment provider" -tag "CI" {
         BeforeAll {
             $env:testvar="b"
             $env:testVar="a"
@@ -165,7 +129,7 @@ Describe "Get-Item" -Tags "CI" {
         }
 
         It "get-item testVar" {
-            (Get-Item env:\testVar).Value | Should -BeExactly "a"
+            (get-item env:\testVar).Value | Should -BeExactly "a"
         }
 
         It "get-item is case-sensitive/insensitive as appropriate" {
@@ -175,7 +139,7 @@ Describe "Get-Item" -Tags "CI" {
                 $expectedValue = "a"
             }
 
-            (Get-Item env:\testvar).Value | Should -BeExactly $expectedValue
+            (get-item env:\testvar).Value | Should -BeExactly $expectedValue
         }
     }
 }
@@ -187,7 +151,7 @@ Describe "Get-Item environment provider on Windows with accidental case-variant 
     AfterAll {
         $env:testVar = $null
     }
-    It "Reports the effective value among accidental case-variant duplicates on Windows" -Skip:$skipNotWindows {
+    It "Reports the effective value among accidental case-variant duplicates on Windows" -skip:$skipNotWindows {
         if (-not (Get-Command -ErrorAction Ignore node.exe)) {
             Write-Warning "Test skipped, because prerequisite Node.js is not installed."
         } else {

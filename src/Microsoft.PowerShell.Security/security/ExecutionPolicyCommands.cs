@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -24,7 +24,7 @@ namespace Microsoft.PowerShell.Commands
     ///    - Current user machine preference
     ///    - Local machine preference.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "ExecutionPolicy", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096594")]
+    [Cmdlet(VerbsCommon.Get, "ExecutionPolicy", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113315")]
     [OutputType(typeof(ExecutionPolicy))]
     public class GetExecutionPolicyCommand : PSCmdlet
     {
@@ -116,7 +116,7 @@ namespace Microsoft.PowerShell.Commands
     /// If the Group Policy setting overrides the desired behaviour, the Cmdlet
     /// generates a terminating error.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "ExecutionPolicy", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096612")]
+    [Cmdlet(VerbsCommon.Set, "ExecutionPolicy", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113394")]
     public class SetExecutionPolicyCommand : PSCmdlet
     {
         /// <summary>
@@ -233,8 +233,10 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
 
+#if !CORECLR
                 PSEtwLog.LogSettingsEvent(MshLog.GetLogContext(Context, MyInvocation),
                     EtwLoggingStrings.ExecutionPolicyName, executionPolicy, null);
+#endif
             }
         }
 

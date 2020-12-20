@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Sort-Object" -Tags "CI" {
 
@@ -103,12 +103,12 @@ Describe "Sort-Object DRT Unit Tests" -Tags "CI" {
 	}
 
 	It "Sort-Object with Non Existing And Null Script Property should work"{
-		$n = New-Object microsoft.powershell.commands.newobjectcommand
-		$d = New-Object microsoft.powershell.commands.newobjectcommand
+		$n = new-object microsoft.powershell.commands.newobjectcommand
+		$d = new-object microsoft.powershell.commands.newobjectcommand
 		$d.TypeName = 'Deetype'
-		$b = New-Object microsoft.powershell.commands.newobjectcommand
+		$b = new-object microsoft.powershell.commands.newobjectcommand
 		$b.TypeName = 'btype'
-		$a = New-Object microsoft.powershell.commands.newobjectcommand
+		$a = new-object microsoft.powershell.commands.newobjectcommand
 		$a.TypeName = 'atype'
 		$results = $n, $d, $b, 'b', $a | Sort-Object -proper {$_.TypeName}
 		$results.Count | Should -Be 5
@@ -119,13 +119,13 @@ Describe "Sort-Object DRT Unit Tests" -Tags "CI" {
 	}
 
 	It "Sort-Object with Non Existing And Null Property should work"{
-		$n = New-Object microsoft.powershell.commands.newobjectcommand
+		$n = new-object microsoft.powershell.commands.newobjectcommand
 		$n.TypeName = $null
-		$d = New-Object microsoft.powershell.commands.newobjectcommand
+		$d = new-object microsoft.powershell.commands.newobjectcommand
 		$d.TypeName = 'Deetype'
-		$b = New-Object microsoft.powershell.commands.newobjectcommand
+		$b = new-object microsoft.powershell.commands.newobjectcommand
 		$b.TypeName = 'btype'
-		$a = New-Object microsoft.powershell.commands.newobjectcommand
+		$a = new-object microsoft.powershell.commands.newobjectcommand
 		$a.TypeName = 'atype'
 		$results = $n, $d, $b, 'b', $a | Sort-Object -prop TypeName
 		$results.Count | Should -Be 5

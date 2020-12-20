@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Describe "Validate start of console host" -Tag CI {
@@ -13,6 +13,7 @@ Describe "Validate start of console host" -Tag CI {
             'netstandard.dll'
             'Newtonsoft.Json.dll'
             'pwsh.dll'
+            'System.Buffers.dll'
             'System.Collections.Concurrent.dll'
             'System.Collections.dll'
             'System.Collections.NonGeneric.dll'
@@ -22,6 +23,8 @@ Describe "Validate start of console host" -Tag CI {
             'System.ComponentModel.TypeConverter.dll'
             'System.Console.dll'
             'System.Data.Common.dll'
+            'System.Diagnostics.Debug.dll'
+            'System.Diagnostics.FileVersionInfo.dll'
             'System.Diagnostics.Process.dll'
             'System.Diagnostics.TraceSource.dll'
             'System.Diagnostics.Tracing.dll'
@@ -40,10 +43,13 @@ Describe "Validate start of console host" -Tag CI {
             'System.Private.CoreLib.dll'
             'System.Private.Uri.dll'
             'System.Private.Xml.dll'
+            'System.Private.Xml.Linq.dll'
             'System.Reflection.Emit.ILGeneration.dll'
             'System.Reflection.Emit.Lightweight.dll'
             'System.Reflection.Primitives.dll'
+            'System.Resources.ResourceManager.dll'
             'System.Runtime.dll'
+            'System.Runtime.Extensions.dll'
             'System.Runtime.InteropServices.dll'
             'System.Runtime.InteropServices.RuntimeInformation.dll'
             'System.Runtime.Loader.dll'
@@ -57,26 +63,32 @@ Describe "Validate start of console host" -Tag CI {
             'System.Text.Encoding.Extensions.dll'
             'System.Text.RegularExpressions.dll'
             'System.Threading.dll'
+            'System.Threading.Tasks.dll'
             'System.Threading.Tasks.Parallel.dll'
             'System.Threading.Thread.dll'
             'System.Threading.ThreadPool.dll'
+            'System.Threading.Timer.dll'
             'System.Xml.ReaderWriter.dll'
+            'System.Xml.XDocument.dll'
         )
 
         if ($IsWindows) {
             $allowedAssemblies += @(
                 'Microsoft.PowerShell.CoreCLR.Eventing.dll'
-                'System.Diagnostics.FileVersionInfo.dll'
                 'System.DirectoryServices.dll'
                 'System.Management.dll'
                 'System.Security.Claims.dll'
                 'System.Security.Cryptography.Primitives.dll'
+                'System.Security.Principal.dll'
                 'System.Threading.Overlapped.dll'
             )
         }
         else {
             $allowedAssemblies += @(
+                'System.Collections.Immutable.dll'
+                'System.IO.MemoryMappedFiles.dll'
                 'System.Net.Sockets.dll'
+                'System.Reflection.Metadata.dll'
             )
         }
 
@@ -90,20 +102,15 @@ Describe "Validate start of console host" -Tag CI {
             Remove-Item $profileDataFile -Force
         }
 
-        $loadedAssemblies = & "$PSHOME/pwsh" -noprofile -command '([System.AppDomain]::CurrentDomain.GetAssemblies()).manifestmodule | Where-Object { $_.Name -notlike ""<*>"" } | ForEach-Object { $_.Name }'
+        $loadedAssemblies = pwsh -noprofile -command '([System.AppDomain]::CurrentDomain.GetAssemblies()).manifestmodule | Where-Object { $_.Name -notlike ""<*>"" } | ForEach-Object { $_.Name }'
     }
 
     It "No new assemblies are loaded" {
-        if ( (Get-PlatformInfo).Platform -eq "alpine" ) {
-            Set-ItResult -Pending -Because "Missing MI library causes list to be different"
-            return
-        }
-
         $diffs = Compare-Object -ReferenceObject $allowedAssemblies -DifferenceObject $loadedAssemblies
 
         if ($null -ne $diffs) {
-            $assembliesAllowedButNotLoaded = $diffs | Where-Object SideIndicator -EQ "<=" | ForEach-Object InputObject
-            $assembliesLoadedButNotAllowed = $diffs | Where-Object SideIndicator -EQ "=>" | ForEach-Object InputObject
+            $assembliesAllowedButNotLoaded = $diffs | Where-Object SideIndicator -eq "<=" | ForEach-Object InputObject
+            $assembliesLoadedButNotAllowed = $diffs | Where-Object SideIndicator -eq "=>" | ForEach-Object InputObject
 
             if ($assembliesAllowedButNotLoaded) {
                 Write-Host ("Assemblies that are expected but not loaded: {0}" -f ($assembliesAllowedButNotLoaded -join ", "))

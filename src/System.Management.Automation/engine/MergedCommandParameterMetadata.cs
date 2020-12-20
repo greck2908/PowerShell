@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -81,7 +81,7 @@ namespace System.Management.Automation
         {
             if (parameterMetadata == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(parameterMetadata));
+                throw PSTraceSource.NewArgumentNullException("parameterMetadata");
             }
 
             Collection<MergedCompiledCommandParameter> result =
@@ -443,7 +443,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             Collection<MergedCompiledCommandParameter> matchingParameters =
@@ -513,7 +513,7 @@ namespace System.Management.Automation
                     }
                 }
 
-                if (tryExactMatching && filteredParameters.Count == 1)
+                if (filteredParameters.Count == 1)
                 {
                     matchingParameters = filteredParameters;
                 }
@@ -657,12 +657,12 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the compiled command parameter for the association.
         /// </summary>
-        internal CompiledCommandParameter Parameter { get; }
+        internal CompiledCommandParameter Parameter { get; private set; }
 
         /// <summary>
         /// Gets the type of binder that the compiled command parameter should be bound with.
         /// </summary>
-        internal ParameterBinderAssociation BinderAssociation { get; }
+        internal ParameterBinderAssociation BinderAssociation { get; private set; }
 
         public override string ToString()
         {
@@ -708,3 +708,4 @@ namespace System.Management.Automation
         PagingParameters,
     }
 }
+

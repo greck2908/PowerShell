@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -98,6 +98,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                         mainControlFound = true;
                         view.mainControl = LoadListControl(n);
                     }
+
                     else if (MatchNodeName(n, XmlTags.WideControlNode))
                     {
                         if (mainControlFound)
@@ -170,7 +171,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                         return false;
                     }
 
-                    if (view.mainControl is not ComplexControlBody && view.mainControl is not ListControlBody)
+                    if (!(view.mainControl is ComplexControlBody) && !(view.mainControl is ListControlBody))
                     {
                         // Error at XPath {0} in file {1}: Out Of Band views can only have CustomControl or ListControl.
                         ReportError(StringUtil.Format(FormatAndOutXmlLoadingStrings.InvalidControlForOutOfBandView, ComputeCurrentXPath(), FilePath));
@@ -200,10 +201,10 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         private bool LoadCommonViewData(XmlNode viewNode, ViewDefinition view, List<XmlNode> unprocessedNodes)
         {
             if (viewNode == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(viewNode));
+                throw PSTraceSource.NewArgumentNullException("viewNode");
 
             if (view == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(view));
+                throw PSTraceSource.NewArgumentNullException("view");
 
             // set loading information
             view.loadingInfo = this.LoadingInfo;

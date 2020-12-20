@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 # get a random string of characters a-z and A-Z
@@ -51,8 +51,6 @@ Describe "Clear-Content cmdlet tests" -Tags "CI" {
     Setup -File "$file3" -Content $content2
     $streamContent = "content for alternate stream"
     $streamName = "altStream1"
-    $dirName = "clearcontent"
-    Setup -Directory "$dirName"
   }
 
   Context "Clear-Content should actually clear content" {
@@ -67,7 +65,7 @@ Describe "Clear-Content cmdlet tests" -Tags "CI" {
     }
 
     # we could suppress the WhatIf output here if we use the testhost, but it's not necessary
-    It "The filesystem provider supports should process" -Skip:(!$IsWindows) {
+    It "The filesystem provider supports should process" -skip:(!$IsWindows) {
       Clear-Content -Path TestDrive:\$file2 -WhatIf
       "TestDrive:\$file2" | Should -FileContentMatch "This is content"
     }
@@ -77,50 +75,32 @@ Describe "Clear-Content cmdlet tests" -Tags "CI" {
       $cci.SupportsShouldProcess | Should -BeTrue
     }
 
-    Context "Clear-Content should work with alternate data streams on Windows" {
-      It "Alternate streams should be cleared with Clear-Content on a file" -Skip:(!$IsWindows) {
+    It "Alternate streams should be cleared with clear-content" -skip:(!$IsWindows) {
+      # make sure that the content is correct
+      # this is here rather than BeforeAll because only windows can write to an alternate stream
+      Set-Content -Path "TestDrive:/$file3" -Stream $streamName -Value $streamContent
+      Get-Content -Path "TestDrive:/$file3" | Should -BeExactly $content2
+      Get-Content -Path "TestDrive:/$file3" -Stream $streamName | Should -BeExactly $streamContent
+      Clear-Content -Path "TestDrive:/$file3" -Stream $streamName
+      Get-Content -Path "TestDrive:/$file3" | Should -BeExactly $content2
+      Get-Content -Path "TestDrive:/$file3" -Stream $streamName | Should -BeNullOrEmpty
+    }
 
-        Set-Content           -Path "TestDrive:/$file3" -Stream $streamName -Value $streamContent
-        Get-Content           -Path "TestDrive:/$file3" -Stream $streamName | Should -BeExactly $streamContent
-
-        Clear-Content         -Path "TestDrive:/$file3" -Stream $streamName -ErrorAction Stop
-
-        $result = Get-Item -Path "TestDrive:/$file3" -Stream $streamName
-        $result | Should -BeOfType System.Management.Automation.Internal.AlternateStreamData
-        $result.length | Should -Be 0
+    It "the '-Stream' dynamic parameter is visible to get-command in the filesystem" -Skip:(!$IsWindows) {
+      try {
+        Push-Location -Path TestDrive:
+        (Get-Command Clear-Content -Stream foo).parameters.keys -eq "stream" | Should -Be "stream"
       }
-
-      It "Alternate streams should be cleared with Clear-Content on a directory" -Skip:(!$IsWindows) {
-        Set-Content           -Path "TestDrive:/$dirName" -Stream $streamName -Value $streamContent
-
-        Get-Content           -Path "TestDrive:/$dirName" -Stream $streamName | Should -BeExactly $streamContent
-        Clear-Content         -Path "TestDrive:/$dirName" -Stream $streamName -ErrorAction Stop
-
-        $result = Get-Item -Path "TestDrive:/$dirName" -Stream $streamName
-        $result | Should -BeOfType System.Management.Automation.Internal.AlternateStreamData
-        $result.length | Should -Be 0
+      finally {
+        Pop-Location
       }
+    }
 
-      It "the '-Stream' dynamic parameter is visible to get-command in the filesystem" -Skip:(!$IsWindows) {
-        try {
-          Push-Location -Path TestDrive:
-          (Get-Command Clear-Content -Stream foo).parameters.keys -eq "Stream" | Should -BeExactly "Stream"
-        }
-        finally {
-          Pop-Location
-        }
-      }
-
-      It "the '-Stream' dynamic parameter should not be visible to get-command in the function provider" -Skip:(!$IsWindows) {
-        try {
-        Push-Location -Path function:
-          { Get-Command Clear-Content -Stream $streamName } |
-            Should -Throw -ErrorId "NamedParameterNotFound,Microsoft.PowerShell.Commands.GetCommandCommand"
-        }
-        finally {
-          Pop-Location
-        }
-      }
+    It "the '-Stream' dynamic parameter should not be visible to get-command in the function provider" {
+      Push-Location -Path function:
+      { Get-Command Clear-Content -Stream $streamName } |
+        Should -Throw -ErrorId "NamedParameterNotFound,Microsoft.PowerShell.Commands.GetCommandCommand"
+      Pop-Location
     }
   }
 

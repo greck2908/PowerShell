@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -10,7 +10,7 @@ namespace Microsoft.PowerShell
     /// Defines a unique key for a Shell Property.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    internal readonly struct PropertyKey : IEquatable<PropertyKey>
+    internal struct PropertyKey : IEquatable<PropertyKey>
     {
         #region Public Properties
         /// <summary>
@@ -75,7 +75,7 @@ namespace Microsoft.PowerShell
             if (obj == null)
                 return false;
 
-            if (obj is not PropertyKey)
+            if (!(obj is PropertyKey))
                 return false;
 
             PropertyKey other = (PropertyKey)obj;

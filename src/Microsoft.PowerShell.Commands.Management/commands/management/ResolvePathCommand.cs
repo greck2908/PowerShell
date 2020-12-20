@@ -1,9 +1,11 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -12,7 +14,7 @@ namespace Microsoft.PowerShell.Commands
     /// MSH paths that match the glob strings.
     /// </summary>
     [Cmdlet(VerbsDiagnostic.Resolve, "Path", DefaultParameterSetName = "Path", SupportsTransactions = true,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097143")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113384")]
     public class ResolvePathCommand : CoreCommandWithCredentialsBase
     {
         #region Parameters
@@ -173,3 +175,4 @@ namespace Microsoft.PowerShell.Commands
 
     }
 }
+

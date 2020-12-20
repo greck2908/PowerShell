@@ -1,10 +1,13 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
 
+using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Management.Automation;
+using System.Globalization;
 
 #endregion
 
@@ -17,7 +20,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal class CimGetCimClassContext : XOperationContextBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimGetCimClassContext"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         /// <param name="methodName"></param>
         /// <param name="propertyName"></param>
@@ -28,10 +33,10 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             string thePropertyName,
             string theQualifierName)
         {
-            this.ClassName = theClassName;
-            this.MethodName = theMethodName;
-            this.PropertyName = thePropertyName;
-            this.QualifierName = theQualifierName;
+            this.className = theClassName;
+            this.methodName = theMethodName;
+            this.propertyName = thePropertyName;
+            this.qualifierName = theQualifierName;
         }
 
         /// <summary>
@@ -42,7 +47,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// Wildcard expansion should be allowed.
         /// </para>
         /// </summary>
-        public string ClassName { get; set; }
+        public string ClassName
+        {
+            get { return className; }
+
+            set { className = value; }
+        }
+
+        private string className;
 
         /// <summary>
         /// <para>
@@ -51,7 +63,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// Then Filter the <see cref="CimClass"/> by given methodname
         /// </para>
         /// </summary>
-        internal string MethodName { get; }
+        internal string MethodName
+        {
+            get { return methodName; }
+        }
+
+        private string methodName;
 
         /// <summary>
         /// <para>
@@ -60,7 +77,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// Filter the <see cref="CimClass"/> by given property name.
         /// </para>
         /// </summary>
-        internal string PropertyName { get; }
+        internal string PropertyName
+        {
+            get { return propertyName; }
+        }
+
+        private string propertyName;
 
         /// <summary>
         /// <para>
@@ -69,7 +91,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// Filter the <see cref="CimClass"/> by given methodname
         /// </para>
         /// </summary>
-        internal string QualifierName { get; }
+        internal string QualifierName
+        {
+            get { return qualifierName; }
+        }
+
+        private string qualifierName;
     }
 
     /// <summary>
@@ -80,7 +107,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal sealed class CimGetCimClass : CimAsyncOperation
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimGetCimClass"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         public CimGetCimClass()
             : base()
@@ -95,10 +124,10 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <param name="cmdlet"><see cref="GetCimClassCommand"/> object.</param>
         public void GetCimClass(GetCimClassCommand cmdlet)
         {
-            List<CimSessionProxy> proxys = new();
+            List<CimSessionProxy> proxys = new List<CimSessionProxy>();
             string nameSpace = ConstValue.GetNamespace(cmdlet.Namespace);
             string className = (cmdlet.ClassName == null) ? @"*" : cmdlet.ClassName;
-            CimGetCimClassContext context = new(
+            CimGetCimClassContext context = new CimGetCimClassContext(
                 cmdlet.ClassName,
                 cmdlet.MethodName,
                 cmdlet.PropertyName,
@@ -160,7 +189,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         /// <param name="proxy"></param>
         /// <param name="cmdlet"></param>
-        private static void SetSessionProxyProperties(
+        private void SetSessionProxyProperties(
             ref CimSessionProxy proxy,
             GetCimClassCommand cmdlet)
         {

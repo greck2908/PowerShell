@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -74,7 +74,7 @@ namespace System.Management.Automation
             _xmlNode = xmlNode;
         }
 
-        private readonly XmlNode _xmlNode;
+        private XmlNode _xmlNode;
 
         /// <summary>
         /// Underline xmlNode for this MamlNode object.
@@ -214,9 +214,9 @@ namespace System.Management.Automation
 
                 if (xmlNode.Attributes["type"] != null)
                 {
-                    if (string.Equals(xmlNode.Attributes["type"].Value, "field", StringComparison.OrdinalIgnoreCase))
+                    if (string.Compare(xmlNode.Attributes["type"].Value, "field", StringComparison.OrdinalIgnoreCase) == 0)
                         mshObject.TypeNames.Add("MamlPSClassHelpInfo#field");
-                    else if (string.Equals(xmlNode.Attributes["type"].Value, "method", StringComparison.OrdinalIgnoreCase))
+                    else if (string.Compare(xmlNode.Attributes["type"].Value, "method", StringComparison.OrdinalIgnoreCase) == 0)
                         mshObject.TypeNames.Add("MamlPSClassHelpInfo#method");
                 }
 
@@ -646,7 +646,7 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="nodes"></param>
         /// <returns></returns>
-        private static int GetParaMamlNodeCount(XmlNodeList nodes)
+        private int GetParaMamlNodeCount(XmlNodeList nodes)
         {
             int i = 0;
 

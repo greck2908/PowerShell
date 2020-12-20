@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -18,7 +18,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         #region tracer
         [TraceSource("format_out_OutCommandInner", "OutCommandInner")]
-        internal static readonly PSTraceSource tracer = PSTraceSource.GetTracer("format_out_OutCommandInner", "OutCommandInner");
+        internal static PSTraceSource tracer = PSTraceSource.GetTracer("format_out_OutCommandInner", "OutCommandInner");
         #endregion tracer
 
         internal override void BeginProcessing()
@@ -181,7 +181,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             {
                 // we assume that the format context
                 // contains the information
-                const FormatShape shape = FormatShape.Table; // default
+                FormatShape shape = FormatShape.Table; // default
                 FormatOutputContext foc = this.FormatContext;
 
                 if (foc == null || foc.Data.shapeInfo == null)
@@ -476,10 +476,11 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
             if (goc.Data.groupingEntry != null)
             {
+                _lo.WriteLine(string.Empty);
+
                 ComplexWriter writer = new ComplexWriter();
                 writer.Initialize(_lo, _lo.ColumnNumber);
                 writer.WriteObject(goc.Data.groupingEntry.formatValueList);
-                _lo.WriteLine(string.Empty);
             }
 
             goc.GroupStart();
@@ -508,7 +509,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             // we assume FormatEntryData as a standard wrapper
             if (fed == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(fed));
+                PSTraceSource.NewArgumentNullException("fed");
             }
 
             if (fed.formatEntryInfo == null)
@@ -596,9 +597,9 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
         internal LineOutput LineOutput
         {
-            get { return _lo; }
-
             set { _lo = value; }
+
+            get { return _lo; }
         }
 
         private ShapeInfo ShapeInfoOnFormatContext
@@ -637,7 +638,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Context manager instance to guide the message traversal.
         /// </summary>
-        private readonly FormatMessagesContextManager _ctxManager = new FormatMessagesContextManager();
+        private FormatMessagesContextManager _ctxManager = new FormatMessagesContextManager();
 
         private FormattedObjectsCache _cache = null;
 
@@ -940,7 +941,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             /// <summary>
             /// Helper class to properly write a table using text output.
             /// </summary>
-            private readonly TableWriter _tableWriter = new TableWriter();
+            private TableWriter _tableWriter = new TableWriter();
         }
 
         private sealed class TableOutputContext : TableOutputContextBase
@@ -948,10 +949,8 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             private int _rowCount = 0;
             private int _consoleHeight = -1;
             private int _consoleWidth = -1;
-
             private const int WhitespaceAndPagerLineCount = 2;
-
-            private readonly bool _repeatHeader = false;
+            private bool _repeatHeader = false;
 
             /// <summary>
             /// Construct a context to push on the stack.
@@ -1174,7 +1173,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             /// <summary>
             /// Writer to do the actual formatting.
             /// </summary>
-            private readonly ListWriter _listWriter = new ListWriter();
+            private ListWriter _listWriter = new ListWriter();
         }
 
         private sealed class WideOutputContext : TableOutputContextBase
@@ -1357,7 +1356,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                         _arr[k] = null;
                 }
 
-                private readonly string[] _arr;
+                private string[] _arr;
                 private int _lastEmptySpot;
             }
         }
@@ -1395,7 +1394,8 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 _writer.WriteObject(cve.formatValueList);
             }
 
-            private readonly ComplexWriter _writer = new ComplexWriter();
+            private ComplexWriter _writer = new ComplexWriter();
         }
     }
 }
+

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -28,7 +28,7 @@ namespace System.Management.Automation
         /// <remarks>
         /// This hashtable is made case-insensitive so that helpInfo can be retrieved case insensitively.
         /// </remarks>
-        private readonly Hashtable _helpCache = new Hashtable(StringComparer.OrdinalIgnoreCase);
+        private Hashtable _helpCache = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Exact match help for a target.

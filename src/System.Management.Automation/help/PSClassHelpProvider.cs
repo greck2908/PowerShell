@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -80,9 +80,11 @@ namespace System.Management.Automation
             else
                 patternList.Add(target);
 
+            bool useWildCards = true;
+
             foreach (string pattern in patternList)
             {
-                PSClassSearcher searcher = new PSClassSearcher(pattern, useWildCards: true, _context);
+                PSClassSearcher searcher = new PSClassSearcher(pattern, useWildCards, _context);
 
                 foreach (var helpInfo in GetHelpInfo(searcher))
                 {
@@ -106,7 +108,10 @@ namespace System.Management.Automation
                 yield return null;
             }
 
-            PSClassSearcher searcher = new PSClassSearcher(helpRequest.Target, useWildCards: false, _context);
+            string target = helpRequest.Target;
+            bool useWildCards = false;
+
+            PSClassSearcher searcher = new PSClassSearcher(target, useWildCards, _context);
 
             foreach (var helpInfo in GetHelpInfo(searcher))
             {
@@ -317,7 +322,7 @@ namespace System.Management.Automation
                 for (int i = 0; i < doc.ChildNodes.Count; i++)
                 {
                     XmlNode node = doc.ChildNodes[i];
-                    if (node.NodeType == XmlNodeType.Element && string.Equals(node.LocalName, "helpItems", StringComparison.OrdinalIgnoreCase))
+                    if (node.NodeType == XmlNodeType.Element && string.Compare(node.LocalName, "helpItems", StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         helpItemsNode = node;
                         break;
@@ -343,7 +348,7 @@ namespace System.Management.Automation
 
                         string nodeLocalName = node.LocalName;
 
-                        bool isClass = (string.Equals(nodeLocalName, "class", StringComparison.OrdinalIgnoreCase));
+                        bool isClass = (string.Compare(nodeLocalName, "class", StringComparison.OrdinalIgnoreCase) == 0);
 
                         if (node.NodeType == XmlNodeType.Element && isClass)
                         {

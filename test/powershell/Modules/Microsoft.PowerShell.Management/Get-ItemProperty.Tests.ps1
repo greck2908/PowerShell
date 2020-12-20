@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Get-ItemProperty" -Tags "CI" {
     $currentDirectory = Split-Path $PSScriptRoot -Leaf

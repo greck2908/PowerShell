@@ -1,12 +1,12 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
+using System.Collections.Generic;
 
 #endregion
 
@@ -22,7 +22,6 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     /// Association parameter.
     /// </para>
     /// </summary>
-    [Alias("gcai")]
     [Cmdlet(VerbsCommon.Get,
         GetCimAssociatedInstanceCommand.Noun,
         DefaultParameterSetName = CimBaseCommand.ComputerSetName,
@@ -33,7 +32,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         #region constructor
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GetCimAssociatedInstanceCommand"/> class.
+        /// Constructor.
         /// </summary>
         public GetCimAssociatedInstanceCommand()
             : base(parameters, parameterSets)
@@ -53,7 +52,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         [Parameter(
             Position = 1,
             ValueFromPipelineByPropertyName = true)]
-        public string Association { get; set; }
+        public string Association
+        {
+            get { return association; }
+
+            set { association = value; }
+        }
+
+        private string association;
 
         /// <summary>
         /// The following is the definition of the input parameter "ResultClassName".
@@ -61,7 +67,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// the given instance.
         /// </summary>
         [Parameter]
-        public string ResultClassName { get; set; }
+        public string ResultClassName
+        {
+            get { return resultClassName; }
+
+            set { resultClassName = value; }
+        }
+
+        private string resultClassName;
 
         /// <summary>
         /// <para>
@@ -76,11 +89,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         [Alias(CimBaseCommand.AliasCimInstance)]
         public CimInstance InputObject
         {
-            get { return CimInstance; }
+            get { return cimInstance; }
 
             set
             {
-                CimInstance = value;
+                cimInstance = value;
                 base.SetParameter(value, nameCimInstance);
             }
         }
@@ -88,7 +101,12 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Property for internal usage purpose.
         /// </summary>
-        internal CimInstance CimInstance { get; private set; }
+        internal CimInstance CimInstance
+        {
+            get { return cimInstance; }
+        }
+
+        private CimInstance cimInstance;
 
         /// <summary>
         /// The following is the definition of the input parameter "Namespace".
@@ -96,7 +114,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// is registered.
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
-        public string Namespace { get; set; }
+        public string Namespace
+        {
+            get { return nameSpace; }
+
+            set { nameSpace = value; }
+        }
+
+        private string nameSpace;
 
         /// <summary>
         /// The following is the definition of the input parameter "OperationTimeoutSec".
@@ -107,7 +132,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Alias(AliasOT)]
         [Parameter(ValueFromPipelineByPropertyName = true)]
-        public UInt32 OperationTimeoutSec { get; set; }
+        public UInt32 OperationTimeoutSec
+        {
+            get { return operationTimeout; }
+
+            set { operationTimeout = value; }
+        }
+
+        private UInt32 operationTimeout;
 
         /// <summary>
         /// <para>
@@ -187,7 +219,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </para>
         /// </summary>
         [Parameter]
-        public SwitchParameter KeyOnly { get; set; }
+        public SwitchParameter KeyOnly
+        {
+            get { return keyOnly; }
+
+            set { keyOnly = value; }
+        }
+
+        private SwitchParameter keyOnly;
 
         #endregion
 
@@ -208,7 +247,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         protected override void ProcessRecord()
         {
             base.CheckParameterSet();
-            CimGetAssociatedInstance operation = this.GetOperationAgent() ?? this.CreateOperationAgent();
+            CimGetAssociatedInstance operation = this.GetOperationAgent();
+            if (operation == null)
+            {
+                operation = this.CreateOperationAgent();
+            }
 
             operation.GetCimAssociatedInstance(this);
             operation.ProcessActions(this.CmdletOperation);
@@ -234,7 +277,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// used to delegate all Get-CimAssociatedInstance operations.
         /// </para>
         /// </summary>
-        private CimGetAssociatedInstance GetOperationAgent()
+        CimGetAssociatedInstance GetOperationAgent()
         {
             return this.AsyncOperation as CimGetAssociatedInstance;
         }
@@ -246,7 +289,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </para>
         /// </summary>
         /// <returns></returns>
-        private CimGetAssociatedInstance CreateOperationAgent()
+        CimGetAssociatedInstance CreateOperationAgent()
         {
             this.AsyncOperation = new CimGetAssociatedInstance();
             return GetOperationAgent();
@@ -275,7 +318,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter definition entries.
         /// </summary>
-        private static readonly Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new()
+        static Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new Dictionary<string, HashSet<ParameterDefinitionEntry>>
         {
             {
                 nameComputerName, new HashSet<ParameterDefinitionEntry> {
@@ -304,7 +347,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// <summary>
         /// Static parameter set entries.
         /// </summary>
-        private static readonly Dictionary<string, ParameterSetEntry> parameterSets = new()
+        static Dictionary<string, ParameterSetEntry> parameterSets = new Dictionary<string, ParameterSetEntry>
         {
             {   CimBaseCommand.SessionSetName, new ParameterSetEntry(2, false)     },
             {   CimBaseCommand.ComputerSetName, new ParameterSetEntry(1, true)     },

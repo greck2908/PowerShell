@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
@@ -26,6 +26,7 @@ namespace System.Management.Automation.Remoting
     internal static class NamedPipeUtils
     {
         #region Strings
+
 
         internal const string NamedPipeNamePrefix = "PSHost.";
 #if UNIX
@@ -95,7 +96,7 @@ namespace System.Management.Automation.Remoting
         {
             if (proc == null)
             {
-                throw new PSArgumentNullException(nameof(proc));
+                throw new PSArgumentNullException("proc");
             }
 
             if (string.IsNullOrEmpty(appDomainName))
@@ -301,12 +302,20 @@ namespace System.Management.Automation.Remoting
         /// Exception reason for listener end event.  Can be null
         /// which indicates listener thread end is not due to an error.
         /// </summary>
-        public Exception Reason { get; }
+        public Exception Reason
+        {
+            private set;
+            get;
+        }
 
         /// <summary>
         /// True if listener should be restarted after ending.
         /// </summary>
-        public bool RestartListener { get; }
+        public bool RestartListener
+        {
+            private set;
+            get;
+        }
 
         #endregion
 
@@ -341,7 +350,7 @@ namespace System.Management.Automation.Remoting
         #region Members
 
         private readonly object _syncObject;
-        private readonly PowerShellTraceSource _tracer = PowerShellTraceSourceFactory.GetTraceSource();
+        private PowerShellTraceSource _tracer = PowerShellTraceSourceFactory.GetTraceSource();
 
         private const string _threadName = "IPC Listener Thread";
         private const int _namedPipeBufferSizeForRemoting = 32768;
@@ -349,7 +358,7 @@ namespace System.Management.Automation.Remoting
         private const int _maxPipePathLengthMacOS = 104;
 
         // Singleton server.
-        private static readonly object s_syncObject;
+        private static object s_syncObject;
         internal static RemoteSessionNamedPipeServer IPCNamedPipeServer;
         internal static bool IPCNamedPipeServerEnabled;
 
@@ -444,7 +453,7 @@ namespace System.Management.Automation.Remoting
         {
             if (pipeName == null)
             {
-                throw new PSArgumentNullException(nameof(pipeName));
+                throw new PSArgumentNullException("pipeName");
             }
 
             _syncObject = new object();
@@ -466,17 +475,17 @@ namespace System.Management.Automation.Remoting
         /// <param name="coreName">Named pipe core name.</param>
         /// <param name="securityDesc"></param>
         /// <returns>NamedPipeServerStream.</returns>
-        private static NamedPipeServerStream CreateNamedPipe(
+        private NamedPipeServerStream CreateNamedPipe(
             string serverName,
             string namespaceName,
             string coreName,
             CommonSecurityDescriptor securityDesc)
         {
-            if (serverName == null) { throw new PSArgumentNullException(nameof(serverName)); }
+            if (serverName == null) { throw new PSArgumentNullException("serverName"); }
 
-            if (namespaceName == null) { throw new PSArgumentNullException(nameof(namespaceName)); }
+            if (namespaceName == null) { throw new PSArgumentNullException("namespaceName"); }
 
-            if (coreName == null) { throw new PSArgumentNullException(nameof(coreName)); }
+            if (coreName == null) { throw new PSArgumentNullException("coreName"); }
 
 #if !UNIX
             string fullPipeName = @"\\" + serverName + @"\" + namespaceName + @"\" + coreName;
@@ -551,7 +560,9 @@ namespace System.Management.Automation.Remoting
 
             CreateIPCNamedPipeServerSingleton();
 
-            CreateProcessExitHandler();
+#if !CORECLR // There is only one AppDomain per application in CoreCLR, which would be the default
+            CreateAppDomainUnloadHandler();
+#endif
         }
 
         #endregion
@@ -673,7 +684,7 @@ namespace System.Management.Automation.Remoting
         {
             if (clientConnectCallback == null)
             {
-                throw new PSArgumentNullException(nameof(clientConnectCallback));
+                throw new PSArgumentNullException("clientConnectCallback");
             }
 
             lock (_syncObject)
@@ -744,7 +755,7 @@ namespace System.Management.Automation.Remoting
         [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle")]
         private void ProcessListeningThread(object state)
         {
-            string processId = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+            string processId = System.Diagnostics.Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture);
             string appDomainName = NamedPipeUtils.GetCurrentAppDomainName();
 
             // Logging.
@@ -900,7 +911,10 @@ namespace System.Management.Automation.Remoting
 
             ManualResetEventSlim clientConnectionEnded = new ManualResetEventSlim(false);
             IPCNamedPipeServer.ListenerEnded -= OnIPCNamedPipeServerEnded;
-            IPCNamedPipeServer.ListenerEnded += (sender, e) => clientConnectionEnded.Set();
+            IPCNamedPipeServer.ListenerEnded += (sender, e) =>
+                {
+                    clientConnectionEnded.Set();
+                };
 
             // Wait for server to service a single client connection.
             clientConnectionEnded.Wait();
@@ -947,31 +961,30 @@ namespace System.Management.Automation.Remoting
             }
         }
 
-        private static void CreateProcessExitHandler()
+#if !CORECLR // There is only one AppDomain per application in CoreCLR, which would be the default
+        private static void CreateAppDomainUnloadHandler()
         {
-            AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
-            {
-                IPCNamedPipeServerEnabled = false;
-                RemoteSessionNamedPipeServer namedPipeServer = IPCNamedPipeServer;
-                if (namedPipeServer != null)
+            // Subscribe to the app domain unload event.
+            AppDomain.CurrentDomain.DomainUnload += (sender, args) =>
                 {
-                    try
+                    IPCNamedPipeServerEnabled = false;
+                    RemoteSessionNamedPipeServer namedPipeServer = IPCNamedPipeServer;
+                    if (namedPipeServer != null)
                     {
-                        // Terminate the IPC thread.
-                        namedPipeServer.Dispose();
+                        try
+                        {
+                            // Terminate the IPC thread.
+                            namedPipeServer.Dispose();
+                        }
+                        catch (ObjectDisposedException) { }
+                        catch (Exception)
+                        {
+                            // Don't throw an exception on the app domain unload event thread.
+                        }
                     }
-                    catch (ObjectDisposedException)
-                    {
-                        // Ignore if object already disposed.
-                    }
-                    catch (Exception)
-                    {
-                        // Don't throw an exception on the app domain unload event thread.
-                    }
-                }
-            };
+                };
         }
-
+#endif
         private static void OnIPCNamedPipeServerEnded(object sender, ListenerEndedEventArgs args)
         {
             if (args.RestartListener)
@@ -1007,7 +1020,7 @@ namespace System.Management.Automation.Remoting
         #region Members
 
         private NamedPipeClientStream _clientPipeStream;
-        private readonly PowerShellTraceSource _tracer = PowerShellTraceSourceFactory.GetTraceSource();
+        private PowerShellTraceSource _tracer = PowerShellTraceSourceFactory.GetTraceSource();
 
         protected string _pipeName;
 
@@ -1165,7 +1178,7 @@ namespace System.Management.Automation.Remoting
         {
             if (pipeName == null)
             {
-                throw new PSArgumentNullException(nameof(pipeName));
+                throw new PSArgumentNullException("pipeName");
             }
 
             _pipeName = pipeName;
@@ -1185,11 +1198,11 @@ namespace System.Management.Automation.Remoting
             string namespaceName,
             string coreName)
         {
-            if (serverName == null) { throw new PSArgumentNullException(nameof(serverName)); }
+            if (serverName == null) { throw new PSArgumentNullException("serverName"); }
 
-            if (namespaceName == null) { throw new PSArgumentNullException(nameof(namespaceName)); }
+            if (namespaceName == null) { throw new PSArgumentNullException("namespaceName"); }
 
-            if (coreName == null) { throw new PSArgumentNullException(nameof(coreName)); }
+            if (coreName == null) { throw new PSArgumentNullException("coreName"); }
 
             _pipeName = @"\\" + serverName + @"\" + namespaceName + @"\" + coreName;
 
@@ -1271,7 +1284,7 @@ namespace System.Management.Automation.Remoting
         {
             if (string.IsNullOrEmpty(containerObRoot))
             {
-                throw new PSArgumentNullException(nameof(containerObRoot));
+                throw new PSArgumentNullException("containerObRoot");
             }
 
             //
@@ -1291,6 +1304,9 @@ namespace System.Management.Automation.Remoting
         /// </summary>
         protected override NamedPipeClientStream DoConnect(int timeout)
         {
+            // Create pipe flags.
+            uint pipeFlags = NamedPipeNative.FILE_FLAG_OVERLAPPED;
+
             //
             // WaitNamedPipe API is not supported by Windows Server container now, so we need to repeatedly
             // attempt connection to pipe server until timeout expires.
@@ -1303,13 +1319,13 @@ namespace System.Management.Automation.Remoting
             {
                 // Get handle to pipe.
                 pipeHandle = NamedPipeNative.CreateFile(
-                    lpFileName: _pipeName,
-                    dwDesiredAccess: NamedPipeNative.GENERIC_READ | NamedPipeNative.GENERIC_WRITE,
-                    dwShareMode: 0,
-                    SecurityAttributes: IntPtr.Zero,
-                    dwCreationDisposition: NamedPipeNative.OPEN_EXISTING,
-                    dwFlagsAndAttributes: NamedPipeNative.FILE_FLAG_OVERLAPPED,
-                    hTemplateFile: IntPtr.Zero);
+                    _pipeName,
+                    NamedPipeNative.GENERIC_READ | NamedPipeNative.GENERIC_WRITE,
+                    0,
+                    IntPtr.Zero,
+                    NamedPipeNative.OPEN_EXISTING,
+                    pipeFlags,
+                    IntPtr.Zero);
 
                 int lastError = Marshal.GetLastWin32Error();
                 if (pipeHandle.IsInvalid)

@@ -1,15 +1,30 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#if !UNIX
-
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel; // Win32Exception
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics; // Process class
+using System.Globalization;
+using System.IO;
 using System.Management;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
+using System.Net;
+using System.Runtime.Serialization;
+using System.Security;
+using System.Security.AccessControl;
+using System.Security.Permissions;
 using System.Security.Principal;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -19,7 +34,7 @@ namespace Microsoft.PowerShell.Commands
     /// Cmdlet for Get-Hotfix Proxy.
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "HotFix", DefaultParameterSetName = "Default",
-        HelpUri = "https://go.microsoft.com/fwlink/?linkid=2109716", RemotingCapability = RemotingCapability.SupportedByCommand)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135217", RemotingCapability = RemotingCapability.SupportedByCommand)]
     [OutputType(@"System.Management.ManagementObject#root\cimv2\Win32_QuickFixEngineering")]
     public sealed class GetHotFixCommand : PSCmdlet, IDisposable
     {
@@ -66,61 +81,45 @@ namespace Microsoft.PowerShell.Commands
         private ManagementObjectSearcher _searchProcess;
 
         private bool _inputContainsWildcard = false;
-        private readonly ConnectionOptions _connectionOptions = new();
-
-        /// <summary>
-        /// Sets connection options.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            _connectionOptions.Authentication = AuthenticationLevel.Packet;
-            _connectionOptions.Impersonation = ImpersonationLevel.Impersonate;
-            _connectionOptions.Username = Credential?.UserName;
-            _connectionOptions.SecurePassword = Credential?.Password;
-        }
-
         /// <summary>
         /// Get the List of HotFixes installed on the Local Machine.
         /// </summary>
-        protected override void ProcessRecord()
+        protected override void BeginProcessing()
         {
             foreach (string computer in ComputerName)
             {
                 bool foundRecord = false;
-                StringBuilder queryString = new();
-                ManagementScope scope = new(ComputerWMIHelper.GetScopeString(computer, ComputerWMIHelper.WMI_Path_CIM), _connectionOptions);
+                StringBuilder QueryString = new StringBuilder();
+                ConnectionOptions conOptions = ComputerWMIHelper.GetConnectionOptions(AuthenticationLevel.Packet, ImpersonationLevel.Impersonate, this.Credential);
+                ManagementScope scope = new ManagementScope(ComputerWMIHelper.GetScopeString(computer, ComputerWMIHelper.WMI_Path_CIM), conOptions);
                 scope.Connect();
                 if (Id != null)
                 {
-                    queryString.Append("Select * from Win32_QuickFixEngineering where (");
+                    QueryString.Append("Select * from Win32_QuickFixEngineering where (");
                     for (int i = 0; i <= Id.Length - 1; i++)
                     {
-                        queryString.Append("HotFixID= '");
-                        queryString.Append(Id[i].Replace("'", "\\'"));
-                        queryString.Append('\'');
+                        QueryString.Append("HotFixID= '");
+                        QueryString.Append(Id[i].ToString().Replace("'", "\\'"));
+                        QueryString.Append("'");
                         if (i < Id.Length - 1)
-                        {
-                            queryString.Append(" Or ");
-                        }
+                            QueryString.Append(" Or ");
                     }
 
-                    queryString.Append(')');
+                    QueryString.Append(")");
                 }
                 else
                 {
-                    queryString.Append("Select * from Win32_QuickFixEngineering");
+                    QueryString.Append("Select * from Win32_QuickFixEngineering");
                     foundRecord = true;
                 }
 
-                _searchProcess = new ManagementObjectSearcher(scope, new ObjectQuery(queryString.ToString()));
+                _searchProcess = new ManagementObjectSearcher(scope, new ObjectQuery(QueryString.ToString()));
                 foreach (ManagementObject obj in _searchProcess.Get())
                 {
                     if (Description != null)
                     {
                         if (!FilterMatch(obj))
-                        {
                             continue;
-                        }
                     }
                     else
                     {
@@ -134,17 +133,24 @@ namespace Microsoft.PowerShell.Commands
                     {
                         try
                         {
-                            SecurityIdentifier secObj = new(installed);
-                            obj["InstalledBy"] = secObj.Translate(typeof(NTAccount));
+                            SecurityIdentifier secObj = new SecurityIdentifier(installed);
+                            obj["InstalledBy"] = secObj.Translate(typeof(NTAccount)); ;
                         }
-                        catch (IdentityNotMappedException)
+                        catch (IdentityNotMappedException) // thrown by SecurityIdentifier.Translate
                         {
-                            // thrown by SecurityIdentifier.Translate
                         }
-                        catch (SystemException)
+                        catch (SystemException) // thrown by SecurityIdentifier.constr
                         {
-                            // thrown by SecurityIdentifier.constr
                         }
+                        // catch (ArgumentException) // thrown (indirectly) by SecurityIdentifier.constr (on XP only?)
+                        // { catch not needed - this is already caught as SystemException
+                        // }
+                        // catch (PlatformNotSupportedException) // thrown (indirectly) by SecurityIdentifier.Translate (on Win95 only?)
+                        // { catch not needed - this is already caught as SystemException
+                        // }
+                        // catch (UnauthorizedAccessException) // thrown (indirectly) by SecurityIdentifier.Translate
+                        // { catch not needed - this is already caught as SystemException
+                        // }
                     }
 
                     WriteObject(obj);
@@ -153,8 +159,8 @@ namespace Microsoft.PowerShell.Commands
 
                 if (!foundRecord && !_inputContainsWildcard)
                 {
-                    Exception ex = new ArgumentException(StringUtil.Format(HotFixResources.NoEntriesFound, computer));
-                    WriteError(new ErrorRecord(ex, "GetHotFixNoEntriesFound", ErrorCategory.ObjectNotFound, null));
+                    Exception Ex = new ArgumentException(StringUtil.Format(HotFixResources.NoEntriesFound, computer));
+                    WriteError(new ErrorRecord(Ex, "GetHotFixNoEntriesFound", ErrorCategory.ObjectNotFound, null));
                 }
 
                 if (_searchProcess != null)
@@ -238,5 +244,3 @@ namespace Microsoft.PowerShell.Commands
     }
     #endregion
 }
-
-#endif

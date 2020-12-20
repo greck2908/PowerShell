@@ -1,8 +1,8 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "ProviderIntrinsics Tests" -tags "CI" {
     BeforeAll {
-        Setup -d TestDir
+        setup -d TestDir
     }
     It 'If a childitem exists, HasChild method returns $true' {
         $ExecutionContext.InvokeProvider.ChildItem.HasChild("$TESTDRIVE") | Should -BeTrue

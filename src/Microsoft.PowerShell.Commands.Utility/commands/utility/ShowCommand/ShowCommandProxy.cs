@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -20,9 +20,9 @@ namespace Microsoft.PowerShell.Commands
     {
         private const string ShowCommandHelperName = "Microsoft.PowerShell.Commands.ShowCommandInternal.ShowCommandHelper";
 
-        private readonly ShowCommandCommand _cmdlet;
+        private ShowCommandCommand _cmdlet;
 
-        private readonly GraphicalHostReflectionWrapper _graphicalHostReflectionWrapper;
+        private GraphicalHostReflectionWrapper _graphicalHostReflectionWrapper;
 
         internal ShowCommandProxy(ShowCommandCommand cmdlet)
         {
@@ -75,9 +75,9 @@ namespace Microsoft.PowerShell.Commands
             return (string)_graphicalHostReflectionWrapper.CallStaticMethod("GetShowAllModulesCommand", false, true);
         }
 
-        internal Dictionary<string, ShowCommandModuleInfo> GetImportedModulesDictionary(object[] moduleObjects)
+        internal Dictionary<String, ShowCommandModuleInfo> GetImportedModulesDictionary(object[] moduleObjects)
         {
-            return (Dictionary<string, ShowCommandModuleInfo>)_graphicalHostReflectionWrapper.CallStaticMethod("GetImportedModulesDictionary", new object[] { moduleObjects });
+            return (Dictionary<String, ShowCommandModuleInfo>)_graphicalHostReflectionWrapper.CallStaticMethod("GetImportedModulesDictionary", new object[] { moduleObjects });
         }
 
         internal List<ShowCommandCommandInfo> GetCommandList(object[] commandObjects)

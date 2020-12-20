@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -11,9 +11,10 @@ namespace System.Management.Automation.Runspaces
         {
             var Registry_GroupingFormat = CustomControl.Create()
                     .StartEntry()
-                        .StartFrame()
-                            .AddText("    Hive: ")
+                        .StartFrame(leftIndent: 4)
+                            .AddText("Hive: ")
                             .AddScriptBlockExpressionBinding(@"$_.PSParentPath.Replace(""Microsoft.PowerShell.Core\Registry::"", """")")
+                            .AddNewline()
                         .EndFrame()
                     .EndEntry()
                 .EndControl();

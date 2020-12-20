@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -13,7 +13,6 @@ using System.Management.Automation.Host;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Remoting;
 using System.Management.Automation.Runspaces;
-using System.Management.Automation.Security;
 using System.Text;
 
 namespace Microsoft.PowerShell.Commands
@@ -26,7 +25,7 @@ namespace Microsoft.PowerShell.Commands
     /// then an error message will result.
     /// </summary>
     [Cmdlet(VerbsCommon.Enter, "PSHostProcess", DefaultParameterSetName = EnterPSHostProcessCommand.ProcessIdParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096580")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=403736")]
     public sealed class EnterPSHostProcessCommand : PSCmdlet
     {
         #region Members
@@ -127,19 +126,6 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void EndProcessing()
         {
-            // Check if system is in locked down mode, in which case this cmdlet is disabled.
-            if (SystemPolicy.GetSystemLockdownPolicy() == SystemEnforcementMode.Enforce)
-            {
-                WriteError(
-                    new ErrorRecord(
-                        new PSSecurityException(RemotingErrorIdStrings.EnterPSHostProcessCmdletDisabled),
-                        "EnterPSHostProcessCmdletDisabled",
-                        ErrorCategory.SecurityError,
-                        null));
-
-                return;
-            }
-
             // Check for host that supports interactive remote sessions.
             _interactiveHost = this.Host as IHostSupportsInteractiveSession;
             if (_interactiveHost == null)
@@ -292,7 +278,7 @@ namespace Microsoft.PowerShell.Commands
             return remoteRunspace;
         }
 
-        private static void PrepareRunspace(Runspace runspace)
+        private void PrepareRunspace(Runspace runspace)
         {
             string promptFn = StringUtil.Format(RemotingErrorIdStrings.EnterPSHostProcessPrompt,
                 @"function global:prompt { """,
@@ -377,7 +363,7 @@ namespace Microsoft.PowerShell.Commands
 
         private void VerifyProcess(Process process)
         {
-            if (process.Id == Environment.ProcessId)
+            if (process.Id == Process.GetCurrentProcess().Id)
             {
                 ThrowTerminatingError(
                         new ErrorRecord(
@@ -445,7 +431,7 @@ namespace Microsoft.PowerShell.Commands
     /// This cmdlet exits an interactive session with a local process.
     /// </summary>
     [Cmdlet(VerbsCommon.Exit, "PSHostProcess",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096583")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=403737")]
     public sealed class ExitPSHostProcessCommand : PSCmdlet
     {
         #region Overrides
@@ -562,7 +548,7 @@ namespace Microsoft.PowerShell.Commands
                     break;
 
                 default:
-                    Debug.Fail("Unknown parameter set.");
+                    Debug.Assert(false, "Unknown parameter set.");
                     processAppDomainInfo = new ReadOnlyCollection<PSHostProcessInfo>(new Collection<PSHostProcessInfo>());
                     break;
             }
@@ -574,7 +560,7 @@ namespace Microsoft.PowerShell.Commands
 
         #region Private Methods
 
-        private static int[] GetProcIdsFromProcs(Process[] processes)
+        private int[] GetProcIdsFromProcs(Process[] processes)
         {
             List<int> returnIds = new List<int>();
             foreach (Process process in processes)
@@ -585,7 +571,7 @@ namespace Microsoft.PowerShell.Commands
             return returnIds.ToArray();
         }
 
-        private static int[] GetProcIdsFromNames(string[] names)
+        private int[] GetProcIdsFromNames(string[] names)
         {
             if ((names == null) || (names.Length == 0))
             {
@@ -648,7 +634,7 @@ namespace Microsoft.PowerShell.Commands
                             int pAppDomainIndex = namedPipe.IndexOf('.', pIdIndex + 1);
                             if (pAppDomainIndex > -1)
                             {
-                                ReadOnlySpan<char> idString = namedPipe.AsSpan(pIdIndex + 1, (pAppDomainIndex - pIdIndex - 1));
+                                string idString = namedPipe.Substring(pIdIndex + 1, (pAppDomainIndex - pIdIndex - 1));
                                 int id = -1;
                                 if (int.TryParse(idString, out id))
                                 {
@@ -707,7 +693,7 @@ namespace Microsoft.PowerShell.Commands
                                     else if (process.ProcessName.Equals(pName, StringComparison.Ordinal))
                                     {
                                         // only add if the process name matches
-                                        procAppDomainInfo.Add(new PSHostProcessInfo(pName, id, appDomainName, namedPipe));
+                                        procAppDomainInfo.Add(new PSHostProcessInfo(pName, id, appDomainName));
                                     }
                                 }
                             }
@@ -736,33 +722,45 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public sealed class PSHostProcessInfo
     {
-        #region Members
-
-        private readonly string _pipeNameFilePath;
-
-        #endregion
-
         #region Properties
 
         /// <summary>
         /// Name of process.
         /// </summary>
-        public string ProcessName { get; }
+        public string ProcessName
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Id of process.
         /// </summary>
-        public int ProcessId { get; }
+        public int ProcessId
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Name of PowerShell AppDomain in process.
         /// </summary>
-        public string AppDomainName { get; }
+        public string AppDomainName
+        {
+            get;
+            private set;
+        }
 
+#if !CORECLR
         /// <summary>
         /// Main window title of the process.
         /// </summary>
-        public string MainWindowTitle { get; }
+        public string MainWindowTitle
+        {
+            get;
+            private set;
+        }
+#endif
 
         #endregion
 
@@ -771,60 +769,31 @@ namespace Microsoft.PowerShell.Commands
         private PSHostProcessInfo() { }
 
         /// <summary>
-        /// Initializes a new instance of the PSHostProcessInfo type.
+        /// Constructor.
         /// </summary>
         /// <param name="processName">Name of process.</param>
         /// <param name="processId">Id of process.</param>
         /// <param name="appDomainName">Name of process AppDomain.</param>
-        /// <param name="pipeNameFilePath">File path of pipe name.</param>
-        internal PSHostProcessInfo(
-            string processName,
-            int processId,
-            string appDomainName,
-            string pipeNameFilePath)
+        internal PSHostProcessInfo(string processName, int processId, string appDomainName)
         {
-            if (string.IsNullOrEmpty(processName))
-            {
-                throw new PSArgumentNullException(nameof(processName));
-            }
+            if (string.IsNullOrEmpty(processName)) { throw new PSArgumentNullException("processName"); }
 
-            if (string.IsNullOrEmpty(appDomainName))
-            {
-                throw new PSArgumentNullException(nameof(appDomainName));
-            }
+            if (string.IsNullOrEmpty(appDomainName)) { throw new PSArgumentNullException("appDomainName"); }
 
+#if !CORECLR
             MainWindowTitle = string.Empty;
             try
             {
                 var proc = Process.GetProcessById(processId);
                 MainWindowTitle = proc.MainWindowTitle ?? string.Empty;
             }
-            catch (ArgumentException)
-            {
-                // Window title is optional.
-            }
-            catch (InvalidOperationException)
-            {
-                // Window title is optional.
-            }
+            catch (ArgumentException) { }
+            catch (InvalidOperationException) { }
+#endif
 
             this.ProcessName = processName;
             this.ProcessId = processId;
             this.AppDomainName = appDomainName;
-            _pipeNameFilePath = pipeNameFilePath;
-        }
-
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Retrieves the pipe name file path.
-        /// </summary>
-        /// <returns>Pipe name file path.</returns>
-        public string GetPipeNameFilePath()
-        {
-            return _pipeNameFilePath;
         }
 
         #endregion

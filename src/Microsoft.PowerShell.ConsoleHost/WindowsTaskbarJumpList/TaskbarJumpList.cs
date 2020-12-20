@@ -1,9 +1,8 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.Diagnostics;
-using System.Management.Automation;
 using System.Reflection;
 using System.Threading;
 
@@ -21,13 +20,6 @@ namespace Microsoft.PowerShell
         // not over-optimize this and always create the JumpList as a non-blocking background STA thread instead.
         internal static void CreateRunAsAdministratorJumpList()
         {
-            // The STA apartment state is not supported on NanoServer and Windows IoT.
-            // Plus, there is not need to create jump list in those environment anyways.
-            if (!Platform.IsWindowsDesktop)
-            {
-                return;
-            }
-
             // Some COM APIs are implicitly STA only, therefore the executing thread must run in STA.
             var thread = new Thread(() =>
             {
@@ -42,16 +34,8 @@ namespace Microsoft.PowerShell
                     Debug.Fail($"Creating 'Run as Administrator' JumpList failed. {exception}");
                 }
             });
-
-            try
-            {
-                thread.SetApartmentState(ApartmentState.STA);
-                thread.Start();
-            }
-            catch (System.Threading.ThreadStartException)
-            {
-                // STA may not be supported on some platforms
-            }
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
         }
 
         private static void CreateElevatedEntry(string title)
@@ -59,8 +43,8 @@ namespace Microsoft.PowerShell
             // Check startupInfo first to know if the current shell is interactive and owns a window before proceeding
             // This check is fast (less than 1ms) and allows for quick-exit
             GetStartupInfo(out StartUpInfo startupInfo);
-            const uint STARTF_USESHOWWINDOW = 0x00000001;
-            const ushort SW_HIDE = 0;
+            var STARTF_USESHOWWINDOW = 0x00000001;
+            var SW_HIDE = 0;
             if (((startupInfo.dwFlags & STARTF_USESHOWWINDOW) == 1) && (startupInfo.wShowWindow != SW_HIDE))
             {
                 string cmdPath = Assembly.GetEntryAssembly().Location.Replace(".dll", ".exe");
@@ -97,7 +81,7 @@ namespace Microsoft.PowerShell
                     flags |= 0x00002000; // SLDF_RUNAS_USER
                     shellLinkDataList.SetFlags(flags);
                     var PKEY_TITLE = new PropertyKey(new Guid("{F29F85E0-4FF9-1068-AB91-08002B27B3D9}"), 2);
-                    hResult = nativePropertyStore.SetValue(in PKEY_TITLE, new PropVariant(title));
+                    hResult = nativePropertyStore.SetValue(ref PKEY_TITLE, new PropVariant(title));
                     if (hResult < 0)
                     {
                         pCustDestList.AbortList();

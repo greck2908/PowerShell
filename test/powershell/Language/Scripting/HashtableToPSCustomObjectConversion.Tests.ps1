@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Tests for hashtable to PSCustomObject conversion" -Tags "CI" {
     BeforeAll {
@@ -35,7 +35,7 @@ Describe "Tests for hashtable to PSCustomObject conversion" -Tags "CI" {
 
     It 'Type Validation: <Name>' -TestCases:$testdata {
         param ($Name, $Cmd, $ExpectedType)
-        Invoke-Expression $Cmd -OutVariable a
+        Invoke-expression $Cmd -OutVariable a
         $a = Get-Variable -Name a -ValueOnly
         $a | Should -BeOfType $ExpectedType
     }
@@ -43,11 +43,11 @@ Describe "Tests for hashtable to PSCustomObject conversion" -Tags "CI" {
     It 'Hashtable conversion to PSCustomObject retains insertion order of hashtable keys when passed a hashliteral' {
 
         $x = [pscustomobject]@{one=1;two=2}
-        $x | Should -BeOfType System.Management.automation.psobject
+        $x | Should -BeOfType "System.Management.automation.psobject"
 
         $p = 0
         # Checks if the first property is One
-        $x.psobject.Properties | ForEach-Object  `
+        $x.psobject.Properties | foreach-object  `
                                 {
                                     if ($p -eq 0)
                                     {
@@ -60,11 +60,11 @@ Describe "Tests for hashtable to PSCustomObject conversion" -Tags "CI" {
     It 'Conversion of Ordered hashtable to PSCustomObject should succeed' {
 
        $x = [pscustomobject][ordered]@{one=1;two=2}
-       $x | Should -BeOfType System.Management.automation.psobject
+       $x | Should -BeOfType "System.Management.automation.psobject"
 
        $p = 0
        # Checks if the first property is One
-       $x.psobject.Properties | ForEach-Object  `
+       $x.psobject.Properties | foreach-object  `
                                 {
                                     if ($p -eq 0)
                                     {
@@ -136,7 +136,7 @@ Describe "Tests for hashtable to PSCustomObject conversion" -Tags "CI" {
         $obj = $null
         $ht = @{one=1;two=2}
 
-        { $obj = New-Object System.Management.Automation.PSCustomObject -Property $ht } |
+        { $obj = New-Object System.Management.Automation.PSCustomObject -property $ht } |
             Should -Throw -ErrorId "CannotFindAppropriateCtor,Microsoft.PowerShell.Commands.NewObjectCommand"
         $obj | Should -BeNullOrEmpty
     }

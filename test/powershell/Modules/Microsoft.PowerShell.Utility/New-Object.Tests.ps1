@@ -1,8 +1,8 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "New-Object" -Tags "CI" {
     It "Support 'ComObject' parameter on platforms" {
-        if ($IsLinux -or $IsMacOS ) {
+        if ($IsLinux -or $IsMacOs ) {
             { New-Object -ComObject "Shell.Application" } | Should -Throw -ErrorId "NamedParameterNotFound,Microsoft.PowerShell.Commands.NewObjectCommand"
         } else {
             # It works on NanoServer and IoT too
@@ -126,14 +126,14 @@ Describe "New-Object DRT basic functionality" -Tags "CI" {
     }
 
     It "New-Object with TypeName and Property parameter should work"{
-        $result = New-Object -TypeName PSObject -Property @{foo=123}
+        $result = New-Object -TypeName PSObject -property @{foo=123}
         $result.foo | Should -Be 123
     }
 }
 
 try
 {
-    $defaultParamValues = $PSDefaultParameterValues.Clone()
+    $defaultParamValues = $PSdefaultParameterValues.Clone()
     $PSDefaultParameterValues["it:skip"] = ![System.Management.Automation.Platform]::IsWindowsDesktop
 
     Describe "New-Object COM functionality" -Tags "CI" {
@@ -154,7 +154,7 @@ try
             param($Name, $Property, $Type)
             $comObject = New-Object -ComObject $name
             $comObject.$Property | Should -Not -BeNullOrEmpty
-            $comObject.$Property | Should -BeOfType $Type
+            $comObject.$Property | Should -Beoftype $Type
         }
 
         It "Should fail with correct error when creating a COM object that dose not exist" {

@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 	Describe "ConvertTo--SecureString" -Tags "CI" {
 
@@ -6,7 +6,7 @@
 
 	It "Should return System.Security.SecureString after converting plaintext variable"{
         #[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Demo/doc/test secret.")]
-	    $PesterTestConvert = (ConvertTo-SecureString "plaintextpester" -AsPlainText -Force)
+	    $PesterTestConvert = (ConvertTo-SecureString "plaintextpester" -AsPlainText -force)
 	    $PesterTestConvert | Should -BeOfType securestring
 
 	}

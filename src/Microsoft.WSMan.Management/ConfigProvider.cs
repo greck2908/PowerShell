@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -24,7 +24,7 @@ namespace Microsoft.WSMan.Management
     /// WsMan Provider.
     /// </summary>
     [CmdletProvider(WSManStringLiterals.ProviderName, ProviderCapabilities.Credentials)]
-    public sealed class WSManConfigProvider : NavigationCmdletProvider, ICmdletProviderSupportsHelp
+    public sealed partial class WSManConfigProvider : NavigationCmdletProvider, ICmdletProviderSupportsHelp
     {
         // Plugin Name Storage
         private PSObject objPluginNames = null;
@@ -38,17 +38,17 @@ namespace Microsoft.WSMan.Management
         /// </summary>
         private bool clearItemIsCalled = false;
 
-        private WSManHelper helper = new WSManHelper();
+        WSManHelper helper = new WSManHelper();
 
         /// <summary>
         /// Object contains the cache of the enumerate results for the cmdlet to execute.
         /// </summary>
-        private readonly Dictionary<string, XmlDocument> enumerateMapping = new Dictionary<string, XmlDocument>();
+        Dictionary<string, XmlDocument> enumerateMapping = new Dictionary<string, XmlDocument>();
 
         /// <summary>
         /// Mapping of ResourceURI with the XML returned by the Get call.
         /// </summary>
-        private readonly Dictionary<string, string> getMapping = new Dictionary<string, string>();
+        Dictionary<string, string> getMapping = new Dictionary<string, string>();
 
         #region ICmdletProviderSupportsHelp Members
 
@@ -193,7 +193,7 @@ namespace Microsoft.WSMan.Management
                 return null;
             }
 
-            if (!string.IsNullOrEmpty(drive.Root))
+            if (string.IsNullOrEmpty(drive.Root) == false)
             {
                 AssertError(helper.GetResourceMsgFromResourcetext("NewDriveRootDoesNotExist"), false);
                 return null;
@@ -439,7 +439,7 @@ namespace Microsoft.WSMan.Management
                 // 3. Plugin and its internal structure Checks
                 else if (WsManURI.Contains(WSManStringLiterals.containerPlugin))
                 {
-                    strPathCheck += WSManStringLiterals.containerPlugin;
+                    strPathCheck = strPathCheck + WSManStringLiterals.containerPlugin;
                     // Check for Plugin path
                     XmlDocument xmlPlugins = FindResourceValue(sessionobj, WsManURI, null);
                     string currentpluginname = string.Empty;
@@ -477,7 +477,7 @@ namespace Microsoft.WSMan.Management
                     ArrayList arrSecurities = null;
                     ArrayList arrResources = ProcessPluginResourceLevel(CurrentPluginXML, out arrSecurities);
                     ArrayList arrInitParams = ProcessPluginInitParamLevel(CurrentPluginXML);
-                    strPathCheck += WSManStringLiterals.DefaultPathSeparator;
+                    strPathCheck = strPathCheck + WSManStringLiterals.DefaultPathSeparator;
                     if (path.EndsWith(strPathCheck + WSManStringLiterals.containerResources, StringComparison.OrdinalIgnoreCase))
                     {
                         if (arrResources != null && arrResources.Count > 0)
@@ -823,7 +823,7 @@ namespace Microsoft.WSMan.Management
                     try
                     {
                         PSObject mshObject = null;
-                        if (!uri.Equals(WinrmRootName[0], StringComparison.OrdinalIgnoreCase))
+                        if (!uri.Equals(WinrmRootName[0].ToString(), StringComparison.OrdinalIgnoreCase))
                         {
                             foreach (XmlNode innerResourceNodes in xmlResource.ChildNodes)
                             {
@@ -856,7 +856,7 @@ namespace Microsoft.WSMan.Management
                             }
                         }
                     }
-                    catch (PSArgumentNullException) { return; /*Leaving this known exception for no value found. Not Throwing error.*/}
+                    catch (PSArgumentNullException) { return;/*Leaving this known exception for no value found. Not Throwing error.*/}
                     catch (NullReferenceException) { return; /*Leaving this known exception for no value found. Not Throwing error.*/}
                 }
             }
@@ -1033,7 +1033,7 @@ namespace Microsoft.WSMan.Management
                                     pluginConfiguration.UpdateOneConfiguration(
                                         ".",
                                         WSManStringLiterals.ConfigRunAsPasswordName,
-                                        GetStringFromSecureString(runAsCredentials.Password));
+                                        this.GetStringFromSecureString(runAsCredentials.Password));
                                 }
                             }
 
@@ -1050,7 +1050,7 @@ namespace Microsoft.WSMan.Management
                                     AssertError(helper.GetResourceMsgFromResourcetext("SetItemOnRunAsPasswordNoRunAsUser"), false);
                                 }
 
-                                value = GetStringFromSecureString(value);
+                                value = this.GetStringFromSecureString(value);
                             }
 
                             pluginConfiguration.UpdateOneConfiguration(".", ChildName, value.ToString());
@@ -1237,7 +1237,7 @@ namespace Microsoft.WSMan.Management
                             pluginConfiguration.PutConfigurationOnServer(resourceUri);
 
                             // Show Win RM service restart warning only when the changed setting is not picked up dynamically
-                            if (!settingPickedUpDynamically)
+                            if (settingPickedUpDynamically == false)
                             {
                                 if (IsPathLocalMachine(host))
                                 {
@@ -1284,7 +1284,7 @@ namespace Microsoft.WSMan.Management
                             {
                                 if (!Force)
                                 {
-                                    string query = string.Empty;
+                                    string query = "";
                                     string caption = helper.GetResourceMsgFromResourcetext("SetItemGeneralSecurityCaption");
                                     if (ChildName.Equals("TrustedHosts", StringComparison.OrdinalIgnoreCase))
                                     {
@@ -1340,7 +1340,7 @@ namespace Microsoft.WSMan.Management
                     }
                 }
 
-                foreach (string warnings in warningMessage)
+                foreach (String warnings in warningMessage)
                 {
                     WriteWarning(warnings);
                 }
@@ -1446,11 +1446,6 @@ namespace Microsoft.WSMan.Management
 
             // Get the wsman host name to find the session object
             string host = GetHostName(path);
-            if (string.IsNullOrEmpty(host))
-            {
-                return false;
-            }
-
             string WsManURI = NormalizePath(path, host);
 
             lock (WSManHelper.AutoSession)
@@ -1473,7 +1468,7 @@ namespace Microsoft.WSMan.Management
                 strPathCheck = host + WSManStringLiterals.DefaultPathSeparator;
                 if (WsManURI.Contains(WSManStringLiterals.containerListener))
                 {
-                    strPathCheck += WSManStringLiterals.containerListener;
+                    strPathCheck = strPathCheck + WSManStringLiterals.containerListener;
                     if (path.EndsWith(strPathCheck, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
@@ -1494,7 +1489,7 @@ namespace Microsoft.WSMan.Management
                 // 2. Client Certificate Checks
                 else if (WsManURI.Contains(WSManStringLiterals.containerCertMapping))
                 {
-                    strPathCheck += WSManStringLiterals.containerClientCertificate;
+                    strPathCheck = strPathCheck + WSManStringLiterals.containerClientCertificate;
                     if (path.EndsWith(strPathCheck, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
@@ -1514,19 +1509,19 @@ namespace Microsoft.WSMan.Management
                 // 3. Plugin and its internal structure Checks
                 else if (WsManURI.Contains(WSManStringLiterals.containerPlugin))
                 {
-                    strPathCheck += WSManStringLiterals.containerPlugin;
+                    strPathCheck = strPathCheck + WSManStringLiterals.containerPlugin;
                     // Check for Plugin path
                     if (path.EndsWith(strPathCheck, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
 
-                    strPathCheck += WSManStringLiterals.DefaultPathSeparator;
+                    strPathCheck = strPathCheck + WSManStringLiterals.DefaultPathSeparator;
                     XmlDocument xmlPlugins = FindResourceValue(sessionobj, WsManURI, null);
 
                     string currentpluginname = string.Empty;
                     GetPluginNames(xmlPlugins, out objPluginNames, out currentpluginname, path);
-                    strPathCheck += currentpluginname;
+                    strPathCheck = strPathCheck + currentpluginname;
                     if (path.EndsWith(currentpluginname, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
@@ -1541,7 +1536,7 @@ namespace Microsoft.WSMan.Management
                         return true;
                     }
 
-                    strPathCheck += WSManStringLiterals.DefaultPathSeparator;
+                    strPathCheck = strPathCheck + WSManStringLiterals.DefaultPathSeparator;
                     if (path.EndsWith(strPathCheck + WSManStringLiterals.containerResources, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
@@ -1695,7 +1690,7 @@ namespace Microsoft.WSMan.Management
                         return;
                     }
 
-                    strPathCheck += WSManStringLiterals.containerPlugin;
+                    strPathCheck = strPathCheck + WSManStringLiterals.containerPlugin;
                     int pos = 0; string pName = null;
 
                     pos = path.LastIndexOf(strPathCheck + WSManStringLiterals.DefaultPathSeparator, StringComparison.OrdinalIgnoreCase) + strPathCheck.Length + 1;
@@ -1977,8 +1972,8 @@ namespace Microsoft.WSMan.Management
                 helper.CreateWsManConnection(parametersetName, dynParams.ConnectionURI, dynParams.Port, Name, dynParams.ApplicationName, dynParams.UseSSL, dynParams.Authentication, dynParams.SessionOption, this.Credential, dynParams.CertificateThumbprint);
                 if (dynParams.ConnectionURI != null)
                 {
-                    string[] constrsplit = dynParams.ConnectionURI.OriginalString.Split(":" + dynParams.Port + "/" + dynParams.ApplicationName, StringSplitOptions.None);
-                    string[] constrsplit1 = constrsplit[0].Split("//", StringSplitOptions.None);
+                    string[] constrsplit = dynParams.ConnectionURI.OriginalString.Split(new string[] { ":" + dynParams.Port + "/" + dynParams.ApplicationName }, StringSplitOptions.None);
+                    string[] constrsplit1 = constrsplit[0].Split(new string[] { "//" }, StringSplitOptions.None);
                     Name = constrsplit1[1].Trim();
                 }
 
@@ -2152,7 +2147,7 @@ namespace Microsoft.WSMan.Management
                 strPathChk = strPathChk + WSManStringLiterals.DefaultPathSeparator + pName + WSManStringLiterals.DefaultPathSeparator;
                 if (path.Contains(strPathChk + WSManStringLiterals.containerResources))
                 {
-                    strPathChk += WSManStringLiterals.containerResources;
+                    strPathChk = strPathChk + WSManStringLiterals.containerResources;
                     if (path.EndsWith(strPathChk, StringComparison.OrdinalIgnoreCase))
                     {
                         WSManProviderNewItemResourceParameters niParams = DynamicParameters as WSManProviderNewItemResourceParameters;
@@ -2259,7 +2254,7 @@ namespace Microsoft.WSMan.Management
                 inputStr = ConstructPluginXml(ps, uri, host, "Set", ResourceArray, SecurityArray, InitParamArray);
                 try
                 {
-                    ((IWSManSession)sessionobj).Put(uri + "?" + "Name=" + pName, inputStr, 0);
+                    ((IWSManSession)sessionobj).Put(uri + "?" + "Name=" + pName, inputStr.ToString(), 0);
                     if (path.EndsWith(strPathChk + WSManStringLiterals.containerInitParameters, StringComparison.OrdinalIgnoreCase))
                     {
                         WriteItemObject(GetItemPSObjectWithTypeName(mshObj.Properties[NewItem].Name, mshObj.Properties[NewItem].TypeNameOfValue, mshObj.Properties[NewItem].Value, null, "InitParams", WsManElementObjectTypes.WSManConfigLeafElement), path + WSManStringLiterals.DefaultPathSeparator + mshObj.Properties[NewItem].Name, false);
@@ -2290,7 +2285,7 @@ namespace Microsoft.WSMan.Management
         /// <param name="WSManElementObjectType"></param>
         /// <param name="input"></param>
         /// <returns></returns>
-        private static PSObject GetItemPSObjectWithTypeName(string Name, string TypeNameOfElement, object Value, string[] keys, string ExtendedTypeName, WsManElementObjectTypes WSManElementObjectType, PSObject input = null)
+        private PSObject GetItemPSObjectWithTypeName(string Name, string TypeNameOfElement, object Value, string[] keys, string ExtendedTypeName, WsManElementObjectTypes WSManElementObjectType, PSObject input = null)
         {
             PSObject mshObject = null;
             if (WSManElementObjectType.Equals(WsManElementObjectTypes.WSManConfigElement))
@@ -2328,7 +2323,7 @@ namespace Microsoft.WSMan.Management
                 if (mshObject != null)
                 {
                     types.Append(mshObject.ImmediateBaseObject.GetType().FullName);
-                    types.Append('#');
+                    types.Append("#");
                     types.Append(ExtendedTypeName);
                     mshObject.TypeNames.Insert(0, types.ToString());
                 }
@@ -2410,7 +2405,7 @@ namespace Microsoft.WSMan.Management
         /// <param name="value"></param>
         /// <param name="host"></param>
         /// <returns></returns>
-        private static string GetInputStringForCreate(string ResourceURI, Hashtable value, string host)
+        private string GetInputStringForCreate(string ResourceURI, Hashtable value, string host)
         {
             string putstr = string.Empty;
             string nilns = string.Empty;
@@ -2426,16 +2421,16 @@ namespace Microsoft.WSMan.Management
                         sbvalues.Append(key);
                         if (value[key] == null)
                         {
-                            sbvalues.Append(' ');
+                            sbvalues.Append(" ");
                             sbvalues.Append(WSManStringLiterals.ATTR_NIL);
                             nilns = " " + WSManStringLiterals.NS_XSI;
                         }
 
-                        sbvalues.Append('>');
+                        sbvalues.Append(">");
                         sbvalues.Append(EscapeValuesForXML(((Hashtable)value)[key].ToString()));
                         sbvalues.Append("</p:");
                         sbvalues.Append(key);
-                        sbvalues.Append('>');
+                        sbvalues.Append(">");
                     }
                 }
             }
@@ -2523,26 +2518,26 @@ namespace Microsoft.WSMan.Management
             return sHostname;
         }
 
-        private static string GetRootNodeName(string ResourceURI)
+        private string GetRootNodeName(string ResourceURI)
         {
             string tempuri = string.Empty;
-            if (ResourceURI.Contains('?'))
+            if (ResourceURI.Contains("?"))
             {
-                ResourceURI = ResourceURI.Split('?').GetValue(0).ToString();
+                ResourceURI = ResourceURI.Split(new char[] { '?' }).GetValue(0).ToString();
             }
 
-            const string PTRN_URI_LAST = "([a-z_][-a-z0-9._]*)$";
+            string PTRN_URI_LAST = "([a-z_][-a-z0-9._]*)$";
             Regex objregex = new Regex(PTRN_URI_LAST, RegexOptions.IgnoreCase);
             MatchCollection regexmatch = objregex.Matches(ResourceURI);
             if (regexmatch.Count > 0)
             {
-                tempuri = regexmatch[0].Value;
+                tempuri = regexmatch[0].Value.ToString();
             }
 
             return tempuri;
         }
 
-        private static string EscapeValuesForXML(string value)
+        private string EscapeValuesForXML(string value)
         {
             StringBuilder esc_str = new StringBuilder();
             for (int i = 0; i <= value.Length - 1; i++)
@@ -2585,7 +2580,7 @@ namespace Microsoft.WSMan.Management
             return esc_str.ToString();
         }
 
-        private static bool IsItemContainer(XmlNodeList nodes)
+        private bool IsItemContainer(XmlNodeList nodes)
         {
             bool result = false;
             if (nodes.Count != 0)
@@ -2686,7 +2681,7 @@ namespace Microsoft.WSMan.Management
                             if (Itemfound)
                             {
                                 ResourceURI = GetURIWithFilter(ResourceURI, value);
-                                ((IWSManSession)sessionobj).Put(ResourceURI, node.OuterXml, 0);
+                                ((IWSManSession)sessionobj).Put(ResourceURI, node.OuterXml.ToString(), 0);
                             }
                             else
                             {
@@ -2768,7 +2763,7 @@ namespace Microsoft.WSMan.Management
 
                     while (!((IWSManEnumerator)value).AtEndOfStream)
                     {
-                        strXmlValue += ((IWSManEnumerator)value).ReadItem();
+                        strXmlValue = strXmlValue + ((IWSManEnumerator)value).ReadItem();
                     }
 
                     Marshal.ReleaseComObject(value);
@@ -2900,7 +2895,7 @@ namespace Microsoft.WSMan.Management
 
                     while (!((IWSManEnumerator)value).AtEndOfStream)
                     {
-                        valuexml += ((IWSManEnumerator)value).ReadItem();
+                        valuexml = valuexml + ((IWSManEnumerator)value).ReadItem();
                     }
 
                     if ((valuexml != string.Empty) && !(string.IsNullOrEmpty(valuexml)))
@@ -2935,24 +2930,24 @@ namespace Microsoft.WSMan.Management
 
         #endregion "WsMan linking Operations"
 
-        private static string GetURIWithFilter(string uri, Hashtable cmdlinevalues)
+        private string GetURIWithFilter(string uri, Hashtable cmdlinevalues)
         {
             StringBuilder sburi = new StringBuilder(uri);
             if (cmdlinevalues != null)
             {
                 if (uri.Contains("Config/Listener"))
                 {
-                    sburi.Append('?');
+                    sburi.Append("?");
                     sburi.Append(GetFilterString(cmdlinevalues, PKeyListener));
                 }
                 else if (uri.Contains("Config/Service/certmapping"))
                 {
-                    sburi.Append('?');
+                    sburi.Append("?");
                     sburi.Append(GetFilterString(cmdlinevalues, PKeyCertMapping));
                 }
                 else if (uri.Contains("Config/Plugin"))
                 {
-                    sburi.Append('?');
+                    sburi.Append("?");
                     sburi.Append(GetFilterString(cmdlinevalues, PKeyPlugin));
                 }
             }
@@ -2960,7 +2955,7 @@ namespace Microsoft.WSMan.Management
             return sburi.ToString();
         }
 
-        private static string GetFilterString(Hashtable cmdlinevalues, string[] pkey)
+        private string GetFilterString(Hashtable cmdlinevalues, string[] pkey)
         {
             StringBuilder filter = new StringBuilder();
             foreach (string key in pkey)
@@ -2968,9 +2963,9 @@ namespace Microsoft.WSMan.Management
                 if (cmdlinevalues.Contains(key))
                 {
                     filter.Append(key);
-                    filter.Append('=');
+                    filter.Append("=");
                     filter.Append(cmdlinevalues[key].ToString());
-                    filter.Append('+');
+                    filter.Append("+");
                 }
             }
 
@@ -2979,7 +2974,7 @@ namespace Microsoft.WSMan.Management
             return filter.ToString();
         }
 
-        private static bool IsPKey(string value, string ResourceURI)
+        private bool IsPKey(string value, string ResourceURI)
         {
             bool result = false;
             if (ResourceURI.Contains(WSManStringLiterals.containerListener))
@@ -2998,7 +2993,7 @@ namespace Microsoft.WSMan.Management
             return result;
         }
 
-        private static bool CheckPkeysArray(Hashtable values, string value, string[] pkeys)
+        private bool CheckPkeysArray(Hashtable values, string value, string[] pkeys)
         {
             bool result = false;
             if (values != null)
@@ -3102,7 +3097,7 @@ namespace Microsoft.WSMan.Management
                     if (mshObject != null)
                     {
                         types.Append(mshObject.ImmediateBaseObject.GetType().FullName);
-                        types.Append('#');
+                        types.Append("#");
                         types.Append(ExtendedTypeName);
                         mshObject.TypeNames.Insert(0, types.ToString());
                     }
@@ -3164,8 +3159,8 @@ namespace Microsoft.WSMan.Management
 
                 if (!string.IsNullOrEmpty(existingvalue))
                 {
-                    string[] existingsplitvalues = existingvalue.Split(Delimiter, StringSplitOptions.None);
-                    string[] newvalues = value.Split(Delimiter, StringSplitOptions.None);
+                    string[] existingsplitvalues = existingvalue.Split(new string[] { Delimiter }, StringSplitOptions.None);
+                    string[] newvalues = value.Split(new string[] { Delimiter }, StringSplitOptions.None);
                     foreach (string val in newvalues)
                     {
                         if (Array.IndexOf(existingsplitvalues, val) == -1)
@@ -3239,7 +3234,7 @@ namespace Microsoft.WSMan.Management
         /// </summary>
         /// <param name="xmlnode"></param>
         /// <returns></returns>
-        private static PSObject ConvertToPSObject(XmlNode xmlnode)
+        private PSObject ConvertToPSObject(XmlNode xmlnode)
         {
             PSObject mshObject = new PSObject();
             foreach (XmlNode node in xmlnode.ChildNodes)
@@ -3275,7 +3270,7 @@ namespace Microsoft.WSMan.Management
             return mshObject;
         }
 
-        private static string SetXPathString(string uri)
+        private string SetXPathString(string uri)
         {
             string parent = uri.Substring(uri.LastIndexOf(WSManStringLiterals.WinrmPathSeparator.ToString(), StringComparison.OrdinalIgnoreCase) + 1);
             if (parent.Equals(WSManStringLiterals.containerWinrs, StringComparison.OrdinalIgnoreCase))
@@ -3307,7 +3302,7 @@ namespace Microsoft.WSMan.Management
             return parent;
         }
 
-        private static string SetSchemaPath(string uri)
+        private string SetSchemaPath(string uri)
         {
             string schemapath = string.Empty;
             uri = uri.Remove(0, WinrmRootName[0].Length);
@@ -3334,9 +3329,9 @@ namespace Microsoft.WSMan.Management
         /// <param name="path"></param>
         /// <param name="host"></param>
         /// <returns></returns>
-        private static string NormalizePath(string path, string host)
+        private string NormalizePath(string path, string host)
         {
-            string uri = string.Empty;
+            string uri = string.Empty; ;
             if (path.StartsWith(host, StringComparison.OrdinalIgnoreCase))
             {
                 if (path.EndsWith(WSManStringLiterals.DefaultPathSeparator.ToString(), StringComparison.OrdinalIgnoreCase))
@@ -3344,7 +3339,7 @@ namespace Microsoft.WSMan.Management
 
                 if (path.Equals(host, StringComparison.OrdinalIgnoreCase))
                 {
-                    uri = WinrmRootName[0];
+                    uri = WinrmRootName[0].ToString();
                     return uri;
                 }
 
@@ -3353,19 +3348,19 @@ namespace Microsoft.WSMan.Management
                 string host_prefix = host + WSManStringLiterals.DefaultPathSeparator;
                 if (path.StartsWith(host_prefix + WSManStringLiterals.containerClientCertificate, StringComparison.OrdinalIgnoreCase))
                 {
-                    uri = WinrmRootName[0] + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerCertMapping;
+                    uri = WinrmRootName[0].ToString() + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerCertMapping;
                 }
                 else if (path.StartsWith(host_prefix + WSManStringLiterals.containerPlugin, StringComparison.OrdinalIgnoreCase))
                 {
-                    uri = WinrmRootName[0] + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerPlugin;
+                    uri = WinrmRootName[0].ToString() + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerPlugin;
                 }
                 else if (path.StartsWith(host_prefix + WSManStringLiterals.containerShell, StringComparison.OrdinalIgnoreCase))
                 {
-                    uri = WinrmRootName[0] + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerWinrs;
+                    uri = WinrmRootName[0].ToString() + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerWinrs;
                 }
                 else if (path.StartsWith(host_prefix + WSManStringLiterals.containerListener, StringComparison.OrdinalIgnoreCase))
                 {
-                    uri = WinrmRootName[0] + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerListener;
+                    uri = WinrmRootName[0].ToString() + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerListener;
                 }
                 else
                 {
@@ -3380,7 +3375,7 @@ namespace Microsoft.WSMan.Management
                         }
                     }
 
-                    uri = WinrmRootName[0] + uri;
+                    uri = WinrmRootName[0].ToString() + uri;
                 }
 
                 return uri;
@@ -3573,7 +3568,7 @@ namespace Microsoft.WSMan.Management
             string result = ChildName;
             if (ChildName != null)
             {
-                if (!ChildName.Contains('_'))
+                if (!ChildName.Contains("_"))
                 {
                     if (ChildName.Equals(WSManStringLiterals.containerQuotasParameters, StringComparison.OrdinalIgnoreCase))
                         result = WSManStringLiterals.containerQuotasParameters;
@@ -3647,20 +3642,20 @@ namespace Microsoft.WSMan.Management
                 else
                 {
                     if (ChildName.StartsWith(WSManStringLiterals.containerListener, StringComparison.OrdinalIgnoreCase))
-                        result = string.Concat(WSManStringLiterals.containerListener, "_", ChildName.AsSpan(ChildName.IndexOf('_') + 1));
+                        result = WSManStringLiterals.containerListener + "_" + ChildName.Substring(ChildName.IndexOf('_') + 1);
                     if (ChildName.StartsWith(WSManStringLiterals.containerSingleResource, StringComparison.OrdinalIgnoreCase))
-                        result = string.Concat(WSManStringLiterals.containerSingleResource, "_", ChildName.AsSpan(ChildName.IndexOf('_') + 1));
+                        result = WSManStringLiterals.containerSingleResource + "_" + ChildName.Substring(ChildName.IndexOf('_') + 1);
                     if (ChildName.StartsWith(WSManStringLiterals.containerSecurity, StringComparison.OrdinalIgnoreCase))
-                        result = string.Concat(WSManStringLiterals.containerSecurity, "_", ChildName.AsSpan(ChildName.IndexOf('_') + 1));
+                        result = WSManStringLiterals.containerSecurity + "_" + ChildName.Substring(ChildName.IndexOf('_') + 1);
                     if (ChildName.StartsWith(WSManStringLiterals.containerClientCertificate, StringComparison.OrdinalIgnoreCase))
-                        result = string.Concat(WSManStringLiterals.containerClientCertificate, "_", ChildName.AsSpan(ChildName.IndexOf('_') + 1));
+                        result = WSManStringLiterals.containerClientCertificate + "_" + ChildName.Substring(ChildName.IndexOf('_') + 1);
                 }
             }
 
             return result;
         }
 
-        private static ArrayList RemoveItemfromResourceArray(ArrayList resourceArray, string ChildName, string type, string property)
+        private ArrayList RemoveItemfromResourceArray(ArrayList resourceArray, string ChildName, string type, string property)
         {
             if (resourceArray != null)
             {
@@ -3795,6 +3790,7 @@ namespace Microsoft.WSMan.Management
             if (path.EndsWith(host + WSManStringLiterals.DefaultPathSeparator + ContainerListenerOrClientCert, StringComparison.OrdinalIgnoreCase))
             {
                 if (Objcache.ContainsKey(childname))
+
                     WriteItemObject(GetItemPSObjectWithTypeName(childname, WSManStringLiterals.ContainerChildValue, null, (string[])Keyscache[childname], null, WsManElementObjectTypes.WSManConfigContainerElement), path + WSManStringLiterals.DefaultPathSeparator + childname, true);
             }
             else
@@ -4089,7 +4085,7 @@ namespace Microsoft.WSMan.Management
                 CurrentNode = RemainingPath.Substring(0, pos);
             }
 
-            if (!objcache.Contains(CurrentNode))
+            if (objcache.Contains(CurrentNode) == false)
             {
                 return false;
             }
@@ -4104,7 +4100,7 @@ namespace Microsoft.WSMan.Management
             PSObject obj = (PSObject)objcache[CurrentNode];
 
             CurrentNode = RemainingPath.Substring(pos + 1);
-            if (CurrentNode.Contains(WSManStringLiterals.DefaultPathSeparator))
+            if (CurrentNode.IndexOf(WSManStringLiterals.DefaultPathSeparator) != -1)
             {
                 // No more directories allowed after listeners objects
                 return false;
@@ -4519,7 +4515,7 @@ namespace Microsoft.WSMan.Management
         /// <param name="CurrentPluginName"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        private static int GetPluginNames(XmlDocument xmlPlugins, out PSObject PluginNames, out string CurrentPluginName, string path)
+        private int GetPluginNames(XmlDocument xmlPlugins, out PSObject PluginNames, out string CurrentPluginName, string path)
         {
             PluginNames = new PSObject();
             CurrentPluginName = string.Empty;
@@ -4627,7 +4623,7 @@ namespace Microsoft.WSMan.Management
         /// </summary>
         /// <param name="host"></param>
         /// <returns></returns>
-        private static bool IsPathLocalMachine(string host)
+        private bool IsPathLocalMachine(string host)
         {
             bool hostfound = false;
             // Check is Localhost
@@ -4684,7 +4680,7 @@ namespace Microsoft.WSMan.Management
 
         #region Plugin private functions
 
-        private static void GenerateObjectNameAndKeys(Hashtable InputAttributes, string ResourceURI, string ContainerItem, out string ItemName, out string[] keys)
+        private void GenerateObjectNameAndKeys(Hashtable InputAttributes, string ResourceURI, string ContainerItem, out string ItemName, out string[] keys)
         {
             StringBuilder sbHashKey = new StringBuilder();
             string keysColumns = string.Empty;
@@ -4717,7 +4713,7 @@ namespace Microsoft.WSMan.Management
             keys = keysColumns.Split('|');
         }
 
-        private static void ProcessCertMappingObjects(XmlDocument xmlCerts, out Hashtable Certcache, out Hashtable Keyscache)
+        private void ProcessCertMappingObjects(XmlDocument xmlCerts, out Hashtable Certcache, out Hashtable Keyscache)
         {
             Hashtable lCache = new Hashtable();
             Hashtable kCache = new Hashtable();
@@ -4775,7 +4771,7 @@ namespace Microsoft.WSMan.Management
             Keyscache = kCache;
         }
 
-        private static void ProcessListenerObjects(XmlDocument xmlListeners, out Hashtable listenercache, out Hashtable Keyscache)
+        private void ProcessListenerObjects(XmlDocument xmlListeners, out Hashtable listenercache, out Hashtable Keyscache)
         {
             Hashtable lCache = new Hashtable();
             Hashtable kCache = new Hashtable();
@@ -4836,7 +4832,7 @@ namespace Microsoft.WSMan.Management
             Keyscache = kCache;
         }
 
-        private static PSObject ProcessPluginConfigurationLevel(XmlDocument xmldoc, bool setRunasPasswordAsSecureString = false)
+        private PSObject ProcessPluginConfigurationLevel(XmlDocument xmldoc, bool setRunasPasswordAsSecureString = false)
         {
             PSObject objConfiglvl = null;
 
@@ -4877,7 +4873,7 @@ namespace Microsoft.WSMan.Management
             return objConfiglvl;
         }
 
-        private static ArrayList ProcessPluginResourceLevel(XmlDocument xmldoc, out ArrayList arrSecurity)
+        private ArrayList ProcessPluginResourceLevel(XmlDocument xmldoc, out ArrayList arrSecurity)
         {
             ArrayList Resources = null;
             ArrayList nSecurity = null;
@@ -4963,7 +4959,7 @@ namespace Microsoft.WSMan.Management
             return Resources;
         }
 
-        private static ArrayList ProcessPluginInitParamLevel(XmlDocument xmldoc)
+        private ArrayList ProcessPluginInitParamLevel(XmlDocument xmldoc)
         {
             ArrayList InitParamLvl = null;
             if (xmldoc != null)
@@ -5001,7 +4997,7 @@ namespace Microsoft.WSMan.Management
             return InitParamLvl;
         }
 
-        private static ArrayList ProcessPluginSecurityLevel(ArrayList arrSecurity, XmlDocument xmlSecurity, string UniqueResourceID, string ParentResourceUri)
+        private ArrayList ProcessPluginSecurityLevel(ArrayList arrSecurity, XmlDocument xmlSecurity, string UniqueResourceID, string ParentResourceUri)
         {
             // ArrayList SecurityLvl = null;
             if (xmlSecurity != null)
@@ -5063,7 +5059,7 @@ namespace Microsoft.WSMan.Management
         ///<param name="securities">List of Securities</param>
         ///<param name="initParams">List of initialization parameters.</param>
         /// <returns>An Configuration XML, ready to send to server.</returns>
-        private static string ConstructPluginXml(PSObject objinputparam, string ResourceURI, string host, string Operation, ArrayList resources, ArrayList securities, ArrayList initParams)
+        private string ConstructPluginXml(PSObject objinputparam, string ResourceURI, string host, string Operation, ArrayList resources, ArrayList securities, ArrayList initParams)
         {
             StringBuilder sbvalues = new StringBuilder();
             sbvalues.Append("<PlugInConfiguration ");
@@ -5089,7 +5085,7 @@ namespace Microsoft.WSMan.Management
 
                         if (WSManStringLiterals.ConfigRunAsPasswordName.Equals(prop.Name, StringComparison.OrdinalIgnoreCase))
                         {
-                            prop.Value = GetStringFromSecureString(prop.Value);
+                            prop.Value = this.GetStringFromSecureString(prop.Value);
                         }
 
                         // ... Name="Value"
@@ -5191,7 +5187,7 @@ namespace Microsoft.WSMan.Management
         /// if the propertyValue provided is not SecureString appends empty string.
         /// </summary>
         /// <param name="propertyValue">Value to append.</param>
-        private static string GetStringFromSecureString(object propertyValue)
+        private string GetStringFromSecureString(object propertyValue)
         {
             SecureString value = propertyValue as SecureString;
             string passwordValueToAdd = string.Empty;
@@ -5206,7 +5202,7 @@ namespace Microsoft.WSMan.Management
             return passwordValueToAdd;
         }
 
-        private static string ConstructResourceXml(PSObject objinputparams, ArrayList resources, ArrayList securities)
+        private string ConstructResourceXml(PSObject objinputparams, ArrayList resources, ArrayList securities)
         {
             StringBuilder sbvalues = new StringBuilder(string.Empty);
             if (objinputparams == null && resources == null)
@@ -5293,7 +5289,7 @@ namespace Microsoft.WSMan.Management
             return sbvalues.ToString();
         }
 
-        private static string ConstructSecurityXml(PSObject objinputparams, ArrayList securities, string strResourceIdentity)
+        private string ConstructSecurityXml(PSObject objinputparams, ArrayList securities, string strResourceIdentity)
         {
             // <Security Uri="" ExactMatch="false" Sddl="O:NSG:BAD:P(A;;GA;;;BA)(A;;GR;;;ER)S:P(AU;FA;GA;;;WD)(AU;SA;GXGW;;;WD)"/>
             StringBuilder sbvalues = new StringBuilder(string.Empty);
@@ -5320,7 +5316,7 @@ namespace Microsoft.WSMan.Management
             return sbvalues.ToString();
         }
 
-        private static void AddSecurityProperties(
+        private void AddSecurityProperties(
             PSMemberInfoCollection<PSPropertyInfo> properties,
             StringBuilder sbValues)
         {
@@ -5345,7 +5341,7 @@ namespace Microsoft.WSMan.Management
             sbValues.Append("</Security>");
         }
 
-        private static string ConstructInitParamsXml(PSObject objinputparams, ArrayList initparams)
+        private string ConstructInitParamsXml(PSObject objinputparams, ArrayList initparams)
         {
             // <InitializationParameters>
             // <Param Name="Param1" Value="Value1" />
@@ -5397,7 +5393,7 @@ namespace Microsoft.WSMan.Management
             return sbvalues.ToString();
         }
 
-        private static string ConstructCapabilityXml(object[] capabilities)
+        private string ConstructCapabilityXml(object[] capabilities)
         {
             StringBuilder sbvalues = new StringBuilder(string.Empty);
             foreach (object cap in capabilities)
@@ -5413,7 +5409,7 @@ namespace Microsoft.WSMan.Management
             return sbvalues.ToString();
         }
 
-        private static bool IsValueOfParamList(string name, string[] paramcontainer)
+        private bool IsValueOfParamList(string name, string[] paramcontainer)
         {
             bool result = false;
             foreach (string value in paramcontainer)
@@ -5430,22 +5426,21 @@ namespace Microsoft.WSMan.Management
 
         #endregion Plugin private functions
 
-        private enum ProviderMethods
+        enum ProviderMethods
         {
             GetChildItems,
             GetChildNames
-        }
+        };
 
-        private enum WsManElementObjectTypes
+        enum WsManElementObjectTypes
         {
             WSManConfigElement,
             WSManConfigContainerElement,
             WSManConfigLeafElement
-        }
+        };
 
         #region def
         private static readonly string[] WinrmRootName = new string[] { "winrm/Config" };
-
         private static readonly string[] WinRmRootConfigs = new string[] {
             "Client",
             "Service",
@@ -5490,8 +5485,8 @@ namespace Microsoft.WSMan.Management
         /// </summary>
         private static readonly List<string> globalWarningUris =
             new List<string> {
-                WinrmRootName[0] + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerWinrs,
-                WinrmRootName[0] + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerService};
+                WinrmRootName[0].ToString() + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerWinrs,
+                WinrmRootName[0].ToString() + WSManStringLiterals.WinrmPathSeparator + WSManStringLiterals.containerService};
 
         #endregion def
 
@@ -6585,3 +6580,4 @@ $_ | Start-WSManServiceD15A7957836142a18627D7E1D342DD82 -force $args[0] -caption
 
     #endregion "WsMan Output Objects"
 }
+

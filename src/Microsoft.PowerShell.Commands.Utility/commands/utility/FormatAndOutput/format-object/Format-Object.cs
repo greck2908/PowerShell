@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
@@ -10,12 +10,11 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implementation for the format-custom command. It just calls the formatting engine on complex shape.
     /// </summary>
-    [Cmdlet(VerbsCommon.Format, "Custom", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096929")]
+    [Cmdlet(VerbsCommon.Format, "Custom", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113301")]
     public class FormatCustomCommand : OuterFormatShapeCommandBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="FormatCustomCommand"/> class
-        /// and sets the inner command.
+        /// Constructor to se the inner command.
         /// </summary>
         public FormatCustomCommand()
         {
@@ -58,12 +57,12 @@ namespace Microsoft.PowerShell.Commands
 
         internal override FormattingCommandLineParameters GetCommandLineParameters()
         {
-            FormattingCommandLineParameters parameters = new();
+            FormattingCommandLineParameters parameters = new FormattingCommandLineParameters();
 
             if (_props != null)
             {
-                ParameterProcessor processor = new(new FormatObjectParameterDefinition());
-                TerminatingErrorContext invocationContext = new(this);
+                ParameterProcessor processor = new ParameterProcessor(new FormatObjectParameterDefinition());
+                TerminatingErrorContext invocationContext = new TerminatingErrorContext(this);
                 parameters.mshParameterList = processor.ProcessParameters(_props, invocationContext);
             }
 
@@ -87,7 +86,7 @@ namespace Microsoft.PowerShell.Commands
 
             parameters.expansion = ProcessExpandParameter();
 
-            ComplexSpecificParameters csp = new();
+            ComplexSpecificParameters csp = new ComplexSpecificParameters();
             csp.maxDepth = _depth;
             parameters.shapeParameters = csp;
 
@@ -95,3 +94,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

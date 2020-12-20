@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -44,7 +44,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw PSTraceSource.NewArgumentException(nameof(path));
+                throw PSTraceSource.NewArgumentException("path");
             }
 
             Diagnostics.Assert(IO.Path.IsPathRooted(path), "Caller makes sure that 'path' is already resolved.");
@@ -71,7 +71,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw PSTraceSource.NewArgumentException(nameof(path));
+                throw PSTraceSource.NewArgumentException("path");
             }
 
             Diagnostics.Assert(IO.Path.IsPathRooted(path), "Caller makes sure that 'path' is already resolved.");
@@ -358,8 +358,9 @@ namespace System.Management.Automation
         {
             get
             {
-                return _commandMetadata ??=
-                    new CommandMetadata(this.ScriptBlock, this.Name, LocalPipeline.GetExecutionContextFromTLS());
+                return _commandMetadata ??
+                       (_commandMetadata =
+                        new CommandMetadata(this.ScriptBlock, this.Name, LocalPipeline.GetExecutionContextFromTLS()));
             }
         }
 
@@ -402,7 +403,7 @@ namespace System.Management.Automation
             get
             {
                 var data = GetRequiresData();
-                return data?.RequiredApplicationId;
+                return data == null ? null : data.RequiredApplicationId;
             }
         }
 
@@ -416,7 +417,7 @@ namespace System.Management.Automation
             get
             {
                 var data = GetRequiresData();
-                return data?.RequiredPSVersion;
+                return data == null ? null : data.RequiredPSVersion;
             }
         }
 
@@ -425,7 +426,7 @@ namespace System.Management.Automation
             get
             {
                 var data = GetRequiresData();
-                return data?.RequiredPSEditions;
+                return data == null ? null : data.RequiredPSEditions;
             }
         }
 
@@ -434,7 +435,7 @@ namespace System.Management.Automation
             get
             {
                 var data = GetRequiresData();
-                return data?.RequiredModules;
+                return data == null ? null : data.RequiredModules;
             }
         }
 
@@ -443,7 +444,7 @@ namespace System.Management.Automation
             get
             {
                 var data = GetRequiresData();
-                return data != null && data.IsElevationRequired;
+                return data == null ? false : data.IsElevationRequired;
             }
         }
 
@@ -457,7 +458,7 @@ namespace System.Management.Automation
             get
             {
                 var data = GetRequiresData();
-                return data?.RequiresPSSnapIns;
+                return data == null ? null : data.RequiresPSSnapIns;
             }
         }
 
@@ -607,3 +608,4 @@ namespace System.Management.Automation
         public Version Version { get; internal set; }
     }
 }
+

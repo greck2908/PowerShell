@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation
@@ -25,7 +25,7 @@ namespace System.Management.Automation
             get
             {
                 DebuggerCheckVariableRead();
-                return System.Threading.Thread.CurrentThread.CurrentCulture.Name;
+                return System.Globalization.CultureInfo.CurrentCulture.Name;
             }
         }
     }
@@ -52,7 +52,7 @@ namespace System.Management.Automation
             get
             {
                 DebuggerCheckVariableRead();
-                return System.Threading.Thread.CurrentThread.CurrentUICulture.Name;
+                return System.Globalization.CultureInfo.CurrentUICulture.Name;
             }
         }
     }

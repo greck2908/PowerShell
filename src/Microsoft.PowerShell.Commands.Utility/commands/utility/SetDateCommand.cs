@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -16,7 +16,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implementation for the set-date command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "Date", DefaultParameterSetName = "Date", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097133")]
+    [Cmdlet(VerbsCommon.Set, "Date", DefaultParameterSetName = "Date", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113393")]
     [OutputType(typeof(DateTime))]
     public sealed class SetDateCommand : PSCmdlet
     {
@@ -77,7 +77,7 @@ namespace Microsoft.PowerShell.Commands
                 }
 #else
                 // build up the SystemTime struct to pass to SetSystemTime
-                NativeMethods.SystemTime systemTime = new();
+                NativeMethods.SystemTime systemTime = new NativeMethods.SystemTime();
                 systemTime.Year = (UInt16)dateToUse.Year;
                 systemTime.Month = (UInt16)dateToUse.Month;
                 systemTime.Day = (UInt16)dateToUse.Day;
@@ -102,8 +102,8 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // output DateTime object wrapped in an PSObject with DisplayHint attached
-            PSObject outputObj = new(dateToUse);
-            PSNoteProperty note = new("DisplayHint", DisplayHint);
+            PSObject outputObj = new PSObject(dateToUse);
+            PSNoteProperty note = new PSNoteProperty("DisplayHint", DisplayHint);
             outputObj.Properties.Add(note);
 
             WriteObject(outputObj);

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -78,7 +78,7 @@ namespace System.Management.Automation.Runspaces
             {
                 foreach (PSSnapInException e in PSSnapInExceptions)
                 {
-                    sb.Append('\n');
+                    sb.Append("\n");
                     sb.Append(e.Message);
                 }
             }
@@ -87,7 +87,6 @@ namespace System.Management.Automation.Runspaces
         }
 
         private Collection<PSSnapInException> _PSSnapInExceptions = new Collection<PSSnapInException>();
-
         internal Collection<PSSnapInException> PSSnapInExceptions
         {
             get
@@ -115,3 +114,4 @@ namespace System.Management.Automation.Runspaces
         }
     }
 }
+

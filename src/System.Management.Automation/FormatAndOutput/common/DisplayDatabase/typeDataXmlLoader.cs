@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -43,7 +43,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
         #region tracer
         [TraceSource("TypeInfoDataBaseLoader", "TypeInfoDataBaseLoader")]
-        private static readonly PSTraceSource s_tracer = PSTraceSource.GetTracer("TypeInfoDataBaseLoader", "TypeInfoDataBaseLoader");
+        private static PSTraceSource s_tracer = PSTraceSource.GetTracer("TypeInfoDataBaseLoader", "TypeInfoDataBaseLoader");
         #endregion tracer
 
         /// <summary>
@@ -193,16 +193,16 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             bool preValidated)
         {
             if (info == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(info));
+                throw PSTraceSource.NewArgumentNullException("info");
 
             if (info.filePath == null)
                 throw PSTraceSource.NewArgumentNullException("info.filePath");
 
             if (db == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(db));
+                throw PSTraceSource.NewArgumentNullException("db");
 
             if (expressionFactory == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(expressionFactory));
+                throw PSTraceSource.NewArgumentNullException("expressionFactory");
 
             if (SecuritySupport.IsProductBinary(info.filePath))
             {
@@ -288,13 +288,13 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             bool isForHelp)
         {
             if (typeDefinition == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(typeDefinition));
+                throw PSTraceSource.NewArgumentNullException("typeDefinition");
             if (typeDefinition.TypeName == null)
                 throw PSTraceSource.NewArgumentNullException("typeDefinition.TypeName");
             if (db == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(db));
+                throw PSTraceSource.NewArgumentNullException("db");
             if (expressionFactory == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(expressionFactory));
+                throw PSTraceSource.NewArgumentNullException("expressionFactory");
 
             this.expressionFactory = expressionFactory;
             this.ReportTrace("loading ExtendedTypeDefinition started");
@@ -337,10 +337,10 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         private void LoadData(XmlDocument doc, TypeInfoDataBase db)
         {
             if (doc == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(doc));
+                throw PSTraceSource.NewArgumentNullException("doc");
 
             if (db == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(db));
+                throw PSTraceSource.NewArgumentNullException("db");
 
             // create a new instance of the database to be loaded
             XmlElement documentElement = doc.DocumentElement;
@@ -428,7 +428,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 throw PSTraceSource.NewArgumentNullException("viewDefinition");
 
             if (db == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(db));
+                throw PSTraceSource.NewArgumentNullException("db");
 
             int viewIndex = 0;
             foreach (FormatViewDefinition formatView in typeDefinition.FormatViewDefinition)
@@ -586,7 +586,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// </summary>
         /// <param name="tableBody"></param>
         /// <param name="headers"></param>
-        private static void LoadHeadersSectionFromObjectModel(TableControlBody tableBody, List<TableControlColumnHeader> headers)
+        private void LoadHeadersSectionFromObjectModel(TableControlBody tableBody, List<TableControlColumnHeader> headers)
         {
             foreach (TableControlColumnHeader header in headers)
             {
@@ -746,7 +746,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// Load EntrySelectedBy (TypeName) into AppliesTo.
         /// </summary>
         /// <returns></returns>
-        private static AppliesTo LoadAppliesToSectionFromObjectModel(List<string> selectedBy, List<DisplayEntry> condition)
+        private AppliesTo LoadAppliesToSectionFromObjectModel(List<string> selectedBy, List<DisplayEntry> condition)
         {
             AppliesTo appliesTo = new AppliesTo();
 
@@ -2035,7 +2035,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 return _token;
             }
 
-            private readonly TypeInfoDataBaseLoader _loader;
+            private TypeInfoDataBaseLoader _loader;
             private ExpressionToken _token;
             private bool _fatalError = false;
         }
@@ -2054,7 +2054,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             internal bool ProcessExpressionDirectives(XmlNode containerNode, List<XmlNode> unprocessedNodes)
             {
                 if (containerNode == null)
-                    throw PSTraceSource.NewArgumentNullException(nameof(containerNode));
+                    throw PSTraceSource.NewArgumentNullException("containerNode");
 
                 string formatString = null;
                 TextToken textToken = null;
@@ -2175,7 +2175,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             private TextToken _textToken;
             private ExpressionToken _expression;
 
-            private readonly TypeInfoDataBaseLoader _loader;
+            private TypeInfoDataBaseLoader _loader;
         }
 
         #endregion
@@ -2228,9 +2228,10 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             }
 
             private ControlBase _control;
-            private readonly TypeInfoDataBaseLoader _loader;
+            private TypeInfoDataBaseLoader _loader;
         }
 
         #endregion
     }
 }
+

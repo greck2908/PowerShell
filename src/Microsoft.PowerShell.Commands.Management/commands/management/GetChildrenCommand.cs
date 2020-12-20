@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Management.Automation;
 
 using Dbg = System.Management.Automation;
@@ -13,7 +14,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     /// <remarks>
     /// </remarks>
-    [Cmdlet(VerbsCommon.Get, "ChildItem", DefaultParameterSetName = "Items", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096492")]
+    [Cmdlet(VerbsCommon.Get, "ChildItem", DefaultParameterSetName = "Items", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113308")]
     public class GetChildItemCommand : CoreCommandBase
     {
         /// <summary>
@@ -364,3 +365,4 @@ namespace Microsoft.PowerShell.Commands
         #endregion command code
     }
 }
+

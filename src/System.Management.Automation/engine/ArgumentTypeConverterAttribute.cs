@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -25,13 +25,15 @@ namespace System.Management.Automation
             _convertTypes = types;
         }
 
-        private readonly Type[] _convertTypes;
+        private Type[] _convertTypes;
 
         internal Type TargetType
         {
             get
             {
-                return _convertTypes?.LastOrDefault();
+                return _convertTypes == null
+                           ? null
+                           : _convertTypes.LastOrDefault();
             }
         }
 
@@ -65,7 +67,9 @@ namespace System.Management.Automation
                             else
                                 temp = result;
 
-                            if (!(temp is PSReference reference))
+                            PSReference reference = temp as PSReference;
+
+                            if (reference == null)
                             {
                                 throw new PSInvalidCastException("InvalidCastExceptionReferenceTypeExpected", null,
                                                                    ExtendedTypeSystem.ReferenceTypeExpected);
@@ -143,14 +147,15 @@ namespace System.Management.Automation
                     // Note - this is duplicated in ExecutionContext.cs as parameter binding for script cmdlets can avoid this code path.
                     if ((!bindingScriptCmdlet) && (!bindingParameters))
                     {
-                        // ActionPreference.Suspend is reserved for future use and is not supported as a preference variable.
+                        // ActionPreference of Suspend is not supported as a preference variable. We can only block "Suspend"
+                        // during variable assignment (here) - "Ignore" is blocked during variable retrieval.
                         if (_convertTypes[i] == typeof(ActionPreference))
                         {
                             ActionPreference resultPreference = (ActionPreference)result;
 
                             if (resultPreference == ActionPreference.Suspend)
                             {
-                                throw new PSInvalidCastException("InvalidActionPreference", null, ErrorPackage.ActionPreferenceReservedForFutureUseError, resultPreference);
+                                throw new PSInvalidCastException("InvalidActionPreference", null, ErrorPackage.UnsupportedPreferenceVariable, resultPreference);
                             }
                         }
                     }
@@ -206,3 +211,4 @@ namespace System.Management.Automation
         }
     }
 }
+

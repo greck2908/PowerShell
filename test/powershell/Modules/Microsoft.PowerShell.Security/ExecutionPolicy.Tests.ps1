@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Import-Module HelpersCommon
@@ -56,7 +56,7 @@ try {
 
         # Skip the test if Storage module is not available, return a pseudo result
         # ExecutionPolicy only works on windows
-        It "Test for Get-Help Get-Disk" -Skip:(!(Test-Path (Join-Path -Path $PSHOME -ChildPath Modules\Storage\Storage.psd1)) -or $ShouldSkipTest) {
+        It "Test for Get-Help Get-Disk" -skip:(!(Test-Path (Join-Path -Path $PSHOME -ChildPath Modules\Storage\Storage.psd1)) -or $ShouldSkipTest) {
 
                 try
                 {
@@ -100,8 +100,8 @@ try {
                 $LocalSignatureCorruptedScript = Join-Path -Path $remoteTestDirectory -ChildPath LocalSignatureCorruptedScript.ps1
                 $LocalSignedScript = Join-Path -Path $remoteTestDirectory -ChildPath LocalSignedScript.ps1
                 $LocalUnsignedScript = Join-Path -Path $remoteTestDirectory -ChildPath LocalUnsignedScript.ps1
-                $PSHomeUnsignedModule = Join-Path -Path $PSHOME -ChildPath 'Modules' -AdditionalChildPath 'LocalUnsignedModule', 'LocalUnsignedModule.psm1'
-                $PSHomeUntrustedModule = Join-Path -Path $PSHOME -ChildPath 'Modules' -AdditionalChildPath 'LocalUntrustedModule', 'LocalUntrustedModule.psm1'
+                $PSHomeUnsignedModule = Join-Path -Path $PSHome -ChildPath 'Modules' -AdditionalChildPath 'LocalUnsignedModule', 'LocalUnsignedModule.psm1'
+                $PSHomeUntrustedModule = Join-Path -Path $PSHome -ChildPath 'Modules' -AdditionalChildPath 'LocalUntrustedModule', 'LocalUntrustedModule.psm1'
                 $TrustedSignatureCorruptedScript = Join-Path -Path $remoteTestDirectory -ChildPath TrustedSignatureCorruptedScript.ps1
                 $TrustedSignedScript = Join-Path -Path $remoteTestDirectory -ChildPath TrustedSignedScript.ps1
                 $TrustedUnsignedScript = Join-Path -Path $remoteTestDirectory -ChildPath TrustedUnsignedScript.ps1
@@ -458,7 +458,7 @@ try {
                         }
                     }
 
-                    Set-Content $filePath -Value $content
+                    set-content $filePath -Value $content
 
                     ## Valida File types and their corresponding int values are :
                     ##
@@ -476,7 +476,7 @@ try {
 [ZoneTransfer]
 ZoneId=$FileType
 "@
-                        Add-Content -Path $filePath -Value $alternateStreamContent -Stream Zone.Identifier
+                        Add-Content -Path $filePath -Value $alternateStreamContent -stream Zone.Identifier
                     }
                 }
 
@@ -532,10 +532,10 @@ ZoneId=$FileType
 
         Context "Prereq: Validate that 'Microsoft.PowerShell.Archive' is signed" {
             It "'Microsoft.PowerShell.Archive' should have a signature" {
-                $script:archiveAllCert | Should -Not -Be null
+                $script:archiveAllCert | should not be null
             }
             It "'Microsoft.PowerShell.Archive' should have a valid signature" {
-                $script:archiveCert | Should -Not -Be null
+                $script:archiveCert | should not be null
             }
         }
 
@@ -565,7 +565,7 @@ ZoneId=$FileType
 
                     $exception = { & $scriptName } | Should -Throw -PassThru
 
-                    $exception.Exception | Should -BeOfType System.Management.Automation.PSSecurityException
+                    $exception.Exception | Should -BeOfType "System.Management.Automation.PSSecurityException"
                 }
             }
 
@@ -772,7 +772,7 @@ ZoneId=$FileType
 
             function Test-RemoteSignedExecutionPolicy {
 
-                param ($testScript, $expected, $errorId)
+                param($testScript, $expected, $error)
 
                 $TestTypePrefix = "Test 'RemoteSigned' execution policy."
 
@@ -806,91 +806,91 @@ ZoneId=$FileType
                     $actualError = $result."exception"
 
                     $actualResult | Should -Be $expected
-                    $actualError | Should -Be $errorId
+                    $actualError | Should -Be $error
                 }
             }
             $message = "Hello"
-            $errorId = "System.Management.Automation.PSSecurityException"
+            $error = "System.Management.Automation.PSSecurityException"
             $testData = @(
                 @{
                     testScript = $LocalUnsignedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $LocalSignatureCorruptedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $LocalSignedScript
                     expected = "Hello"
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $MyComputerUnsignedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $MyComputerSignatureCorruptedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $myComputerSignedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $TrustedUnsignedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $TrustedSignatureCorruptedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $TrustedSignedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $IntranetUnsignedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $IntranetSignatureCorruptedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $IntranetSignedScript
                     expected = $message
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $InternetUnsignedScript
                     expected = $null
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $InternetSignatureCorruptedScript
                     expected = $null
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $UntrustedUnsignedScript
                     expected = $null
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $UntrustedSignatureCorruptedScript
                     expected = $null
-                    errorId = $errorId
+                    error = $error
                 }
             )
 
@@ -915,11 +915,11 @@ ZoneId=$FileType
 
             $TestTypePrefix = "Test 'AllSigned' execution policy."
 
-            $errorId = "UnauthorizedAccess,Microsoft.PowerShell.Commands.ImportModuleCommand"
+            $error = "UnauthorizedAccess,Microsoft.PowerShell.Commands.ImportModuleCommand"
             $testData = @(
                 @{
                     module = "Microsoft.PowerShell.Archive"
-                    errorId = $null
+                    error = $null
                 }
             )
 
@@ -927,21 +927,21 @@ ZoneId=$FileType
                 $testData += @(
                     @{
                         module = $PSHomeUntrustedModule
-                        errorId = $errorId
+                        error = $error
                     }
                     @{
                         module = $PSHomeUnsignedModule
-                        errorId = $errorId
+                        error = $error
                     }
                 )
             }
 
             It "$TestTypePrefix Importing <module> Module should throw '<error>'" -TestCases $testData  {
-                param ([string]$module, [string]$errorId)
+                param([string]$module, [string]$error)
                 $testScript = {Import-Module -Name $module -Force}
-                if ($errorId)
+                if($error)
                 {
-                    $testScript | Should -Throw -ErrorId $errorId
+                    $testScript | Should -Throw -ErrorId $error
                 }
                 else
                 {
@@ -949,33 +949,33 @@ ZoneId=$FileType
                 }
             }
 
-            $errorId = "UnauthorizedAccess"
+            $error = "UnauthorizedAccess"
             $pendingTestData = @(
                 # The following files are not signed correctly when generated, so we will skip for now
                 # filed https://github.com/PowerShell/PowerShell/issues/5559
                 @{
                     testScript = $MyComputerSignedScript
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $UntrustedSignedScript
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $TrustedSignedScript
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $LocalSignedScript
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $IntranetSignedScript
-                    errorId = $null
+                    error = $null
                 }
                 @{
                     testScript = $InternetSignedScript
-                    errorId = $null
+                    error = $null
                 }
             )
             It "$TestTypePrefix Running <testScript> Script should throw '<error>'" -TestCases $pendingTestData -Pending  {}
@@ -983,64 +983,64 @@ ZoneId=$FileType
             $testData = @(
                 @{
                     testScript = $InternetSignatureCorruptedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $InternetUnsignedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $IntranetSignatureCorruptedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $IntranetSignatureCorruptedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $IntranetUnsignedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $LocalSignatureCorruptedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $LocalUnsignedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $TrustedSignatureCorruptedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $TrustedUnsignedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $UntrustedSignatureCorruptedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $UntrustedUnsignedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $MyComputerSignatureCorruptedScript
-                    errorId = $errorId
+                    error = $error
                 }
                 @{
                     testScript = $MyComputerUnsignedScript
-                    errorId = $errorId
+                    error = $error
                 }
 
             )
             It "$TestTypePrefix Running <testScript> Script should throw '<error>'" -TestCases $testData  {
-                param ([string]$testScript, [string]$errorId)
+                param([string]$testScript, [string]$error)
                 $testScript | Should -Exist
-                if ($errorId)
+                if($error)
                 {
-                    {& $testScript} | Should -Throw -ErrorId $errorId
+                    {& $testScript} | Should -Throw -ErrorId $error
                 }
                 else
                 {
@@ -1111,7 +1111,7 @@ ZoneId=$FileType
 
         BeforeAll {
             if ($IsNotSkipped) {
-                $originalPolicies = Get-ExecutionPolicy -List
+                $originalPolicies = Get-ExecutionPolicy -list
             }
         }
 
@@ -1145,7 +1145,7 @@ ZoneId=$FileType
         BeforeAll {
             if ($IsNotSkipped)
             {
-                $originalPolicies = Get-ExecutionPolicy -List
+                $originalPolicies = Get-ExecutionPolicy -list
             }
         }
 

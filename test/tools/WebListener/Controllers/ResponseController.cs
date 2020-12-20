@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -99,7 +98,7 @@ namespace mvc.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        private static List<T> GetSingleOrArray<T>(JToken token)
+        private List<T> GetSingleOrArray<T>(JToken token)
         {
             if (token.HasValues)
             {

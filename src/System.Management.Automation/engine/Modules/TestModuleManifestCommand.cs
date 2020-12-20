@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -20,7 +20,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This cmdlet takes a module manifest and validates the contents...
     /// </summary>
-    [Cmdlet(VerbsDiagnostic.Test, "ModuleManifest", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096900")]
+    [Cmdlet(VerbsDiagnostic.Test, "ModuleManifest", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=141557")]
     [OutputType(typeof(PSModuleInfo))]
     public sealed class TestModuleManifestCommand : ModuleCmdletBase
     {
@@ -172,7 +172,7 @@ namespace Microsoft.PowerShell.Commands
                                     && !IsValidGacAssembly(nestedModule.Name))
                                 {
                                     Collection<PSModuleInfo> modules = GetModuleIfAvailable(nestedModule);
-                                    if (modules.Count == 0)
+                                    if (0 == modules.Count)
                                     {
                                         string errorMsg = StringUtil.Format(Modules.InvalidNestedModuleinModuleManifest, nestedModule.Name, filePath);
                                         var errorRecord = new ErrorRecord(new DirectoryNotFoundException(errorMsg), "Modules_InvalidNestedModuleinModuleManifest",
@@ -404,7 +404,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="assemblyName"></param>
         /// <returns></returns>
-        private static bool IsValidGacAssembly(string assemblyName)
+        private bool IsValidGacAssembly(string assemblyName)
         {
 #if UNIX
             return false;
@@ -420,13 +420,23 @@ namespace Microsoft.PowerShell.Commands
 
             try
             {
-                return Directory.EnumerateFiles(gacPath, assemblyFile, SearchOption.AllDirectories).Any()
-                    || Directory.EnumerateFiles(gacPath, ngenAssemblyFile, SearchOption.AllDirectories).Any();
+                var allFiles = Directory.GetFiles(gacPath, assemblyFile, SearchOption.AllDirectories);
+
+                if (allFiles.Length == 0)
+                {
+                    var allNgenFiles = Directory.GetFiles(gacPath, ngenAssemblyFile, SearchOption.AllDirectories);
+                    if (allNgenFiles.Length == 0)
+                    {
+                        return false;
+                    }
+                }
             }
             catch
             {
                 return false;
             }
+
+            return true;
 #endif
         }
     }

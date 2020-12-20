@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 // NOTE: define this if you want to test the output on US machine and ASCII
@@ -94,7 +94,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             {
                 return _rawUserInterface.LengthInBufferCells(str, offset);
             }
-            catch
+            catch (Exception ex) when (ex is HostException || ex is NotImplementedException)
             {
                 // thrown when external host rawui is not implemented, in which case
                 // we will fallback to the default value.
@@ -109,7 +109,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             {
                 return _rawUserInterface.LengthInBufferCells(str);
             }
-            catch
+            catch (Exception ex) when (ex is HostException || ex is NotImplementedException)
             {
                 // thrown when external host rawui is not implemented, in which case
                 // we will fallback to the default value.
@@ -124,7 +124,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             {
                 return _rawUserInterface.LengthInBufferCells(character);
             }
-            catch
+            catch (Exception ex) when (ex is HostException || ex is NotImplementedException)
             {
                 // thrown when external host rawui is not implemented, in which case
                 // we will fallback to the default value.
@@ -143,7 +143,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             return GetSplitLengthInternalHelper(str, offset, displayCells, false);
         }
 
-        private readonly PSHostRawUserInterface _rawUserInterface;
+        private PSHostRawUserInterface _rawUserInterface;
     }
 
     /// <summary>
@@ -153,7 +153,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         #region tracer
         [TraceSource("ConsoleLineOutput", "ConsoleLineOutput")]
-        internal static readonly PSTraceSource tracer = PSTraceSource.GetTracer("ConsoleLineOutput", "ConsoleLineOutput");
+        internal static PSTraceSource tracer = PSTraceSource.GetTracer("ConsoleLineOutput", "ConsoleLineOutput");
         #endregion tracer
 
         #region LineOutput implementation
@@ -179,7 +179,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 {
                     return _forceNewLine ? raw.BufferSize.Width - 1 : raw.BufferSize.Width;
                 }
-                catch
+                catch (Exception ex) when (ex is HostException || ex is NotImplementedException)
                 {
                     // thrown when external host rawui is not implemented, in which case
                     // we will fallback to the default value.
@@ -205,7 +205,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 {
                     return raw.WindowSize.Height;
                 }
-                catch
+                catch (Exception ex) when (ex is HostException || ex is NotImplementedException)
                 {
                     // thrown when external host rawui is not implemented, in which case
                     // we will fallback to the default value.
@@ -222,7 +222,6 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         internal override void WriteLine(string s)
         {
             CheckStopProcessing();
-
             // delegate the action to the helper,
             // that will properly break the string into
             // screen lines
@@ -253,9 +252,9 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         internal ConsoleLineOutput(PSHostUserInterface hostConsole, bool paging, TerminatingErrorContext errorContext)
         {
             if (hostConsole == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(hostConsole));
+                throw PSTraceSource.NewArgumentNullException("hostConsole");
             if (errorContext == null)
-                throw PSTraceSource.NewArgumentNullException(nameof(errorContext));
+                throw PSTraceSource.NewArgumentNullException("errorContext");
 
             _console = hostConsole;
             _errorContext = errorContext;
@@ -352,7 +351,6 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 #if TEST_MULTICELL_ON_SINGLE_CELL_LOCALE
             s = ((DisplayCellsTest)this._displayCellsPSHost).GenerateTestString(s);
 #endif
-
             switch (this.WriteStream)
             {
                 case WriteStreamType.Error:
@@ -476,7 +474,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             internal PromptHandler(string s, ConsoleLineOutput cmdlet)
             {
                 if (string.IsNullOrEmpty(s))
-                    throw PSTraceSource.NewArgumentNullException(nameof(s));
+                    throw PSTraceSource.NewArgumentNullException("s");
 
                 _promptString = s;
                 _callingCmdlet = cmdlet;
@@ -557,12 +555,12 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             /// <summary>
             /// Prompt string as passed at initialization.
             /// </summary>
-            private readonly string _promptString;
+            private string _promptString;
 
             /// <summary>
             /// The cmdlet that uses this prompt helper.
             /// </summary>
-            private readonly ConsoleLineOutput _callingCmdlet = null;
+            private ConsoleLineOutput _callingCmdlet = null;
         }
 
         /// <summary>
@@ -570,25 +568,25 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// usable width to N-1 (e.g. 80-1) and forcing a call
         /// to WriteLine()
         /// </summary>
-        private readonly bool _forceNewLine = true;
+        private bool _forceNewLine = true;
 
         /// <summary>
         /// Use this if IRawConsole is null;
         /// </summary>
-        private readonly int _fallbackRawConsoleColumnNumber = 80;
+        private int _fallbackRawConsoleColumnNumber = 80;
 
         /// <summary>
         /// Use this if IRawConsole is null;
         /// </summary>
-        private readonly int _fallbackRawConsoleRowNumber = 40;
+        private int _fallbackRawConsoleRowNumber = 40;
 
-        private readonly WriteLineHelper _writeLineHelper;
+        private WriteLineHelper _writeLineHelper;
 
         /// <summary>
         /// Handler to prompt the user for page breaks
         /// if this handler is not null, we have prompting.
         /// </summary>
-        private readonly PromptHandler _prompt = null;
+        private PromptHandler _prompt = null;
 
         /// <summary>
         /// Conter for the # of lines written when prompting is on.
@@ -603,17 +601,17 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Refecence to the PSHostUserInterface interface we use.
         /// </summary>
-        private readonly PSHostUserInterface _console = null;
+        private PSHostUserInterface _console = null;
 
         /// <summary>
         /// Msh host specific string manipulation helper.
         /// </summary>
-        private readonly DisplayCells _displayCellsPSHost;
+        private DisplayCells _displayCellsPSHost;
 
         /// <summary>
         /// Reference to error context to throw Msh exceptions.
         /// </summary>
-        private readonly TerminatingErrorContext _errorContext = null;
+        private TerminatingErrorContext _errorContext = null;
 
         #endregion
     }

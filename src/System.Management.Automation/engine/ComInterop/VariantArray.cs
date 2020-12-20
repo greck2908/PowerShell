@@ -1,14 +1,17 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
+#if !SILVERLIGHT // ComObject
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Management.Automation.InteropServices;
 using System.Runtime.InteropServices;
 
 namespace System.Management.Automation.ComInterop
@@ -74,7 +77,7 @@ namespace System.Management.Automation.ComInterop
                 // See if we can find an existing type
                 foreach (Type t in s_generatedTypes)
                 {
-                    int arity = int.Parse(t.Name.AsSpan("VariantArray".Length), NumberStyles.Integer, CultureInfo.InvariantCulture);
+                    int arity = int.Parse(t.Name.Substring("VariantArray".Length), CultureInfo.InvariantCulture);
                     if (size == arity)
                     {
                         return t;
@@ -90,14 +93,18 @@ namespace System.Management.Automation.ComInterop
 
         private static Type CreateCustomType(int size)
         {
-            TypeAttributes attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;
+            var attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;
             TypeBuilder type = UnsafeMethods.DynamicModule.DefineType("VariantArray" + size, attrs, typeof(ValueType));
-            GenericTypeParameterBuilder T = type.DefineGenericParameters(new string[] { "T" })[0];
+            var T = type.DefineGenericParameters(new string[] { "T" })[0];
             for (int i = 0; i < size; i++)
             {
                 type.DefineField("Element" + i, T, FieldAttributes.Public);
             }
+
             return type.CreateType();
         }
     }
 }
+
+#endif
+

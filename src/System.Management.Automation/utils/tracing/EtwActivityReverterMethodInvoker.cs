@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 #if !UNIX
 
 namespace System.Management.Automation.Tracing
@@ -23,7 +22,7 @@ namespace System.Management.Automation.Tracing
         {
             if (eventCorrelator == null)
             {
-                throw new ArgumentNullException(nameof(eventCorrelator));
+                throw new ArgumentNullException("eventCorrelator");
             }
 
             _eventCorrelator = eventCorrelator;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -744,7 +744,7 @@ namespace System.Management.Automation.Remoting
         /// </summary>
         private static T SafelyGetBaseObject<T>(PSObject psObject)
         {
-            if (psObject == null || psObject.BaseObject == null || psObject.BaseObject is not T)
+            if (psObject == null || psObject.BaseObject == null || !(psObject.BaseObject is T))
             {
                 throw RemoteHostExceptions.NewDecodingFailedException();
             }
@@ -771,7 +771,7 @@ namespace System.Management.Automation.Remoting
         private static T SafelyGetPropertyValue<T>(PSObject psObject, string key)
         {
             PSPropertyInfo propertyInfo = psObject.Properties[key];
-            if (propertyInfo == null || propertyInfo.Value == null || propertyInfo.Value is not T)
+            if (propertyInfo == null || propertyInfo.Value == null || !(propertyInfo.Value is T))
             {
                 throw RemoteHostExceptions.NewDecodingFailedException();
             }

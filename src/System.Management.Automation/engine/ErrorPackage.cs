@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -420,7 +420,7 @@ namespace System.Management.Automation
             if (string.IsNullOrEmpty(errorCategoryString))
             {
                 // this probably indicates an invalid ErrorCategory value
-                errorCategoryString = nameof(ErrorCategory.NotSpecified);
+                errorCategoryString = ErrorCategory.NotSpecified.ToString();
             }
 
             string templateText = ErrorCategoryStrings.ResourceManager.GetString(errorCategoryString, uiCultureInfo);
@@ -477,7 +477,7 @@ namespace System.Management.Automation
 
         #region Private
         // back-reference for facade class
-        private readonly ErrorRecord _errorRecord;
+        private ErrorRecord _errorRecord;
 
         /// <summary>
         /// The Activity, Reason, TargetName and TargetType strings in
@@ -495,7 +495,7 @@ namespace System.Management.Automation
         /// </remarks>
         internal static string Ellipsize(CultureInfo uiCultureInfo, string original)
         {
-            if (original.Length <= 40)
+            if (40 >= original.Length)
             {
                 return original;
             }
@@ -720,6 +720,7 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Streaming context.</param>
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info != null)
@@ -756,7 +757,7 @@ namespace System.Management.Automation
             get { return ErrorRecord.NotNull(_message); }
         }
 
-        private readonly string _message = string.Empty;
+        private string _message = string.Empty;
 
         /// <summary>
         /// Text describing the recommended action in the event that this error
@@ -1076,6 +1077,7 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Streaming context.</param>
+        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info != null)
@@ -1204,21 +1206,21 @@ namespace System.Management.Automation
 
         private void ToPSObjectForRemoting(PSObject dest, bool serializeExtInfo)
         {
-            RemotingEncoder.AddNoteProperty<Exception>(dest, "Exception", () => Exception);
-            RemotingEncoder.AddNoteProperty<object>(dest, "TargetObject", () => TargetObject);
-            RemotingEncoder.AddNoteProperty<string>(dest, "FullyQualifiedErrorId", () => FullyQualifiedErrorId);
-            RemotingEncoder.AddNoteProperty<InvocationInfo>(dest, "InvocationInfo", () => InvocationInfo);
-            RemotingEncoder.AddNoteProperty<int>(dest, "ErrorCategory_Category", () => (int)CategoryInfo.Category);
-            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_Activity", () => CategoryInfo.Activity);
-            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_Reason", () => CategoryInfo.Reason);
-            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_TargetName", () => CategoryInfo.TargetName);
-            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_TargetType", () => CategoryInfo.TargetType);
-            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_Message", () => CategoryInfo.GetMessage(CultureInfo.CurrentCulture));
+            RemotingEncoder.AddNoteProperty<Exception>(dest, "Exception", delegate () { return Exception; });
+            RemotingEncoder.AddNoteProperty<object>(dest, "TargetObject", delegate () { return TargetObject; });
+            RemotingEncoder.AddNoteProperty<string>(dest, "FullyQualifiedErrorId", delegate () { return FullyQualifiedErrorId; });
+            RemotingEncoder.AddNoteProperty<InvocationInfo>(dest, "InvocationInfo", delegate () { return InvocationInfo; });
+            RemotingEncoder.AddNoteProperty<int>(dest, "ErrorCategory_Category", delegate () { return (int)CategoryInfo.Category; });
+            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_Activity", delegate () { return CategoryInfo.Activity; });
+            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_Reason", delegate () { return CategoryInfo.Reason; });
+            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_TargetName", delegate () { return CategoryInfo.TargetName; });
+            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_TargetType", delegate () { return CategoryInfo.TargetType; });
+            RemotingEncoder.AddNoteProperty<string>(dest, "ErrorCategory_Message", delegate () { return CategoryInfo.GetMessage(CultureInfo.CurrentCulture); });
 
             if (ErrorDetails != null)
             {
-                RemotingEncoder.AddNoteProperty<string>(dest, "ErrorDetails_Message", () => ErrorDetails.Message);
-                RemotingEncoder.AddNoteProperty<string>(dest, "ErrorDetails_RecommendedAction", () => ErrorDetails.RecommendedAction);
+                RemotingEncoder.AddNoteProperty<string>(dest, "ErrorDetails_Message", delegate () { return ErrorDetails.Message; });
+                RemotingEncoder.AddNoteProperty<string>(dest, "ErrorDetails_RecommendedAction", delegate () { return ErrorDetails.RecommendedAction; });
             }
 
             if (!serializeExtInfo || this.InvocationInfo == null)
@@ -1229,12 +1231,12 @@ namespace System.Management.Automation
             {
                 RemotingEncoder.AddNoteProperty(dest, "SerializeExtendedInfo", () => true);
                 this.InvocationInfo.ToPSObjectForRemoting(dest);
-                RemotingEncoder.AddNoteProperty<object>(dest, "PipelineIterationInfo", () => PipelineIterationInfo);
+                RemotingEncoder.AddNoteProperty<object>(dest, "PipelineIterationInfo", delegate () { return PipelineIterationInfo; });
             }
 
             if (!string.IsNullOrEmpty(this.ScriptStackTrace))
             {
-                RemotingEncoder.AddNoteProperty(dest, "ErrorDetails_ScriptStackTrace", () => this.ScriptStackTrace);
+                RemotingEncoder.AddNoteProperty(dest, "ErrorDetails_ScriptStackTrace", delegate () { return this.ScriptStackTrace; });
             }
         }
 
@@ -1336,7 +1338,7 @@ namespace System.Management.Automation
             string errorDetails_ScriptStackTrace =
                 GetNoteValue(serializedErrorRecord, "ErrorDetails_ScriptStackTrace") as string;
 
-            RemoteException re = new RemoteException((!string.IsNullOrWhiteSpace(exceptionMessage)) ? exceptionMessage : errorCategory_Message, serializedException, invocationInfo);
+            RemoteException re = new RemoteException((string.IsNullOrWhiteSpace(exceptionMessage) == false) ? exceptionMessage : errorCategory_Message, serializedException, invocationInfo);
 
             // Create ErrorRecord
             PopulateProperties(
@@ -1468,7 +1470,6 @@ namespace System.Management.Automation
         public object TargetObject { get => _target; }
 
         private object _target /* = null */;
-
         internal void SetTargetObject(object target)
         {
             _target = target;
@@ -1480,7 +1481,7 @@ namespace System.Management.Automation
         /// for that ErrorCategory.
         /// </summary>
         /// <value>never null</value>
-        public ErrorCategoryInfo CategoryInfo { get => _categoryInfo ??= new ErrorCategoryInfo(this); }
+        public ErrorCategoryInfo CategoryInfo { get => _categoryInfo ?? (_categoryInfo = new ErrorCategoryInfo(this)); }
 
         private ErrorCategoryInfo _categoryInfo;
 
@@ -1634,7 +1635,7 @@ namespace System.Management.Automation
         #endregion Public Properties
 
         #region Private
-        private readonly string _errorId;
+        private string _errorId;
 
         #region Exposed by ErrorCategoryInfo
         internal ErrorCategory _category;
@@ -1666,7 +1667,8 @@ namespace System.Management.Automation
                 return commandInfo.Name;
             }
 
-            if (!(commandInfo is CmdletInfo cmdletInfo))
+            CmdletInfo cmdletInfo = commandInfo as CmdletInfo;
+            if (cmdletInfo == null)
             {
                 return string.Empty;
             }

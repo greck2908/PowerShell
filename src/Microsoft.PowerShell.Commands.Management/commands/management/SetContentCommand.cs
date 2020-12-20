@@ -1,8 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
 using System.Management.Automation.Internal;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -10,7 +12,7 @@ namespace Microsoft.PowerShell.Commands
     /// A command to set the content of an item at a specified path.
     /// </summary>
     [Cmdlet(VerbsCommon.Set, "Content", DefaultParameterSetName = "Path", SupportsShouldProcess = true, SupportsTransactions = true,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097142")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113392")]
     public class SetContentCommand : WriteContentCommandBase
     {
         #region protected members
@@ -26,10 +28,10 @@ namespace Microsoft.PowerShell.Commands
         {
             if (paths == null || paths.Length == 0)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(paths));
+                throw PSTraceSource.NewArgumentNullException("paths");
             }
 
-            CmdletProviderContext context = new(GetCurrentContext());
+            CmdletProviderContext context = new CmdletProviderContext(GetCurrentContext());
 
             foreach (string path in paths)
             {
@@ -88,3 +90,4 @@ namespace Microsoft.PowerShell.Commands
         #endregion protected members
     }
 }
+

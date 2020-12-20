@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -22,7 +22,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements a cmdlet that gets the list of loaded modules...
     /// </summary>
-    [Cmdlet(VerbsCommon.Remove, "Module", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096802")]
+    [Cmdlet(VerbsCommon.Remove, "Module", SupportsShouldProcess = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=141556")]
     public sealed class RemoveModuleCommand : ModuleCmdletBase
     {
         /// <summary>
@@ -32,9 +32,9 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public string[] Name
         {
-            get { return _name; }
-
             set { _name = value; }
+
+            get { return _name; }
         }
 
         private string[] _name = Array.Empty<string>();
@@ -53,9 +53,9 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public PSModuleInfo[] ModuleInfo
         {
-            get { return _moduleInfo; }
-
             set { _moduleInfo = value; }
+
+            get { return _moduleInfo; }
         }
 
         private PSModuleInfo[] _moduleInfo = Array.Empty<PSModuleInfo>();

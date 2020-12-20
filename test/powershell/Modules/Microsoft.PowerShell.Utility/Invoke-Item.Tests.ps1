@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 using namespace System.Diagnostics
 
@@ -116,7 +116,7 @@ Describe "Invoke-Item basic tests" -Tags "Feature" {
             while (((Get-Date) - $startTime).TotalSeconds -lt 30 -and ($title -ne $expectedTitle))
             {
                 Start-Sleep -Milliseconds 100
-                $title = Get-WindowsTitleMacOS -Name TextEdit
+                $title = Get-WindowsTitleMacOS -name TextEdit
             }
             $afterCount = Get-WindowCountMacOS -Name TextEdit
             $afterCount | Should -Be ($beforeCount + 1) -Because "There should be one more 'textEdit' windows open than when the tests started and there was $beforeCount"
@@ -294,16 +294,16 @@ Describe "Invoke-Item tests on Windows" -Tags "CI","RequireAdminOnWindows" {
     }
 
     It "Should invoke a file without error on Windows full SKUs" -Skip:(-not $isFullWin) {
-        Invoke-Item $testfilepath
+        invoke-item $testfilepath
         # Waiting subprocess start and rename file
         {
             $startTime = [Datetime]::Now
-            while (-not (Test-Path $renamedtestfilepath))
+            while (-not (test-path $renamedtestfilepath))
             {
                 Start-Sleep -Milliseconds 100
                 if (([Datetime]::Now - $startTime) -ge [timespan]"00:00:05") { throw "Timeout exception" }
             }
-        } | Should -Not -Throw
+        } | Should -Not -throw
     }
 
     It "Should start a file without error on Windows full SKUs" -Skip:(-not $isFullWin) {

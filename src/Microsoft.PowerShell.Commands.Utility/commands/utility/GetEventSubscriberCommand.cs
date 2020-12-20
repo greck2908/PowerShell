@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -10,7 +10,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Lists all event subscribers.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "EventSubscriber", DefaultParameterSetName = "BySource", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096607")]
+    [Cmdlet(VerbsCommon.Get, "EventSubscriber", DefaultParameterSetName = "BySource", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135155")]
     [OutputType(typeof(PSEventSubscriber))]
     public class GetEventSubscriberCommand : PSCmdlet
     {
@@ -67,7 +67,7 @@ namespace Microsoft.PowerShell.Commands
 
             // Go through all the received events and write them to the output
             // pipeline
-            List<PSEventSubscriber> subscribers = new(Events.Subscribers);
+            List<PSEventSubscriber> subscribers = new List<PSEventSubscriber>(Events.Subscribers);
             foreach (PSEventSubscriber subscriber in subscribers)
             {
                 // If they specified a event identifier and we don't match, continue
@@ -118,7 +118,7 @@ namespace Microsoft.PowerShell.Commands
                         error = EventingStrings.EventSubscriptionNotFound;
                     }
 
-                    ErrorRecord errorRecord = new(
+                    ErrorRecord errorRecord = new ErrorRecord(
                         new ArgumentException(string.Format(System.Globalization.CultureInfo.CurrentCulture, error, identifier)),
                         "INVALID_SOURCE_IDENTIFIER",
                         ErrorCategory.InvalidArgument,

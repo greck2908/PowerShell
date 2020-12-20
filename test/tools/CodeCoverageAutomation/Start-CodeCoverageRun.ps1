@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 param(
     [Parameter(Mandatory = $true, Position = 0)] $coverallsToken,
@@ -178,21 +178,21 @@ try
     {
         Remove-Item $CoverageZipFilePath -Force
     }
-    Invoke-WebRequest -Uri $codeCoverageZip -OutFile "$outputBaseFolder\PSCodeCoverage.zip"
+    Invoke-WebRequest -uri $codeCoverageZip -outfile "$outputBaseFolder\PSCodeCoverage.zip"
 
     $TestsZipFilePath = "$outputBaseFolder\tests.zip"
     if(Test-Path $TestsZipFilePath)
     {
         Remove-Item $TestsZipFilePath -Force
     }
-    Invoke-WebRequest -Uri $testContentZip -OutFile $TestsZipFilePath
+    Invoke-WebRequest -uri $testContentZip -outfile $TestsZipFilePath
 
     $OpenCoverZipFilePath = "$outputBaseFolder\OpenCover.zip"
     if(Test-Path $OpenCoverZipFilePath)
     {
         Remove-Item $OpenCoverZipFilePath -Force
     }
-    Invoke-WebRequest -Uri $openCoverZip -OutFile $OpenCoverZipFilePath
+    Invoke-WebRequest -uri $openCoverZip -outfile $OpenCoverZipFilePath
 
     Write-LogPassThru -Message "Downloads complete. Starting expansion"
 
@@ -200,19 +200,19 @@ try
     {
         Remove-Item -Force -Recurse $psBinPath
     }
-    Expand-Archive -Path $CoverageZipFilePath -DestinationPath "$psBinPath" -Force
+    Expand-Archive -path $CoverageZipFilePath -destinationpath "$psBinPath" -Force
 
     if(Test-Path $testRootPath)
     {
         Remove-Item -Force -Recurse $testRootPath
     }
-    Expand-Archive -Path $TestsZipFilePath -DestinationPath $testRootPath -Force
+    Expand-Archive -path $TestsZipFilePath -destinationpath $testRootPath -Force
 
     if(Test-Path $openCoverPath)
     {
         Remove-Item -Force -Recurse $openCoverPath
     }
-    Expand-Archive -Path $OpenCoverZipFilePath -DestinationPath $openCoverPath -Force
+    Expand-Archive -path $OpenCoverZipFilePath -destinationpath $openCoverPath -Force
     Write-LogPassThru -Message "Expansion complete."
 
     if(Test-Path $elevatedLogs)
@@ -318,12 +318,12 @@ try
     }
     catch {
         ("ERROR: " + $_.ScriptStackTrace) | Write-LogPassThru
-        $_ 2>&1 | Out-String -Stream | %{ "ERROR: $_" } | Write-LogPassThru
+        $_ 2>&1 | out-string -Stream | %{ "ERROR: $_" } | Write-LogPassThru
     }
 
     if(Test-Path $outputLog)
     {
-        Write-LogPassThru -Message (Get-ChildItem $outputLog).FullName
+        Write-LogPassThru -Message (get-childitem $outputLog).FullName
     }
 
     Write-LogPassThru -Message "Test run done."

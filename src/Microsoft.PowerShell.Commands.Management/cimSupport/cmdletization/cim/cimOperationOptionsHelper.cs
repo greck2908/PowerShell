@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -17,7 +17,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
     internal class CimCustomOptionsDictionary
     {
         private readonly IDictionary<string, object> _dict;
-        private readonly object _dictModificationLock = new();
+        private readonly object _dictModificationLock = new object();
 
         private CimCustomOptionsDictionary(IEnumerable<KeyValuePair<string, object>> wrappedDictionary)
         {
@@ -42,7 +42,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             return new CimCustomOptionsDictionary(wrappedDictionary);
         }
 
-        private static readonly ConditionalWeakTable<CimInstance, CimCustomOptionsDictionary> s_cimInstanceToCustomOptions = new();
+        private static readonly ConditionalWeakTable<CimInstance, CimCustomOptionsDictionary> s_cimInstanceToCustomOptions = new ConditionalWeakTable<CimInstance, CimCustomOptionsDictionary>();
 
         internal static void AssociateCimInstanceWithCustomOptions(CimInstance cimInstance, CimCustomOptionsDictionary newCustomOptions)
         {

@@ -1,9 +1,11 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace Microsoft.PowerShell.Commands.GetCounter
@@ -16,54 +18,94 @@ namespace Microsoft.PowerShell.Commands.GetCounter
                             string setHelp,
                             ref Dictionary<string, string[]> counterInstanceMapping)
         {
-            CounterSetName = setName;
+            _counterSetName = setName;
             if (machineName == null || machineName.Length == 0)
             {
                 machineName = ".";
             }
             else
             {
-                MachineName = machineName;
-                if (!MachineName.StartsWith(@"\\", StringComparison.OrdinalIgnoreCase))
+                _machineName = machineName;
+                if (!_machineName.StartsWith(@"\\", StringComparison.OrdinalIgnoreCase))
                 {
-                    MachineName = @"\\" + MachineName;
+                    _machineName = @"\\" + _machineName;
                 }
             }
 
-            CounterSetType = categoryType;
-            Description = setHelp;
-            CounterInstanceMapping = counterInstanceMapping;
+            _counterSetType = categoryType;
+            _description = setHelp;
+            _counterInstanceMapping = counterInstanceMapping;
         }
 
-        public string CounterSetName { get; } = string.Empty;
+        public string CounterSetName
+        {
+            get
+            {
+                return _counterSetName;
+            }
+        }
 
-        public string MachineName { get; } = ".";
+        private string _counterSetName = string.Empty;
 
-        public PerformanceCounterCategoryType CounterSetType { get; }
+        public string MachineName
+        {
+            get
+            {
+                return _machineName;
+            }
+        }
 
-        public string Description { get; } = string.Empty;
+        private string _machineName = ".";
 
-        internal Dictionary<string, string[]> CounterInstanceMapping { get; }
+        public PerformanceCounterCategoryType CounterSetType
+        {
+            get
+            {
+                return _counterSetType;
+            }
+        }
+
+        private PerformanceCounterCategoryType _counterSetType;
+
+        public string Description
+        {
+            get
+            {
+                return _description;
+            }
+        }
+
+        private string _description = string.Empty;
+
+        internal Dictionary<string, string[]> CounterInstanceMapping
+        {
+            get
+            {
+                return _counterInstanceMapping;
+            }
+        }
+
+        private Dictionary<string, string[]> _counterInstanceMapping;
 
         public StringCollection Paths
         {
             get
             {
-                StringCollection retColl = new();
+                StringCollection retColl = new StringCollection();
                 foreach (string counterName in this.CounterInstanceMapping.Keys)
                 {
                     string path;
                     if (CounterInstanceMapping[counterName].Length != 0)
                     {
-                        path = (MachineName == ".") ?
-                          ("\\" + CounterSetName + "(*)\\" + counterName) :
-                          (MachineName + "\\" + CounterSetName + "(*)\\" + counterName);
+                        path = (_machineName == ".") ?
+                          ("\\" + _counterSetName + "(*)\\" + counterName) :
+                          (_machineName + "\\" + _counterSetName + "(*)\\" + counterName);
                     }
                     else
                     {
-                        path = (MachineName == ".") ?
-                         ("\\" + CounterSetName + "\\" + counterName) :
-                         (MachineName + "\\" + CounterSetName + "\\" + counterName);
+                        path = (_machineName == ".") ?
+                         ("\\" + _counterSetName + "\\" + counterName) :
+                         (_machineName + "\\" + _counterSetName + "\\" + counterName);
                     }
 
                     retColl.Add(path);
@@ -77,14 +119,14 @@ namespace Microsoft.PowerShell.Commands.GetCounter
         {
             get
             {
-                StringCollection retColl = new();
+                StringCollection retColl = new StringCollection();
                 foreach (string counterName in CounterInstanceMapping.Keys)
                 {
                     foreach (string instanceName in CounterInstanceMapping[counterName])
                     {
-                        string path = (MachineName == ".") ?
-                          ("\\" + CounterSetName + "(" + instanceName + ")\\" + counterName) :
-                          (MachineName + "\\" + CounterSetName + "(" + instanceName + ")\\" + counterName);
+                        string path = (_machineName == ".") ?
+                          ("\\" + _counterSetName + "(" + instanceName + ")\\" + counterName) :
+                          (_machineName + "\\" + _counterSetName + "(" + instanceName + ")\\" + counterName);
                         retColl.Add(path);
                     }
                 }

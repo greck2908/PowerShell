@@ -32,7 +32,7 @@ namespace System.Management.Automation.Interpreter
 {
     internal sealed class LightLambdaCompileEventArgs : EventArgs
     {
-        public Delegate Compiled { get; }
+        public Delegate Compiled { get; private set; }
 
         internal LightLambdaCompileEventArgs(Delegate compiled)
         {

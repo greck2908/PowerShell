@@ -1,8 +1,13 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
+#if !SILVERLIGHT // ComObject
+
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 using System.Runtime.InteropServices;
 
 namespace System.Management.Automation.ComInterop
@@ -26,9 +31,9 @@ namespace System.Management.Automation.ComInterop
             {
                 parameter = Expression.Property(
                     Helpers.Convert(parameter, typeof(UnknownWrapper)),
-                    typeof(UnknownWrapper).GetProperty(nameof(UnknownWrapper.WrappedObject))
+                    typeof(UnknownWrapper).GetProperty("WrappedObject")
                 );
-            }
+            };
 
             return Helpers.Convert(parameter, typeof(object));
         }
@@ -42,7 +47,7 @@ namespace System.Management.Automation.ComInterop
                 Expression.Equal(parameter, Expression.Constant(null)),
                 Expression.Constant(IntPtr.Zero),
                 Expression.Call(
-                    typeof(Marshal).GetMethod(nameof(System.Runtime.InteropServices.Marshal.GetIUnknownForObject)),
+                    typeof(Marshal).GetMethod("GetIUnknownForObject"),
                     parameter
                 )
             );
@@ -55,7 +60,7 @@ namespace System.Management.Automation.ComInterop
                 Expression.Equal(value, Expression.Constant(IntPtr.Zero)),
                 Expression.Constant(null),
                 Expression.Call(
-                    typeof(Marshal).GetMethod(nameof(System.Runtime.InteropServices.Marshal.GetObjectForIUnknown)),
+                    typeof(Marshal).GetMethod("GetObjectForIUnknown"),
                     value
                 )
             );
@@ -66,9 +71,12 @@ namespace System.Management.Automation.ComInterop
                     typeof(UnknownWrapper).GetConstructor(new Type[] { typeof(object) }),
                     unmarshal
                 );
-            }
+            };
 
             return base.UnmarshalFromRef(unmarshal);
         }
     }
 }
+
+#endif
+

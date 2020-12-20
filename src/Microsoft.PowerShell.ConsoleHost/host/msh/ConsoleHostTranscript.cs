@@ -1,10 +1,12 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.IO;
 using System.Management.Automation.Host;
 using System.Management.Automation.Internal;
+
+using Dbg = System.Management.Automation.Diagnostics;
 
 namespace Microsoft.PowerShell
 {
@@ -59,7 +61,7 @@ namespace Microsoft.PowerShell
             }
         }
         */
-        private readonly string _transcriptFileName = string.Empty;
+        private string _transcriptFileName = string.Empty;
 
         internal string StopTranscribing()
         {
@@ -125,6 +127,7 @@ namespace Microsoft.PowerShell
         }
 
         private StreamWriter _transcriptionWriter;
-        private readonly object _transcriptionStateLock = new object();
+        private object _transcriptionStateLock = new object();
     }
 }   // namespace
+

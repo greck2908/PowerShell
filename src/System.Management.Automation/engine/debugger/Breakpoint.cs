@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -20,7 +20,7 @@ namespace System.Management.Automation
         /// <summary>
         /// The action to take when the breakpoint is hit.
         /// </summary>
-        public ScriptBlock Action { get; }
+        public ScriptBlock Action { get; private set; }
 
         /// <summary>
         /// Gets whether this breakpoint is enabled.
@@ -40,7 +40,7 @@ namespace System.Management.Automation
         /// <summary>
         /// This breakpoint's Id.
         /// </summary>
-        public int Id { get; }
+        public int Id { get; private set; }
 
         /// <summary>
         /// True if breakpoint is set on a script, false if the breakpoint is not scoped.
@@ -53,7 +53,7 @@ namespace System.Management.Automation
         /// <summary>
         /// The script this breakpoint is on, or null if the breakpoint is not scoped.
         /// </summary>
-        public string Script { get; }
+        public string Script { get; private set; }
 
         #endregion properties
 
@@ -72,7 +72,7 @@ namespace System.Management.Automation
         protected Breakpoint(string script, ScriptBlock action)
         {
             Enabled = true;
-            Script = string.IsNullOrEmpty(script) ? null : script;
+            Script = script;
             Id = Interlocked.Increment(ref s_lastID);
             Action = action;
             HitCount = 0;
@@ -91,7 +91,7 @@ namespace System.Management.Automation
         protected Breakpoint(string script, ScriptBlock action, int id)
         {
             Enabled = true;
-            Script = string.IsNullOrEmpty(script) ? null : script;
+            Script = script;
             Id = id;
             Action = action;
             HitCount = 0;
@@ -128,7 +128,9 @@ namespace System.Management.Automation
             return BreakpointAction.Continue;
         }
 
-        internal virtual bool RemoveSelf(ScriptDebugger debugger) => false;
+        internal virtual void RemoveSelf(ScriptDebugger debugger)
+        {
+        }
 
         #endregion methods
 
@@ -191,9 +193,9 @@ namespace System.Management.Automation
         /// <summary>
         /// Which command this breakpoint is on.
         /// </summary>
-        public string Command { get; }
+        public string Command { get; private set; }
 
-        internal WildcardPattern CommandPattern { get; }
+        internal WildcardPattern CommandPattern { get; private set; }
 
         /// <summary>
         /// Gets a string representation of this breakpoint.
@@ -206,8 +208,10 @@ namespace System.Management.Automation
                        : StringUtil.Format(DebuggerStrings.CommandBreakpointString, Command);
         }
 
-        internal override bool RemoveSelf(ScriptDebugger debugger) =>
+        internal override void RemoveSelf(ScriptDebugger debugger)
+        {
             debugger.RemoveCommandBreakpoint(this);
+        }
 
         private bool CommandInfoMatches(CommandInfo commandInfo)
         {
@@ -220,7 +224,7 @@ namespace System.Management.Automation
             // If the breakpoint looks like it might have specified a module name and the command
             // we're checking is in a module, try matching the module\command against the pattern
             // in the breakpoint.
-            if (!string.IsNullOrEmpty(commandInfo.ModuleName) && Command.Contains('\\'))
+            if (!string.IsNullOrEmpty(commandInfo.ModuleName) && Command.IndexOf('\\') != -1)
             {
                 if (CommandPattern.IsMatch(commandInfo.ModuleName + "\\" + commandInfo.Name))
                     return true;
@@ -312,12 +316,12 @@ namespace System.Management.Automation
         /// <summary>
         /// The access mode to trigger this variable breakpoint on.
         /// </summary>
-        public VariableAccessMode AccessMode { get; }
+        public VariableAccessMode AccessMode { get; private set; }
 
         /// <summary>
         /// Which variable this breakpoint is on.
         /// </summary>
-        public string Variable { get; }
+        public string Variable { get; private set; }
 
         /// <summary>
         /// Gets the string representation of this breakpoint.
@@ -346,8 +350,10 @@ namespace System.Management.Automation
             return false;
         }
 
-        internal override bool RemoveSelf(ScriptDebugger debugger) =>
+        internal override void RemoveSelf(ScriptDebugger debugger)
+        {
             debugger.RemoveVariableBreakpoint(this);
+        }
     }
 
     /// <summary>
@@ -415,12 +421,12 @@ namespace System.Management.Automation
         /// <summary>
         /// Which column this breakpoint is on.
         /// </summary>
-        public int Column { get; }
+        public int Column { get; private set; }
 
         /// <summary>
         /// Which line this breakpoint is on.
         /// </summary>
-        public int Line { get; }
+        public int Line { get; private set; }
 
         /// <summary>
         /// Gets a string representation of this breakpoint.
@@ -434,9 +440,7 @@ namespace System.Management.Automation
         }
 
         internal int SequencePointIndex { get; set; }
-
         internal IScriptExtent[] SequencePoints { get; set; }
-
         internal BitArray BreakpointBitArray { get; set; }
 
         private class CheckBreakpointInScript : AstVisitor
@@ -585,7 +589,7 @@ namespace System.Management.Automation
             this.BreakpointBitArray.Set(SequencePointIndex, true);
         }
 
-        internal override bool RemoveSelf(ScriptDebugger debugger)
+        internal override void RemoveSelf(ScriptDebugger debugger)
         {
             if (this.SequencePoints != null)
             {
@@ -608,7 +612,7 @@ namespace System.Management.Automation
                 }
             }
 
-            return debugger.RemoveLineBreakpoint(this);
+            debugger.RemoveLineBreakpoint(this);
         }
     }
 }

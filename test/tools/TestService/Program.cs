@@ -1,13 +1,12 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 using System.ServiceProcess;
 
 namespace TestService
 {
-    internal static class Program
+    static class Program
     {
-       private static void Main()
+       static void Main()
         {
             ServiceBase[] ServicesToRun;
             ServicesToRun = new ServiceBase[]

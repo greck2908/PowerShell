@@ -1,11 +1,16 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
+#if !SILVERLIGHT
+
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+using System.Dynamic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace System.Management.Automation.ComInterop
@@ -20,9 +25,20 @@ namespace System.Management.Automation.ComInterop
         {
         }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj as ComInvokeAction);
+        }
+
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion)
         {
-            if (ComBinder.TryBindInvoke(this, target, args, out DynamicMetaObject res))
+            DynamicMetaObject res;
+            if (ComBinder.TryBindInvoke(this, target, args, out res))
             {
                 return res;
             }
@@ -32,8 +48,7 @@ namespace System.Management.Automation.ComInterop
                     Expression.New(
                         typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
                         Expression.Constant(ParserStrings.CannotCall)
-                    ),
-                    typeof(object)
+                    )
                 ),
                 target.Restrictions.Merge(BindingRestrictions.Combine(args))
             );
@@ -66,6 +81,7 @@ namespace System.Management.Automation.ComInterop
                 nestedArgs.Add(Expression.ArrayAccess(array, Expression.Constant(i)));
                 delegateArgs[i + 2] = typeof(object).MakeByRefType();
             }
+
             delegateArgs[delegateArgs.Length - 1] = typeof(object);
 
             return Expression.IfThen(
@@ -82,3 +98,5 @@ namespace System.Management.Automation.ComInterop
         }
     }
 }
+
+#endif

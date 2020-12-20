@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 # The Get-TargetResource cmdlet is used to fetch the desired state of the DSC managed node through a powershell script.
@@ -37,7 +37,7 @@ function Set-TargetResource
        $text
      )
 	$path = "$env:SystemDrive\dscTestPath\hello1.txt"
- 	New-Item -Path $path -Type File -Force
+ 	New-Item -Path $path -Type File -force
 	Add-Content -Path $path -Value $text
 }
 

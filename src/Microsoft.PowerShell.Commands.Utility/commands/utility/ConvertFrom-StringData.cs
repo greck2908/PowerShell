@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -11,7 +11,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Class comment.
     /// </summary>
-    [Cmdlet(VerbsData.ConvertFrom, "StringData", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096602", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.ConvertFrom, "StringData", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113288", RemotingCapability = RemotingCapability.None)]
     [OutputType(typeof(Hashtable))]
     public sealed class ConvertFromStringDataCommand : PSCmdlet
     {
@@ -38,16 +38,10 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Gets or sets the delimiter.
-        /// </summary>
-        [Parameter(Position = 1)]
-        public char Delimiter { get; set; } = '=';
-
-        /// <summary>
         /// </summary>
         protected override void ProcessRecord()
         {
-            Hashtable result = new(StringComparer.OrdinalIgnoreCase);
+            Hashtable result = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
             if (string.IsNullOrEmpty(_stringData))
             {
@@ -64,7 +58,7 @@ namespace Microsoft.PowerShell.Commands
                 if (string.IsNullOrEmpty(s) || s[0] == '#')
                     continue;
 
-                int index = s.IndexOf(Delimiter);
+                int index = s.IndexOf('=');
                 if (index <= 0)
                 {
                     throw PSTraceSource.NewInvalidOperationException(
@@ -95,3 +89,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

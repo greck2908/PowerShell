@@ -1,14 +1,9 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 #
 # PSSession tests for non-Windows platforms
 #
-
-function GetRandomString()
-{
-    return [System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetRandomFileName())
-}
 
 Describe "New-PSSessionOption parameters for non-Windows platforms" -Tag "CI" {
 
@@ -41,13 +36,12 @@ Describe "SkipCACheck and SkipCNCheck PSSession options are required for New-PSS
     BeforeAll {
         $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
 
-        # Skip this test for macOS because the latest OS release is incompatible with our shipped libmi for WinRM/OMI.
-        if ($IsWindows -or $IsMacOS)  {
+        if ($IsWindows)  {
             $PSDefaultParameterValues['it:skip'] = $true
         }
         else {
             $userName = "User_$(Get-Random -Maximum 99999)"
-            $userPassword = GetRandomString
+            $userPassword = "Password_$(Get-Random -Maximum 99999)"
             $cred = [pscredential]::new($userName, (ConvertTo-SecureString -String $userPassword -AsPlainText -Force))
             $soSkipCA = New-PSSessionOption -SkipCACheck
             $soSkipCN = New-PSSessionOption -SkipCNCheck
@@ -60,34 +54,24 @@ Describe "SkipCACheck and SkipCNCheck PSSession options are required for New-PSS
 
     $testCases = @(
         @{
-            Name = 'Verifies expected error when session option is missing'
+            Name = 'Verifies expected error when session options is missing'
             ScriptBlock = { New-PSSession -cn localhost -Credential $cred -Authentication Basic -UseSSL }
             ExpectedErrorCode = 825
         },
         @{
             Name = 'Verifies expected error when SkipCACheck option is missing'
-            ScriptBlock = { New-PSSession -cn localhost -Credential $cred -Authentication Basic -UseSSL -SessionOption $soSkipCN }
+            ScriptBlock = { New-PSSession -cn localhost -Credential $cred -Authentication Basic -UseSSl -SessionOption $soSkipCN }
             ExpectedErrorCode = 825
         },
         @{
             Name = 'Verifies expected error when SkipCNCheck option is missing'
-            ScriptBlock = { New-PSSession -cn localhost -Credential $cred -Authentication Basic -UseSSL -SessionOption $soSkipCA }
+            ScriptBlock = { New-PSSession -cn localhost -Credential $cred -Authentication Basic -UseSSl -SessionOption $soSkipCA }
             ExpectedErrorCode = 825
         }
     )
 
     It "<Name>" -TestCases $testCases {
         param ($scriptBlock, $expectedErrorCode)
-
-        $platformInfo = Get-PlatformInfo
-        if (
-            ($platformInfo.Platform -match "alpine|raspbian") -or
-            ($platformInfo.Platform -eq "debian" -and ($platformInfo.Version -eq '10' -or $platformInfo.Version -eq '')) -or # debian 11 has empty Version ID
-            ($platformInfo.Platform -eq 'centos' -and $platformInfo.Version -eq '8')
-        ) {
-            Set-ItResult -Skipped -Because "MI library not available for Alpine, Raspberry Pi, Debian 10 and 11, and CentOS 8"
-            return
-        }
 
         $er = { & $scriptBlock } | Should -Throw -ErrorId 'System.Management.Automation.Remoting.PSRemotingDataStructureException,Microsoft.PowerShell.Commands.NewPSSessionCommand' -PassThru
         $er.Exception.ErrorCode | Should -Be $expectedErrorCode

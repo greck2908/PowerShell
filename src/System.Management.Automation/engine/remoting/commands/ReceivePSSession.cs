@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -64,7 +64,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     [SuppressMessage("Microsoft.PowerShell", "PS1012:CallShouldProcessOnlyIfDeclaringSupport")]
     [Cmdlet(VerbsCommunications.Receive, "PSSession", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.Low,
-        DefaultParameterSetName = ReceivePSSessionCommand.SessionParameterSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096800",
+        DefaultParameterSetName = ReceivePSSessionCommand.SessionParameterSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=217037",
         RemotingCapability = RemotingCapability.OwnedByCommand)]
     public class ReceivePSSessionCommand : PSRemotingCmdlet
     {
@@ -467,7 +467,7 @@ namespace Microsoft.PowerShell.Commands
                 // Find specified session.
                 bool haveMatch = false;
                 if (!string.IsNullOrEmpty(name) &&
-                    string.Equals(name, ((RemoteRunspace)runspace).RunspacePool.RemoteRunspacePoolInternal.Name, StringComparison.OrdinalIgnoreCase))
+                    string.Compare(name, ((RemoteRunspace)runspace).RunspacePool.RemoteRunspacePoolInternal.Name, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     // Selected by friendly name.
                     haveMatch = true;
@@ -1115,7 +1115,7 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="session">Session to connect.</param>
         /// <param name="ex">Optional exception object.</param>
         /// <returns>Connected session or null.</returns>
-        private static PSSession ConnectSession(PSSession session, out Exception ex)
+        private PSSession ConnectSession(PSSession session, out Exception ex)
         {
             ex = null;
 
@@ -1158,7 +1158,8 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>PSSession disconnected runspace object.</returns>
         private PSSession TryGetSessionFromServer(PSSession session)
         {
-            if (!(session.Runspace is RemoteRunspace remoteRunspace))
+            RemoteRunspace remoteRunspace = session.Runspace as RemoteRunspace;
+            if (remoteRunspace == null)
             {
                 return null;
             }
@@ -1302,7 +1303,7 @@ namespace Microsoft.PowerShell.Commands
         private RemotePipeline _remotePipeline;
         private Job _job;
         private ManualResetEvent _stopPipelineReceive;
-        private readonly object _syncObject = new object();
+        private object _syncObject = new object();
 
         #endregion
     }

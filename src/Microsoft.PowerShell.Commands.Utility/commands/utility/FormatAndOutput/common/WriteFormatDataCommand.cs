@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
@@ -10,7 +11,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Cmdlet used to write a collection of formatting directives to an XML file.
     /// </summary>
-    [Cmdlet(VerbsData.Export, "FormatData", DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096834")]
+    [Cmdlet(VerbsData.Export, "FormatData", DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=144302")]
     public class ExportFormatDataCommand : PSCmdlet
     {
         private ExtendedTypeDefinition[] _typeDefinition;
@@ -74,7 +75,7 @@ namespace Microsoft.PowerShell.Commands
 
         private bool _isLiteralPath = false;
 
-        private readonly List<ExtendedTypeDefinition> _typeDefinitions = new();
+        private List<ExtendedTypeDefinition> _typeDefinitions = new List<ExtendedTypeDefinition>();
 
         private bool _force;
 

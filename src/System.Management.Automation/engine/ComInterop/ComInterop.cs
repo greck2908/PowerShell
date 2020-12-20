@@ -1,15 +1,28 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
+#if !SILVERLIGHT // ComObject
+
 using System.Runtime.InteropServices;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Management.Automation.ComInterop
 {
-    [ComImport]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [Guid("00020400-0000-0000-C000-000000000046")]
+    [
+    ComImport,
+    InterfaceType(ComInterfaceType.InterfaceIsIDispatch),
+    Guid("00020400-0000-0000-C000-000000000046")
+    ]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    internal interface IDispatchForReflection
+    {
+    }
+
+    [
+    ComImport,
+    InterfaceType(ComInterfaceType.InterfaceIsIUnknown),
+    Guid("00020400-0000-0000-C000-000000000046"),
+    ]
     internal interface IDispatch
     {
         [PreserveSig]
@@ -36,23 +49,36 @@ namespace System.Management.Automation.ComInterop
             int lcid,
             ComTypes.INVOKEKIND wFlags,
             ref ComTypes.DISPPARAMS pDispParams,
-            IntPtr VarResult,
-            IntPtr pExcepInfo,
-            IntPtr puArgErr);
+            out object VarResult,
+            out ComTypes.EXCEPINFO pExcepInfo,
+            out uint puArgErr);
     }
 
-    [ComImport]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [Guid("B196B283-BAB4-101A-B69C-00AA00341D07")]
+    /// <summary>
+    /// Layout of the IDispatch vtable.
+    /// </summary>
+    internal enum IDispatchMethodIndices
+    {
+        IUnknown_QueryInterface,
+        IUnknown_AddRef,
+        IUnknown_Release,
+
+        IDispatch_GetTypeInfoCount,
+        IDispatch_GetTypeInfo,
+        IDispatch_GetIDsOfNames,
+        IDispatch_Invoke
+    }
+
+    [
+    ComImport,
+    InterfaceType(ComInterfaceType.InterfaceIsIUnknown),
+    Guid("B196B283-BAB4-101A-B69C-00AA00341D07")
+    ]
     internal interface IProvideClassInfo
     {
         void GetClassInfo(out IntPtr info);
     }
-
-    internal static class ComDispIds
-    {
-        internal const int DISPID_VALUE = 0;
-        internal const int DISPID_PROPERTYPUT = -3;
-        internal const int DISPID_NEWENUM = -4;
-    }
 }
+
+#endif
+

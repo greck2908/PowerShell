@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -16,12 +16,12 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Current.
         /// </summary>
-        private readonly int[] _current;
+        private int[] _current;
 
         /// <summary>
         /// Lengths.
         /// </summary>
-        private readonly int[] _lengths;
+        private int[] _lengths;
 
         /// <summary>
         /// Current.
@@ -49,7 +49,7 @@ namespace System.Management.Automation.Remoting
         /// Check lengths non negative.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        private static bool CheckLengthsNonNegative(int[] lengths)
+        private bool CheckLengthsNonNegative(int[] lengths)
         {
             for (int i = 0; i < lengths.Length; ++i)
             {

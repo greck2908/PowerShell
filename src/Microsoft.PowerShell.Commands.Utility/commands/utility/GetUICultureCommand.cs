@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
@@ -8,7 +8,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Returns the thread's current UI culture.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "UICulture", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096613")]
+    [Cmdlet(VerbsCommon.Get, "UICulture", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113334")]
     [OutputType(typeof(System.Globalization.CultureInfo))]
     public sealed class GetUICultureCommand : PSCmdlet
     {

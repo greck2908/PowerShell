@@ -14,7 +14,7 @@ Author = 'PowerShell'
 CompanyName = 'Microsoft Corporation'
 
 # Copyright statement for this module
-Copyright = 'Copyright (c) Microsoft Corporation.'
+Copyright = 'Copyright (c) Microsoft Corporation. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'NestedRequiredModule1 module'

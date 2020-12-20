@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -18,7 +18,7 @@ namespace Microsoft.PowerShell.Commands
     /// (multi-valued parameter for a cmdlet), without exposing the list.
     /// </summary>
     [Cmdlet(VerbsData.Update, "List", DefaultParameterSetName = "AddRemoveSet",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2109383", RemotingCapability = RemotingCapability.None)]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113447", RemotingCapability = RemotingCapability.None)]
     public class UpdateListCommand : PSCmdlet
     {
         /// <summary>
@@ -129,7 +129,7 @@ namespace Microsoft.PowerShell.Commands
 
         private Hashtable CreateHashtable()
         {
-            Hashtable hash = new(2);
+            Hashtable hash = new Hashtable(2);
             if (Add != null)
             {
                 hash.Add("Add", Add);
@@ -150,7 +150,7 @@ namespace Microsoft.PowerShell.Commands
 
         private PSListModifier CreatePSListModifier()
         {
-            PSListModifier listModifier = new();
+            PSListModifier listModifier = new PSListModifier();
             if (Add != null)
             {
                 foreach (object obj in Add)
@@ -180,8 +180,8 @@ namespace Microsoft.PowerShell.Commands
 
         private ErrorRecord NewError(string errorId, string resourceId, object targetObject, params object[] args)
         {
-            ErrorDetails details = new(this.GetType().Assembly, "UpdateListStrings", resourceId, args);
-            ErrorRecord errorRecord = new(
+            ErrorDetails details = new ErrorDetails(this.GetType().Assembly, "UpdateListStrings", resourceId, args);
+            ErrorRecord errorRecord = new ErrorRecord(
                 new InvalidOperationException(details.Message),
                 errorId,
                 ErrorCategory.InvalidOperation,

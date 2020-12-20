@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -20,7 +20,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     [SuppressMessage("Microsoft.PowerShell", "PS1012:CallShouldProcessOnlyIfDeclaringSupport")]
     [Cmdlet(VerbsDiagnostic.Debug, "Runspace", SupportsShouldProcess = true, DefaultParameterSetName = DebugRunspaceCommand.RunspaceParameterSet,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096917")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=403731")]
     public sealed class DebugRunspaceCommand : PSCmdlet
     {
         #region Strings
@@ -43,7 +43,7 @@ namespace Microsoft.PowerShell.Commands
 
         // Debugging to persist until Ctrl+C or Debugger 'Exit' stops cmdlet.
         private bool _debugging;
-        private readonly ManualResetEventSlim _newRunningScriptEvent = new(true);
+        private ManualResetEventSlim _newRunningScriptEvent = new ManualResetEventSlim(true);
         private RunspaceAvailability _previousRunspaceAvailability = RunspaceAvailability.None;
 
         #endregion
@@ -101,11 +101,19 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Gets or sets a flag that tells PowerShell to automatically perform a BreakAll when the debugger is attached to the remote target.
+        /// The optional breakpoint objects to use for debugging.
         /// </summary>
-        [Experimental("Microsoft.PowerShell.Utility.PSManageBreakpointsInRunspace", ExperimentAction.Show)]
-        [Parameter]
-        public SwitchParameter BreakAll { get; set; }
+        [Experimental("Microsoft.PowerShell.Utility.PSDebugRunspaceWithBreakpoints", ExperimentAction.Show)]
+        [Parameter(Position = 1,
+                   ParameterSetName = DebugRunspaceCommand.InstanceIdParameterSet)]
+        [Parameter(ParameterSetName = DebugRunspaceCommand.RunspaceParameterSet)]
+        [Parameter(ParameterSetName = DebugRunspaceCommand.IdParameterSet)]
+        [Parameter(ParameterSetName = DebugRunspaceCommand.NameParameterSet)]
+        public Breakpoint[] Breakpoint
+        {
+            get;
+            set;
+        }
 
         #endregion
 
@@ -267,7 +275,7 @@ namespace Microsoft.PowerShell.Commands
                 _debugger.SetDebugMode(DebugModes.LocalScript | DebugModes.RemoteScript);
 
                 // Set up host script debugger to debug the runspace.
-                _debugger.DebugRunspace(_runspace, breakAll: BreakAll);
+                _debugger.DebugRunspace(_runspace, disableBreakAll: Breakpoint?.Length > 0);
 
                 while (_debugging)
                 {
@@ -524,6 +532,10 @@ namespace Microsoft.PowerShell.Commands
         {
             SetLocalMode(runspace.Debugger, true);
             EnableHostDebugger(runspace, false);
+            if (Breakpoint?.Length > 0)
+            {
+                runspace.Debugger?.SetBreakpoints(Breakpoint);
+            }
         }
 
         private void RestoreRunspace(Runspace runspace)
@@ -549,7 +561,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private static void SetLocalMode(System.Management.Automation.Debugger debugger, bool localMode)
+        private void SetLocalMode(System.Management.Automation.Debugger debugger, bool localMode)
         {
             ServerRemoteDebugger remoteDebugger = debugger as ServerRemoteDebugger;
             if (remoteDebugger != null)

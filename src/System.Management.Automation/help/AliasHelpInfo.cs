@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis; // for fxcop
@@ -27,7 +27,7 @@ namespace System.Management.Automation
             this.ForwardTarget = name;
             // A Cmdlet/Function/Script etc can have alias.
             this.ForwardHelpCategory = HelpCategory.Cmdlet |
-                HelpCategory.Function | HelpCategory.ExternalScript | HelpCategory.ScriptCommand | HelpCategory.Filter;
+                HelpCategory.Function | HelpCategory.ExternalScript | HelpCategory.ScriptCommand | HelpCategory.Filter | HelpCategory.Workflow;
 
             if (!string.IsNullOrEmpty(aliasInfo.Name))
             {
@@ -70,7 +70,7 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly PSObject _fullHelpObject;
+        private PSObject _fullHelpObject;
 
         /// <summary>
         /// Returns full help object for alias help.

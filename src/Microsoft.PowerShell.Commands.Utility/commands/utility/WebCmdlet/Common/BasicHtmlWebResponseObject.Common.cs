@@ -1,10 +1,12 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -30,7 +32,7 @@ namespace Microsoft.PowerShell.Commands
         #region Constructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BasicHtmlWebResponseObject"/> class.
+        /// Constructor for BasicHtmlWebResponseObject.
         /// </summary>
         /// <param name="response"></param>
         public BasicHtmlWebResponseObject(HttpResponseMessage response)
@@ -38,8 +40,7 @@ namespace Microsoft.PowerShell.Commands
         { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BasicHtmlWebResponseObject"/> class
-        /// with the specified <paramref name="contentStream"/>.
+        /// Constructor for HtmlWebResponseObject with memory stream.
         /// </summary>
         /// <param name="response"></param>
         /// <param name="contentStream"></param>
@@ -56,28 +57,22 @@ namespace Microsoft.PowerShell.Commands
         #region Properties
 
         /// <summary>
-        /// Gets the text body content of this response.
+        /// Gets the Content property.
         /// </summary>
-        /// <value>
-        /// Content of the response body, decoded using <see cref="Encoding"/>,
-        /// if the <c>Content-Type</c> response header is a recognized text
-        /// type.  Otherwise <see langword="null"/>.
-        /// </value>
         public new string Content { get; private set; }
 
         /// <summary>
-        /// Gets the encoding of the text body content of this response.
+        /// Gets the Encoding that was used to decode the Content.
         /// </summary>
         /// <value>
-        /// Encoding of the response body from the <c>Content-Type</c> header,
-        /// or <see langword="null"/> if the encoding could not be determined.
+        /// The Encoding used to decode the Content; otherwise, a null reference if the content is not text.
         /// </value>
         public Encoding Encoding { get; private set; }
 
         private WebCmdletElementCollection _inputFields;
 
         /// <summary>
-        /// Gets the HTML input field elements parsed from <see cref="Content"/>.
+        /// Gets the Fields property.
         /// </summary>
         public WebCmdletElementCollection InputFields
         {
@@ -87,7 +82,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     EnsureHtmlParser();
 
-                    List<PSObject> parsedFields = new();
+                    List<PSObject> parsedFields = new List<PSObject>();
                     MatchCollection fieldMatch = s_inputFieldRegex.Matches(Content);
                     foreach (Match field in fieldMatch)
                     {
@@ -104,7 +99,7 @@ namespace Microsoft.PowerShell.Commands
         private WebCmdletElementCollection _links;
 
         /// <summary>
-        /// Gets the HTML a link elements parsed from <see cref="Content"/>.
+        /// Gets the Links property.
         /// </summary>
         public WebCmdletElementCollection Links
         {
@@ -114,7 +109,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     EnsureHtmlParser();
 
-                    List<PSObject> parsedLinks = new();
+                    List<PSObject> parsedLinks = new List<PSObject>();
                     MatchCollection linkMatch = s_linkRegex.Matches(Content);
                     foreach (Match link in linkMatch)
                     {
@@ -131,7 +126,7 @@ namespace Microsoft.PowerShell.Commands
         private WebCmdletElementCollection _images;
 
         /// <summary>
-        /// Gets the HTML img elements parsed from <see cref="Content"/>.
+        /// Gets the Images property.
         /// </summary>
         public WebCmdletElementCollection Images
         {
@@ -141,7 +136,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     EnsureHtmlParser();
 
-                    List<PSObject> parsedImages = new();
+                    List<PSObject> parsedImages = new List<PSObject>();
                     MatchCollection imageMatch = s_imageRegex.Matches(Content);
                     foreach (Match image in imageMatch)
                     {
@@ -185,9 +180,9 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private static PSObject CreateHtmlObject(string html, string tagName)
+        private PSObject CreateHtmlObject(string html, string tagName)
         {
-            PSObject elementObject = new();
+            PSObject elementObject = new PSObject();
 
             elementObject.Properties.Add(new PSNoteProperty("outerHTML", html));
             elementObject.Properties.Add(new PSNoteProperty("tagName", tagName));
@@ -197,7 +192,7 @@ namespace Microsoft.PowerShell.Commands
             return elementObject;
         }
 
-        private static void EnsureHtmlParser()
+        private void EnsureHtmlParser()
         {
             if (s_tagRegex == null)
             {
@@ -231,7 +226,7 @@ namespace Microsoft.PowerShell.Commands
 
             if (s_imageRegex == null)
             {
-                s_imageRegex = new Regex(@"<img\s[^>]*?>",
+                s_imageRegex = new Regex(@"<img\s+[^>]*>",
                     RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
             }
         }
@@ -243,7 +238,7 @@ namespace Microsoft.PowerShell.Commands
             this.RawContent = raw.ToString();
         }
 
-        private static void ParseAttributes(string outerHtml, PSObject elementObject)
+        private void ParseAttributes(string outerHtml, PSObject elementObject)
         {
             // We might get an empty input for a directive from the HTML file
             if (!string.IsNullOrEmpty(outerHtml))

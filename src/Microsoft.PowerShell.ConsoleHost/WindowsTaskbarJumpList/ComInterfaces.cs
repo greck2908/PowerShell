@@ -1,7 +1,8 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -18,7 +19,7 @@ namespace Microsoft.PowerShell
         /// string fields at all, nothing is lost.
         /// </remarks>
         [StructLayout(LayoutKind.Sequential)]
-        internal readonly struct StartUpInfo
+        internal struct StartUpInfo
         {
             public readonly UInt32 cb;
             private readonly IntPtr lpReserved;
@@ -55,56 +56,39 @@ namespace Microsoft.PowerShell
                 int cchMaxPath,
                 IntPtr pfd,
                 uint fFlags);
-
             void GetIDList(out IntPtr ppidl);
-
             void SetIDList(IntPtr pidl);
-
             void GetDescription(
                 [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile,
                 int cchMaxName);
-
             void SetDescription(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszName);
-
             void GetWorkingDirectory(
                 [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir,
                 int cchMaxPath
                 );
-
             void SetWorkingDirectory(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszDir);
-
             void GetArguments(
                 [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs,
                 int cchMaxPath);
-
             void SetArguments(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
-
             void GetHotKey(out short wHotKey);
-
             void SetHotKey(short wHotKey);
-
             void GetShowCmd(out uint iShowCmd);
-
             void SetShowCmd(uint iShowCmd);
-
             void GetIconLocation(
                 [Out(), MarshalAs(UnmanagedType.LPWStr)] out StringBuilder pszIconPath,
                 int cchIconPath,
                 out int iIcon);
-
             void SetIconLocation(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszIconPath,
                 int iIcon);
-
             void SetRelativePath(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszPathRel,
                 uint dwReserved);
-
             void Resolve(IntPtr hwnd, uint fFlags);
-
             void SetPath(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszFile);
         }
@@ -122,7 +106,7 @@ namespace Microsoft.PowerShell
             /// </summary>
             /// <param name="propertyCount"></param>
             /// <returns></returns>
-            [PreserveSig]
+            [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             HResult GetCount([Out] out uint propertyCount);
 
             /// <summary>
@@ -131,7 +115,7 @@ namespace Microsoft.PowerShell
             /// <param name="propertyIndex"></param>
             /// <param name="key"></param>
             /// <returns></returns>
-            [PreserveSig]
+            [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             HResult GetAt([In] uint propertyIndex, out PropertyKey key);
 
             /// <summary>
@@ -140,8 +124,8 @@ namespace Microsoft.PowerShell
             /// <param name="key"></param>
             /// <param name="pv"></param>
             /// <returns></returns>
-            [PreserveSig]
-            HResult GetValue([In] in PropertyKey key, [Out] PropVariant pv);
+            [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+            HResult GetValue([In] ref PropertyKey key, [Out] PropVariant pv);
 
             /// <summary>
             /// Sets the value of a property in the store.
@@ -149,14 +133,15 @@ namespace Microsoft.PowerShell
             /// <param name="key"></param>
             /// <param name="pv"></param>
             /// <returns></returns>
-            [PreserveSig]
-            HResult SetValue([In] in PropertyKey key, [In] PropVariant pv);
+            [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime), PreserveSig]
+            HResult SetValue([In] ref PropertyKey key, [In] PropVariant pv);
 
             /// <summary>
             /// Commits the changes.
             /// </summary>
             /// <returns></returns>
             [PreserveSig]
+            [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             HResult Commit();
         }
 
@@ -167,34 +152,26 @@ namespace Microsoft.PowerShell
         {
             void SetAppID(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszAppID);
-
             [PreserveSig]
             HResult BeginList(
                 out uint cMaxSlots,
                 ref Guid riid,
                 [Out(), MarshalAs(UnmanagedType.Interface)] out object ppvObject);
-
             [PreserveSig]
             HResult AppendCategory(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszCategory,
                 [MarshalAs(UnmanagedType.Interface)] IObjectArray poa);
-
             void AppendKnownCategory(
                 [MarshalAs(UnmanagedType.I4)] KnownDestinationCategory category);
-
             [PreserveSig]
             HResult AddUserTasks(
                 [MarshalAs(UnmanagedType.Interface)] IObjectArray poa);
-
             void CommitList();
-
             void GetRemovedDestinations(
                 ref Guid riid,
                 [Out(), MarshalAs(UnmanagedType.Interface)] out object ppvObject);
-
             void DeleteList(
                 [MarshalAs(UnmanagedType.LPWStr)] string pszAppID);
-
             void AbortList();
         }
 
@@ -210,7 +187,6 @@ namespace Microsoft.PowerShell
         internal interface IObjectArray
         {
             void GetCount(out uint cObjects);
-
             void GetAt(
                 uint iIndex,
                 ref Guid riid,
@@ -223,8 +199,9 @@ namespace Microsoft.PowerShell
         internal interface IObjectCollection
         {
             // IObjectArray
+            [PreserveSig]
             void GetCount(out uint cObjects);
-
+            [PreserveSig]
             void GetAt(
                 uint iIndex,
                 ref Guid riid,
@@ -233,12 +210,9 @@ namespace Microsoft.PowerShell
             // IObjectCollection
             void AddObject(
                 [MarshalAs(UnmanagedType.Interface)] object pvObject);
-
             void AddFromArray(
                 [MarshalAs(UnmanagedType.Interface)] IObjectArray poaSource);
-
             void RemoveObject(uint uiIndex);
-
             void Clear();
         }
 
@@ -257,7 +231,6 @@ namespace Microsoft.PowerShell
             Int32 RemoveDataBlock(UInt32 dwSig);
 
             void GetFlags(out uint pdwFlags);
-
             void SetFlags(uint dwFlags);
         }
 

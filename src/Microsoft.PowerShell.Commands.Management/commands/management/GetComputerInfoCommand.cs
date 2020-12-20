@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #if !UNIX
@@ -21,11 +21,11 @@ namespace Microsoft.PowerShell.Commands
 
     #region GetComputerInfoCommand cmdlet implementation
     /// <summary>
-    /// The Get-ComputerInfo cmdlet gathers and reports information
+    /// The Get=ComputerInfo cmdlet gathers and reports information
     /// about a computer.
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "ComputerInfo",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096810")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=799466")]
     [Alias("gin")]
     [OutputType(typeof(ComputerInfo), typeof(PSObject))]
     public class GetComputerInfoCommand : PSCmdlet
@@ -85,7 +85,7 @@ namespace Microsoft.PowerShell.Commands
         #endregion Static Data and Constants
 
         #region Instance Data
-        private readonly string _machineName = localMachineName;  // we might need to have cmdlet work on another machine
+        private string _machineName = localMachineName;  // we might need to have cmdlet work on another machine
 
         /// <summary>
         /// Collection of property names from the Property parameter,
@@ -225,7 +225,7 @@ namespace Microsoft.PowerShell.Commands
         /// </param>
         private void UpdateProgress(string status)
         {
-            ProgressRecord progress = new(0, activity, status ?? ComputerResources.ProgressStatusCompleted);
+            ProgressRecord progress = new ProgressRecord(0, activity, status ?? ComputerResources.ProgressStatusCompleted);
             progress.RecordType = status == null ? ProgressRecordType.Completed : ProgressRecordType.Processing;
 
             WriteProgress(progress);
@@ -486,7 +486,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         private static HyperVInfo GetHyperVisorInfo(CimSession session)
         {
-            HyperVInfo info = new();
+            HyperVInfo info = new HyperVInfo();
             bool ok = false;
             CimInstance instance = null;
 
@@ -1042,9 +1042,9 @@ namespace Microsoft.PowerShell.Commands
                     // find a matching property name via case-insensitive string comparison
                     Predicate<string> pred = (s) =>
                                                 {
-                                                    return string.Equals(s,
+                                                    return string.Compare(s,
                                                                           name,
-                                                                          StringComparison.OrdinalIgnoreCase);
+                                                                          StringComparison.OrdinalIgnoreCase) == 0;
                                                 };
                     var propertyName = availableProperties.Find(pred);
 
@@ -1142,7 +1142,7 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-            return culture?.Name;
+            return culture == null ? null : culture.Name;
         }
 
         /// <summary>
@@ -1335,7 +1335,6 @@ namespace Microsoft.PowerShell.Commands
             return null;
         }
     }
-
 #pragma warning disable 649 // fields and properties in these class are assigned dynamically
     [SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Class is instantiated directly from a CIM instance")]
     internal class WmiBaseBoard
@@ -1885,7 +1884,7 @@ namespace Microsoft.PowerShell.Commands
         #endregion Public Methods
 
         #region Private Methods
-        private static OSProductSuite[] MakeProductSuites(uint? suiteMask)
+        private OSProductSuite[] MakeProductSuites(uint? suiteMask)
         {
             if (suiteMask == null)
                 return null;

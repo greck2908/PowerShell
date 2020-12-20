@@ -1,8 +1,17 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+#if !SILVERLIGHT
+
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 using System.Dynamic;
-using System.Linq.Expressions;
+
+//using Microsoft.Scripting.Utils;
 
 namespace System.Management.Automation.ComInterop
 {
@@ -23,31 +32,26 @@ namespace System.Management.Automation.ComInterop
 
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
         {
-            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackGetIndex(UnwrapSelf(), indexes);
         }
 
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
         {
-            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackSetIndex(UnwrapSelf(), indexes, value);
         }
 
         public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
         {
-            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackGetMember(UnwrapSelf());
         }
 
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
         {
-            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackInvokeMember(UnwrapSelf(), args);
         }
 
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
         {
-            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackSetMember(UnwrapSelf(), value);
         }
 
@@ -71,3 +75,6 @@ namespace System.Management.Automation.ComInterop
         }
     }
 }
+
+#endif
+

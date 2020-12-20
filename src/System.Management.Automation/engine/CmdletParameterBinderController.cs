@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -54,12 +54,12 @@ namespace System.Management.Automation
         {
             if (cmdlet == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(cmdlet));
+                throw PSTraceSource.NewArgumentNullException("cmdlet");
             }
 
             if (commandMetadata == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(commandMetadata));
+                throw PSTraceSource.NewArgumentNullException("commandMetadata");
             }
 
             this.Command = cmdlet;
@@ -207,7 +207,13 @@ namespace System.Management.Automation
                 psCompiledScriptCmdlet.PrepareForBinding(this.CommandLineParameters);
             }
 
-            InitUnboundArguments(arguments);
+            // Add the passed in arguments to the unboundArguments collection
+
+            foreach (CommandParameterInternal argument in arguments)
+            {
+                UnboundArguments.Add(argument);
+            }
+
             CommandMetadata cmdletMetadata = _commandMetadata;
             // Clear the warningSet at the beginning.
             _warningSet.Clear();
@@ -226,7 +232,7 @@ namespace System.Management.Automation
                 _commandMetadata.Name))
             {
                 // Bind the actual arguments
-                UnboundArguments = BindNamedParameters(_currentParameterSetFlag, this.UnboundArguments);
+                UnboundArguments = BindParameters(_currentParameterSetFlag, this.UnboundArguments);
             }
 
             ParameterBindingException reportedBindingException;
@@ -551,7 +557,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Get the aliases of the current cmdlet.
+        /// Get the aliases of the the current cmdlet.
         /// </summary>
         /// <returns></returns>
         private List<string> GetAliasOfCurrentCmdlet()
@@ -626,7 +632,8 @@ namespace System.Management.Automation
 
             foreach (DictionaryEntry entry in DefaultParameterValues)
             {
-                if (!(entry.Key is string key))
+                string key = entry.Key as string;
+                if (key == null)
                 {
                     continue;
                 }
@@ -973,7 +980,7 @@ namespace System.Management.Automation
                     {
                         ParameterBinderBase.bindingTracer.WriteLine(
                             "{0} valid parameter sets, using the DEFAULT PARAMETER SET: [{0}]",
-                            this.BindableParameters.ParameterSetCount.ToString(),
+                            this.BindableParameters.ParameterSetCount,
                             _commandMetadata.DefaultParameterSetName);
 
                         _currentParameterSetFlag =
@@ -1057,56 +1064,134 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Validate the given named parameter against the specified parameter set,
-        /// and then bind the argument to the parameter.
+        /// Binds the actual arguments to only the formal parameters
+        /// for only the parameters in the specified parameter set.
         /// </summary>
-        protected override void BindNamedParameter(
-            uint parameterSets,
-            CommandParameterInternal argument,
-            MergedCompiledCommandParameter parameter)
+        /// <param name="parameterSets">
+        ///     The parameter set used to bind the arguments.
+        /// </param>
+        /// <param name="arguments">
+        ///     The arguments that should be attempted to bind to the parameters of the specified
+        ///     parameter binder.
+        /// </param>
+        /// <exception cref="ParameterBindingException">
+        /// if multiple parameters are found matching the name.
+        /// or
+        /// if no match could be found.
+        /// or
+        /// If argument transformation fails.
+        /// or
+        /// The argument could not be coerced to the appropriate type for the parameter.
+        /// or
+        /// The parameter argument transformation, prerequisite, or validation failed.
+        /// or
+        /// If the binding to the parameter fails.
+        /// </exception>
+        private Collection<CommandParameterInternal> BindParameters(uint parameterSets, Collection<CommandParameterInternal> arguments)
         {
-            if ((parameter.Parameter.ParameterSetFlags & parameterSets) == 0 &&
-                !parameter.Parameter.IsInAllSets)
+            Collection<CommandParameterInternal> result = new Collection<CommandParameterInternal>();
+
+            foreach (CommandParameterInternal argument in arguments)
             {
-                string parameterSetName = BindableParameters.GetParameterSetName(parameterSets);
-
-                ParameterBindingException bindingException =
-                    new ParameterBindingException(
-                        ErrorCategory.InvalidArgument,
-                        this.Command.MyInvocation,
-                        errorPosition: null,
-                        argument.ParameterName,
-                        parameterType: null,
-                        typeSpecified: null,
-                        ParameterBinderStrings.ParameterNotInParameterSet,
-                        "ParameterNotInParameterSet",
-                        parameterSetName);
-
-                // Might be caused by default parameter binding
-                if (!DefaultParameterBindingInUse)
+                if (!argument.ParameterNameSpecified)
                 {
-                    throw bindingException;
+                    result.Add(argument);
+                    continue;
+                }
+
+                // We don't want to throw an exception yet because
+                // the parameter might be a positional argument or it
+                // might match up to a dynamic parameter
+
+                MergedCompiledCommandParameter parameter =
+                    BindableParameters.GetMatchingParameter(
+                        argument.ParameterName,
+                        false, true,
+                        new InvocationInfo(this.InvocationInfo.MyCommand, argument.ParameterExtent));
+
+                // If the parameter is not in the specified parameter set,
+                // throw a binding exception
+
+                if (parameter != null)
+                {
+                    // Now check to make sure it hasn't already been
+                    // bound by looking in the boundParameters collection
+
+                    if (BoundParameters.ContainsKey(parameter.Parameter.Name))
+                    {
+                        ParameterBindingException bindingException =
+                            new ParameterBindingException(
+                                ErrorCategory.InvalidArgument,
+                                this.InvocationInfo,
+                                GetParameterErrorExtent(argument),
+                                argument.ParameterName,
+                                null,
+                                null,
+                                ParameterBinderStrings.ParameterAlreadyBound,
+                                nameof(ParameterBinderStrings.ParameterAlreadyBound));
+
+                        // Multiple values assigned to the same parameter.
+                        // Not caused by default parameter binding
+                        throw bindingException;
+                    }
+
+                    if ((parameter.Parameter.ParameterSetFlags & parameterSets) == 0 &&
+                        !parameter.Parameter.IsInAllSets)
+                    {
+                        string parameterSetName = BindableParameters.GetParameterSetName(parameterSets);
+
+                        ParameterBindingException bindingException =
+                            new ParameterBindingException(
+                                ErrorCategory.InvalidArgument,
+                                this.Command.MyInvocation,
+                                null,
+                                argument.ParameterName,
+                                null,
+                                null,
+                                ParameterBinderStrings.ParameterNotInParameterSet,
+                                "ParameterNotInParameterSet",
+                                parameterSetName);
+
+                        // Might be caused by default parameter binding
+                        if (!DefaultParameterBindingInUse)
+                        {
+                            throw bindingException;
+                        }
+                        else
+                        {
+                            ThrowElaboratedBindingException(bindingException);
+                        }
+                    }
+
+                    try
+                    {
+                        BindParameter(parameterSets, argument, parameter,
+                            ParameterBindingFlags.ShouldCoerceType | ParameterBindingFlags.DelayBindScriptBlock);
+                    }
+                    catch (ParameterBindingException pbex)
+                    {
+                        if (!DefaultParameterBindingInUse)
+                        {
+                            throw;
+                        }
+
+                        ThrowElaboratedBindingException(pbex);
+                    }
+                }
+                else if (argument.ParameterName.Equals(Parser.VERBATIM_PARAMETERNAME, StringComparison.Ordinal))
+                {
+                    // We sometimes send a magic parameter from a remote machine with the values referenced via
+                    // a using expression ($using:x).  We then access these values via PSBoundParameters, so
+                    // "bind" them here.
+                    DefaultParameterBinder.CommandLineParameters.SetImplicitUsingParameters(argument.ArgumentValue);
                 }
                 else
                 {
-                    ThrowElaboratedBindingException(bindingException);
+                    result.Add(argument);
                 }
             }
 
-            try
-            {
-                BindParameter(parameterSets, argument, parameter,
-                    ParameterBindingFlags.ShouldCoerceType | ParameterBindingFlags.DelayBindScriptBlock);
-            }
-            catch (ParameterBindingException pbex)
-            {
-                if (!DefaultParameterBindingInUse)
-                {
-                    throw;
-                }
-
-                ThrowElaboratedBindingException(pbex);
-            }
+            return result;
         }
 
         /// <summary>
@@ -1129,7 +1214,7 @@ namespace System.Management.Automation
 
             do // false loop
             {
-                if (parameterType == typeof(object))
+                if (parameterType == typeof(Object))
                 {
                     result = true;
                     break;
@@ -1172,6 +1257,17 @@ namespace System.Management.Automation
 
             s_tracer.WriteLine("IsParameterScriptBlockBindable: result = {0}", result);
             return result;
+        }
+
+        /// <summary>
+        /// Binds the specified parameters to the cmdlet.
+        /// </summary>
+        /// <param name="parameters">
+        /// The parameters to bind.
+        /// </param>
+        internal override Collection<CommandParameterInternal> BindParameters(Collection<CommandParameterInternal> parameters)
+        {
+            return BindParameters(uint.MaxValue, parameters);
         }
 
         /// <summary>
@@ -1719,7 +1815,7 @@ namespace System.Management.Automation
 
                                 ReparseUnboundArguments();
 
-                                UnboundArguments = BindNamedParameters(_currentParameterSetFlag, UnboundArguments);
+                                UnboundArguments = BindParameters(_currentParameterSetFlag, UnboundArguments);
                             }
 
                             using (ParameterBinderBase.bindingTracer.TraceScope(
@@ -2256,7 +2352,7 @@ namespace System.Management.Automation
 
                         // If we have one or the other, we can latch onto that set without difficulty
                         uint uniqueSetThatTakesPipelineInput = 0;
-                        if (foundSetThatTakesPipelineInputByValue && foundSetThatTakesPipelineInputByPropertyName &&
+                        if ((foundSetThatTakesPipelineInputByValue & foundSetThatTakesPipelineInputByPropertyName) &&
                             (setThatTakesPipelineInputByValue == setThatTakesPipelineInputByPropertyName))
                         {
                             uniqueSetThatTakesPipelineInput = setThatTakesPipelineInputByValue;
@@ -2450,7 +2546,7 @@ namespace System.Management.Automation
             }
         }
 
-        private static uint NewParameterSetPromptingData(
+        private uint NewParameterSetPromptingData(
             Dictionary<uint, ParameterSetPromptingData> promptingData,
             MergedCompiledCommandParameter parameter,
             ParameterSetSpecificMetadata parameterSetMetadata,
@@ -3077,7 +3173,7 @@ namespace System.Management.Automation
             for (int i = 0; i < parameterName.Length; i++)
             {
                 // try Upper case
-                if (char.IsUpper(parameterName[i]) && usedHotKeysStr.Contains(parameterName[i]))
+                if (char.IsUpper(parameterName[i]) && (usedHotKeysStr.IndexOf(parameterName[i]) == -1))
                 {
                     label.Insert(i, hotKeyPrefix);
                     usedHotKeys.Append(parameterName[i]);
@@ -3091,7 +3187,7 @@ namespace System.Management.Automation
                 // try Lower case
                 for (int i = 0; i < parameterName.Length; i++)
                 {
-                    if (char.IsLower(parameterName[i]) && usedHotKeysStr.Contains(parameterName[i]))
+                    if (char.IsLower(parameterName[i]) && (usedHotKeysStr.IndexOf(parameterName[i]) == -1))
                     {
                         label.Insert(i, hotKeyPrefix);
                         usedHotKeys.Append(parameterName[i]);
@@ -3106,7 +3202,7 @@ namespace System.Management.Automation
                 // try non-letters
                 for (int i = 0; i < parameterName.Length; i++)
                 {
-                    if (!char.IsLetter(parameterName[i]) && usedHotKeysStr.Contains(parameterName[i]))
+                    if (!char.IsLetter(parameterName[i]) && (usedHotKeysStr.IndexOf(parameterName[i]) == -1))
                     {
                         label.Insert(i, hotKeyPrefix);
                         usedHotKeys.Append(parameterName[i]);
@@ -3878,7 +3974,7 @@ namespace System.Management.Automation
         /// Gets or sets the command that this parameter binder controller
         /// will bind parameters to.
         /// </summary>
-        internal Cmdlet Command { get; }
+        internal Cmdlet Command { get; private set; }
 
         #region DefaultParameterBindingStructures
 
@@ -3927,7 +4023,8 @@ namespace System.Management.Automation
         {
             get
             {
-                return _boundObsoleteParameterNames ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                return _boundObsoleteParameterNames ??
+                       (_boundObsoleteParameterNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             }
         }
 
@@ -4117,7 +4214,7 @@ namespace System.Management.Automation
                     /*argumentAst*/null, parameterValue,
                     false);
 
-                flags &= ~ParameterBindingFlags.DelayBindScriptBlock;
+                flags = flags & ~ParameterBindingFlags.DelayBindScriptBlock;
                 result = BindParameter(_currentParameterSetFlag, param, parameter, flags);
 
                 if (result)
@@ -4178,7 +4275,7 @@ namespace System.Management.Automation
         {
             if (parameters == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(parameters));
+                throw PSTraceSource.NewArgumentNullException("parameters");
             }
 
             // Get all the matching arguments from the defaultParameterValues collection
@@ -4222,7 +4319,7 @@ namespace System.Management.Automation
 
                     if (error != null)
                     {
-                        Type specifiedType = argumentToBind.ArgumentValue?.GetType();
+                        Type specifiedType = (argumentToBind.ArgumentValue == null) ? null : argumentToBind.ArgumentValue.GetType();
                         ParameterBindingException bindingException =
                             new ParameterBindingException(
                                 error,
@@ -4312,7 +4409,7 @@ namespace System.Management.Automation
         {
             if (dictionary == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(dictionary));
+                throw PSTraceSource.NewArgumentNullException("dictionary");
             }
             // Contains keys that are in bad format. For every bad format key, we should write out a warning message
             // the first time we encounter it, and remove it from the $PSDefaultParameterValues
@@ -4384,10 +4481,11 @@ namespace System.Management.Automation
         {
             if (key == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(key));
+                throw PSTraceSource.NewArgumentNullException("key");
             }
 
-            if (!(key is string strKey)) { return false; }
+            var strKey = key as string;
+            if (strKey == null) { return false; }
 
             string keyAfterTrim = strKey.Trim();
             return base.ContainsKey(keyAfterTrim);
@@ -4410,12 +4508,13 @@ namespace System.Management.Automation
         {
             if (key == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(key));
+                throw PSTraceSource.NewArgumentNullException("key");
             }
 
-            if (!(key is string strKey))
+            var strKey = key as string;
+            if (strKey == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(key), ParameterBinderStrings.StringValueKeyExpected, key, key.GetType().FullName);
+                throw PSTraceSource.NewArgumentException("key", ParameterBinderStrings.StringValueKeyExpected, key, key.GetType().FullName);
             }
 
             string keyAfterTrim = strKey.Trim();
@@ -4431,7 +4530,7 @@ namespace System.Management.Automation
                     return;
                 }
 
-                throw PSTraceSource.NewArgumentException(nameof(key), ParameterBinderStrings.KeyAlreadyAdded, key);
+                throw PSTraceSource.NewArgumentException("key", ParameterBinderStrings.KeyAlreadyAdded, key);
             }
 
             if (!CheckKeyIsValid(keyAfterTrim, ref cmdletName, ref parameterName))
@@ -4456,9 +4555,10 @@ namespace System.Management.Automation
         {
             get
             {
-                if (key == null) { throw PSTraceSource.NewArgumentNullException(nameof(key)); }
+                if (key == null) { throw PSTraceSource.NewArgumentNullException("key"); }
 
-                if (!(key is string strKey)) { return null; }
+                var strKey = key as string;
+                if (strKey == null) { return null; }
 
                 string keyAfterTrim = strKey.Trim();
                 return base[keyAfterTrim];
@@ -4478,10 +4578,11 @@ namespace System.Management.Automation
         {
             if (key == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(key));
+                throw PSTraceSource.NewArgumentNullException("key");
             }
 
-            if (!(key is string strKey)) { return; }
+            var strKey = key as string;
+            if (strKey == null) { return; }
 
             string keyAfterTrim = strKey.Trim();
             if (base.ContainsKey(keyAfterTrim))
@@ -4640,3 +4741,4 @@ namespace System.Management.Automation
         #endregion KeyValidation
     }
 }
+

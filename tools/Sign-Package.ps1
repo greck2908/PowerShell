@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 # Utility to generate a self-signed certificate and sign a given package such as PowerShell.zip/appx/msi
@@ -21,7 +21,7 @@ function New-SelfSignedCertificate
 
         #Path to save generated Certificate
         [ValidateNotNullOrEmpty()]
-        [string] $CertificateFilePath = "$PWD\PowerShell.cer",
+        [string] $CertificateFilePath = "$pwd\PowerShell.cer",
 
         #Path to save generated pvk file
         [ValidateNotNullOrEmpty()]
@@ -55,7 +55,7 @@ function ConvertTo-Pfx
 
         #Path to Certificate file
         [ValidateNotNullOrEmpty()]
-        [string] $CertificateFilePath = "$PWD\PowerShell.cer",
+        [string] $CertificateFilePath = "$pwd\PowerShell.cer",
 
         #Path to pvk file
         [ValidateNotNullOrEmpty()]

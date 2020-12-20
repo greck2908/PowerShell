@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 Import-Module HelpersCommon
@@ -21,7 +21,7 @@ try
     #
     if ($IsNotSkipped)
     {
-        $endpointName = "PowerShell.$($PSVersionTable.GitCommitId)"
+        $endpointName = "PowerShell.$($psversiontable.GitCommitId)"
 
         $matchedEndpoint = Get-PSSessionConfiguration $endpointName -ErrorAction SilentlyContinue
 
@@ -57,7 +57,6 @@ try
 
                 $result.MaxShells | Should -Be 40
                 $result.IdleTimeoutms | Should -Be 3600000
-                $result.UseSharedProcess | Should -Be 'False'
             }
         }
         Describe "Validate Get-PSSessionConfiguration, Enable-PSSessionConfiguration, Disable-PSSessionConfiguration, Unregister-PSSessionConfiguration cmdlets" -Tags @("CI", 'RequireAdminOnWindows') {
@@ -256,7 +255,7 @@ try
                     It "$Description" {
 
                         $Result = [PSObject] @{Output = $true ; Error = $null}
-                        $error.Clear()
+                        $Error.Clear()
                         try
                         {
                             $null = Unregister-PSSessionConfiguration -name $SessionConfigName -ErrorAction stop
@@ -630,7 +629,7 @@ namespace PowershellTestConfigNamespace
             }
 
             $resultContent = invoke-expression ($result)
-            $resultContent | Should -BeOfType System.Collections.Hashtable
+            $resultContent | Should -BeOfType "System.Collections.Hashtable"
 
             # The default created hashtable in the session configuration file would have the
             # following keys which we are validating below.
@@ -657,7 +656,7 @@ namespace PowershellTestConfigNamespace
                     SessionType = 'Default'
                     Author = 'User'
                     CompanyName = 'Microsoft Corporation'
-                    Copyright = 'Copyright (c) Microsoft Corporation.'
+                    Copyright = 'Copyright (c) Microsoft Corporation. All rights reserved.'
                     Description = 'This is a sample session configuration file.'
                     GUID = '73cba863-aa49-4cbf-9917-269ddcf2b1e3'
                     SchemaVersion = '1.0.0.0'
@@ -701,12 +700,12 @@ namespace PowershellTestConfigNamespace
                     FunctionDefinitions=@(
                         @{
                             Name = "sysmodules";
-                            ScriptBlock = 'pushd $PSHOME\Modules';
+                            ScriptBlock = 'pushd $pshome\Modules';
                             Options = "AllScope";
                         },
                         @{
                             Name = "mymodules";
-                            ScriptBlock = 'pushd $HOME\Documents\WindowsPowerShell\Modules';
+                            ScriptBlock = 'pushd $home\Documents\WindowsPowerShell\Modules';
                             Options = "ReadOnly";
                         }
                     )

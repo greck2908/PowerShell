@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -59,7 +59,7 @@ namespace PSTests.Parallel
         [Fact]
         public static void TestBoundedStack()
         {
-            const int capacity = 20;
+            uint capacity = 20;
             var boundedStack = new BoundedStack<string>(capacity);
             Assert.Throws<InvalidOperationException>(() => boundedStack.Pop());
 
@@ -116,7 +116,7 @@ namespace PSTests.Parallel
         public static void TestConvertToJsonWithoutCompress()
         {
             var context = new JsonObject.ConvertToJsonContext(maxDepth: 1, enumsAsStrings: true, compressOutput: false);
-            const string expected = @"{
+            string expected = @"{
   ""type"": ""Alias""
 }";
             Hashtable hash = new Hashtable {
@@ -134,9 +134,9 @@ namespace PSTests.Parallel
                 maxDepth: 1,
                 enumsAsStrings: true,
                 compressOutput: false,
+                source.Token,
                 Newtonsoft.Json.StringEscapeHandling.Default,
-                targetCmdlet: null,
-                source.Token);
+                targetCmdlet: null);
 
             source.Cancel();
             Hashtable hash = new Hashtable {

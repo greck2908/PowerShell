@@ -1,9 +1,7 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Native streams behavior with PowerShell" -Tags 'CI' {
-    BeforeAll {
-        $powershell = Join-Path -Path $PSHOME -ChildPath "pwsh"
-    }
+    $powershell = Join-Path -Path $PsHome -ChildPath "pwsh"
 
     Context "Error stream" {
         # we are using powershell itself as an example of a native program.
@@ -21,17 +19,18 @@ Describe "Native streams behavior with PowerShell" -Tags 'CI' {
 
         # this check should be the first one, because $error is a global shared variable
         It 'should not add records to $error variable' {
-            $error.Count | Should -Be 0
+            # we are keeping existing Windows PS v5.1 behavior for $error variable
+            $error.Count | Should -Be 9
         }
 
         It 'uses ErrorRecord object to return stderr output' {
             ($out | Measure-Object).Count | Should -BeGreaterThan 1
 
-            $out[0] | Should -BeOfType System.Management.Automation.ErrorRecord
+            $out[0] | Should -BeOfType 'System.Management.Automation.ErrorRecord'
             $out[0].FullyQualifiedErrorId | Should -Be 'NativeCommandError'
 
             $out | Select-Object -Skip 1 | ForEach-Object {
-                $_ | Should -BeOfType System.Management.Automation.ErrorRecord
+                $_ | Should -BeOfType 'System.Management.Automation.ErrorRecord'
                 $_.FullyQualifiedErrorId | Should -Be 'NativeCommandErrorMessage'
             }
         }
@@ -58,7 +57,7 @@ Describe "Native streams behavior with PowerShell" -Tags 'CI' {
             while ($longtext.Length -lt [console]::WindowWidth) {
                 $longtext += $longtext
             }
-            & $powershell -c "& { [Console]::Error.WriteLine('$longtext') }" 2>&1 > $testdrive\error.txt
+            pwsh -c "& { [Console]::Error.WriteLine('$longtext') }" 2>&1 > $testdrive\error.txt
             $e = Get-Content -Path $testdrive\error.txt
             $e.Count | Should -Be 1
             $e | Should -BeExactly $longtext

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -65,22 +65,22 @@ namespace System.Management.Automation
         /// <summary>
         /// Text to be used as the auto completion result.
         /// </summary>
-        private readonly string _completionText;
+        private string _completionText;
 
         /// <summary>
         /// Text to be displayed in a list.
         /// </summary>
-        private readonly string _listItemText;
+        private string _listItemText;
 
         /// <summary>
         /// The text for the tooltip with details to be displayed about the object.
         /// </summary>
-        private readonly string _toolTip;
+        private string _toolTip;
 
         /// <summary>
         /// Type of completion result.
         /// </summary>
-        private readonly CompletionResultType _resultType;
+        private CompletionResultType _resultType;
 
         /// <summary>
         /// Private member for null instance.
@@ -170,22 +170,22 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(completionText))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(completionText));
+                throw PSTraceSource.NewArgumentNullException("completionText");
             }
 
             if (string.IsNullOrEmpty(listItemText))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(listItemText));
+                throw PSTraceSource.NewArgumentNullException("listItemText");
             }
 
             if (resultType < CompletionResultType.Text || resultType > CompletionResultType.DynamicKeyword)
             {
-                throw PSTraceSource.NewArgumentOutOfRangeException(nameof(resultType), resultType);
+                throw PSTraceSource.NewArgumentOutOfRangeException("resultType", resultType);
             }
 
             if (string.IsNullOrEmpty(toolTip))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(toolTip));
+                throw PSTraceSource.NewArgumentNullException("toolTip");
             }
 
             _completionText = completionText;

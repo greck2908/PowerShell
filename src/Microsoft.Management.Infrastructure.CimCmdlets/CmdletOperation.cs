@@ -1,9 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
-using System;
 using System.Management.Automation;
+using System;
+using System.Globalization;
 
 #endregion
 
@@ -117,13 +118,13 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         internal void ThrowTerminatingError(Exception exception, string operation)
         {
-            ErrorRecord errorRecord = new(exception, operation, ErrorCategory.InvalidOperation, this);
+            ErrorRecord errorRecord = new ErrorRecord(exception, operation, ErrorCategory.InvalidOperation, this);
             cmdlet.ThrowTerminatingError(errorRecord);
         }
         #endregion
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CmdletOperationBase"/> class.
+        /// Constructor method.
         /// </summary>
         public CmdletOperationBase(Cmdlet cmdlet)
         {
@@ -143,7 +144,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal class CmdletOperationRemoveCimInstance : CmdletOperationBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CmdletOperationRemoveCimInstance"/> class.
+        /// Constructor method.
         /// </summary>
         /// <param name="cmdlet"></param>
         public CmdletOperationRemoveCimInstance(Cmdlet cmdlet,
@@ -187,7 +188,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
 
         #region private methods
 
-        private readonly CimRemoveCimInstance removeCimInstance;
+        private CimRemoveCimInstance removeCimInstance;
 
         private const string cimRemoveCimInstanceParameterName = @"cimRemoveCimInstance";
 
@@ -207,7 +208,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal class CmdletOperationSetCimInstance : CmdletOperationBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CmdletOperationSetCimInstance"/> class.
+        /// Constructor method.
         /// </summary>
         /// <param name="cmdlet"></param>
         public CmdletOperationSetCimInstance(Cmdlet cmdlet,
@@ -233,8 +234,8 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 CimSetCimInstanceContext setContext = context as CimSetCimInstanceContext;
                 if (setContext != null)
                 {
-                    if (string.Equals(setContext.ParameterSetName, CimBaseCommand.QueryComputerSet, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(setContext.ParameterSetName, CimBaseCommand.QuerySessionSet, StringComparison.OrdinalIgnoreCase))
+                    if ((string.Compare(setContext.ParameterSetName, CimBaseCommand.QueryComputerSet, StringComparison.OrdinalIgnoreCase) == 0) ||
+                        (string.Compare(setContext.ParameterSetName, CimBaseCommand.QuerySessionSet, StringComparison.OrdinalIgnoreCase) == 0))
                     {
                         this.setCimInstance.SetCimInstance(sendToPipeline as CimInstance, setContext, this);
                         return;
@@ -267,7 +268,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
 
         #region private methods
 
-        private readonly CimSetCimInstance setCimInstance;
+        private CimSetCimInstance setCimInstance;
 
         private const string theCimSetCimInstanceParameterName = @"theCimSetCimInstance";
 
@@ -285,7 +286,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal class CmdletOperationInvokeCimMethod : CmdletOperationBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CmdletOperationInvokeCimMethod"/> class.
+        /// Constructor method.
         /// </summary>
         /// <param name="cmdlet"></param>
         public CmdletOperationInvokeCimMethod(Cmdlet cmdlet,
@@ -330,7 +331,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
 
         #region private methods
 
-        private readonly CimInvokeCimMethod cimInvokeCimMethod;
+        private CimInvokeCimMethod cimInvokeCimMethod;
 
         private const string theCimInvokeCimMethodParameterName = @"theCimInvokeCimMethod";
 
@@ -350,7 +351,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal class CmdletOperationTestCimSession : CmdletOperationBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CmdletOperationTestCimSession"/> class.
+        /// Constructor method.
         /// </summary>
         /// <param name="cmdlet"></param>
         public CmdletOperationTestCimSession(Cmdlet cmdlet,
@@ -391,7 +392,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
 
         #region private methods
 
-        private readonly CimNewSession cimNewSession;
+        private CimNewSession cimNewSession;
 
         private const string theCimNewSessionParameterName = @"theCimNewSession";
 

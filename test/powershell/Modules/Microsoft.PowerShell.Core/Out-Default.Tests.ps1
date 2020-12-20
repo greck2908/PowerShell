@@ -1,6 +1,6 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-Describe "Out-Default Tests" -Tag CI {
+Describe "Out-Default Tests" -tag CI {
     BeforeAll {
         # due to https://github.com/PowerShell/PowerShell/issues/3405, `Out-Default -Transcript` emits output to pipeline
         # as running in Pester effectively wraps everything in parenthesis, workaround is to use another powershell

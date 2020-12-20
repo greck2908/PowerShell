@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Globalization;
@@ -98,7 +98,7 @@ namespace System.Management.Automation
 
         #region Basic Help Properties
 
-        private readonly PSObject _fullHelpObject;
+        private PSObject _fullHelpObject;
 
         /// <summary>
         /// Full help object for this help item.

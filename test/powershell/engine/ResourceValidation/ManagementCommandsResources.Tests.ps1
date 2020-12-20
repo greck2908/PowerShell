@@ -1,6 +1,6 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-. "$PSScriptRoot/TestRunner.ps1"
+. "$psscriptroot/TestRunner.ps1"
 $AssemblyName = "Microsoft.PowerShell.Commands.Management"
 
 # excluded resources, taken from the 'EmbeddedResource Remove'

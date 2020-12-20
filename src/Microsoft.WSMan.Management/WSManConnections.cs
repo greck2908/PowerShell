@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -114,7 +114,7 @@ namespace Microsoft.WSMan.Management
     /// <summary>
     /// Connect wsman cmdlet.
     /// </summary>
-    [Cmdlet(VerbsCommunications.Connect, "WSMan", DefaultParameterSetName = "ComputerName", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096841")]
+    [Cmdlet(VerbsCommunications.Connect, "WSMan", DefaultParameterSetName = "ComputerName", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=141437")]
     public class ConnectWSManCommand : AuthenticatingWSManCommand
     {
         #region Parameters
@@ -259,8 +259,8 @@ namespace Microsoft.WSMan.Management
                 try
                 {
                     // always in the format http://server:port/applicationname
-                    string[] constrsplit = connectionuri.OriginalString.Split(":" + port + "/" + applicationname, StringSplitOptions.None);
-                    string[] constrsplit1 = constrsplit[0].Split("//", StringSplitOptions.None);
+                    string[] constrsplit = connectionuri.OriginalString.Split(new string[] { ":" + port + "/" + applicationname }, StringSplitOptions.None);
+                    string[] constrsplit1 = constrsplit[0].Split(new string[] { "//" }, StringSplitOptions.None);
                     computername = constrsplit1[1].Trim();
                 }
                 catch (IndexOutOfRangeException)
@@ -269,7 +269,11 @@ namespace Microsoft.WSMan.Management
                 }
             }
 
-            string crtComputerName = computername ?? "localhost";
+            string crtComputerName = computername;
+            if (crtComputerName == null)
+            {
+                crtComputerName = "localhost";
+            }
 
             if (this.SessionState.Path.CurrentProviderLocation(WSManStringLiterals.rootpath).Path.StartsWith(this.SessionState.Drive.Current.Name + ":" + WSManStringLiterals.DefaultPathSeparator + crtComputerName, StringComparison.OrdinalIgnoreCase))
             {
@@ -288,7 +292,8 @@ namespace Microsoft.WSMan.Management
     /// is the local computer. Type the fully qualified domain name, NETBIOS name or
     /// IP address to indicate the remote host(s)
     /// </summary>
-    [Cmdlet(VerbsCommunications.Disconnect, "WSMan", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096839")]
+
+    [Cmdlet(VerbsCommunications.Disconnect, "WSMan", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=141439")]
     public class DisconnectWSManCommand : PSCmdlet, IDisposable
     {
         /// <summary>

@@ -1,10 +1,9 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
 using System.IO;
 
-#nullable enable
 namespace System.Management.Automation.Provider
 {
     #region IContentWriter
@@ -67,3 +66,4 @@ namespace System.Management.Automation.Provider
 
     #endregion IContentWriter
 }
+

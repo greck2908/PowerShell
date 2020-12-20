@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -15,7 +15,7 @@ namespace Microsoft.PowerShell.Commands
     /// Implements a cmdlet that applies a script block
     /// to each element of the pipeline.
     /// </summary>
-    [Cmdlet(VerbsDiagnostic.Measure, "Command", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097029", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsDiagnostic.Measure, "Command", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113348", RemotingCapability = RemotingCapability.None)]
     [OutputType(typeof(TimeSpan))]
     public sealed class MeasureCommandCommand : PSCmdlet
     {
@@ -25,19 +25,19 @@ namespace Microsoft.PowerShell.Commands
         /// This parameter specifies the current pipeline object.
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { get; set; } = AutomationNull.Value;
+        public PSObject InputObject { set; get; } = AutomationNull.Value;
 
         /// <summary>
         /// The script block to apply.
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        public ScriptBlock Expression { get; set; }
+        public ScriptBlock Expression { set; get; }
 
         #endregion
 
         #region private members
 
-        private readonly System.Diagnostics.Stopwatch _stopWatch = new();
+        private System.Diagnostics.Stopwatch _stopWatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 

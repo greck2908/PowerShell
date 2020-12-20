@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -13,8 +13,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implements Get-ExperimentalFeature cmdlet.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "ExperimentalFeature", HelpUri = "https://go.microsoft.com/fwlink/?linkid=2096786")]
-    [OutputType(typeof(ExperimentalFeature))]
+    [Cmdlet(VerbsCommon.Get, "ExperimentalFeature", HelpUri = "https://go.microsoft.com/fwlink/?linkid=2007351")]
     public class GetExperimentalFeatureCommand : PSCmdlet
     {
         /// <summary>

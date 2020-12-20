@@ -12,7 +12,7 @@ GUID = 'cc1c8e94-51d1-4bc1-b508-62bc09f02f54'
 
 CompanyName = 'Microsoft Corporation'
 
-Copyright = 'Copyright (c) Microsoft Corporation.'
+Copyright = 'Copyright (c) Microsoft Corporation. All rights reserved.'
 
 Description = 'Temporary module contains functions for using in tests'
 
@@ -23,7 +23,6 @@ FunctionsToExport = @(
         'Enable-Testhook'
         'Get-RandomFileName'
         'New-RandomHexString'
-        'New-ComplexPassword'
         'Send-VstsLogFile'
         'Set-TesthookResult'
         'Start-NativeExecution'
@@ -34,7 +33,6 @@ FunctionsToExport = @(
         'Test-TesthookIsSet'
         'Wait-FileToBePresent'
         'Wait-UntilTrue'
-        'Get-PlatformInfo'
     )
 
 CmdletsToExport= @()

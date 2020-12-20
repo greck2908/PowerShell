@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -78,13 +78,13 @@ namespace Microsoft.WSMan.Management
         // string for operation
         internal string WSManOp = null;
 
-        private readonly PSCmdlet cmdletname;
-        private readonly NavigationCmdletProvider _provider;
+        private PSCmdlet cmdletname;
+        private NavigationCmdletProvider _provider;
 
         private FileStream _fs;
         private StreamReader _sr;
 
-        private static readonly ResourceManager _resourceMgr = new ResourceManager("Microsoft.WSMan.Management.resources.WsManResources", typeof(WSManHelper).GetTypeInfo().Assembly);
+        private static ResourceManager _resourceMgr = new ResourceManager("Microsoft.WSMan.Management.resources.WsManResources", typeof(WSManHelper).GetTypeInfo().Assembly);
 
         //
         //
@@ -94,7 +94,7 @@ namespace Microsoft.WSMan.Management
             /// <summary>
             /// Dictionary object to store the connection.
             /// </summary>
-            internal static readonly Dictionary<string, object> SessionObjCache = new Dictionary<string, object>();
+            internal static Dictionary<string, object> SessionObjCache = new Dictionary<string, object>();
 
             ~Sessions()
             {
@@ -102,7 +102,7 @@ namespace Microsoft.WSMan.Management
             }
         }
 
-        internal static readonly Sessions AutoSession = new Sessions();
+        internal static Sessions AutoSession = new Sessions();
         //
         //
         //
@@ -180,12 +180,12 @@ namespace Microsoft.WSMan.Management
         {
             if (resourceManager == null)
             {
-                throw new ArgumentNullException(nameof(resourceManager));
+                throw new ArgumentNullException("resourceManager");
             }
 
             if (string.IsNullOrEmpty(resourceName))
             {
-                throw new ArgumentNullException(nameof(resourceName));
+                throw new ArgumentNullException("resourceName");
             }
 
             string template = resourceManager.GetString(resourceName);
@@ -467,7 +467,7 @@ namespace Microsoft.WSMan.Management
                                     }
                                     else
                                     {
-                                        XmlNode tmpNode = node.ChildNodes[0]; //.Item[0];
+                                        XmlNode tmpNode = node.ChildNodes[0];//.Item[0];
                                         if (!tmpNode.NodeType.ToString().Equals("text", StringComparison.OrdinalIgnoreCase))
                                         {
                                             throw new ArgumentException(_resourceMgr.GetString("NOAttributeMatch"));
@@ -478,7 +478,7 @@ namespace Microsoft.WSMan.Management
                                 if (string.IsNullOrEmpty(entry.Key.ToString()))
                                 {
                                     // XmlNode newnode = xmlfile.CreateNode(XmlNodeType.Attribute, ATTR_NIL_NAME, NS_XSI_URI);
-                                    XmlAttribute newnode = xmlfile.CreateAttribute(nameof(XmlNodeType.Attribute), ATTR_NIL_NAME, NS_XSI_URI);
+                                    XmlAttribute newnode = xmlfile.CreateAttribute(XmlNodeType.Attribute.ToString(), ATTR_NIL_NAME, NS_XSI_URI);
                                     newnode.Value = "true";
                                     node.Attributes.Append(newnode);
                                     // (newnode.Attributes.Item(0).FirstChild   );
@@ -562,7 +562,7 @@ namespace Microsoft.WSMan.Management
 
             if (selectorset != null)
             {
-                resource += "?";
+                resource = resource + "?";
                 int i = 0;
                 foreach (DictionaryEntry entry in selectorset)
                 {
@@ -656,7 +656,7 @@ namespace Microsoft.WSMan.Management
             {
                 if (authentication.Equals(AuthenticationMechanism.None))
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagUseNoAuthentication;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUseNoAuthentication;
                 }
 
                 if (authentication.Equals(AuthenticationMechanism.Basic))
@@ -666,12 +666,12 @@ namespace Microsoft.WSMan.Management
 
                 if (authentication.Equals(AuthenticationMechanism.Negotiate))
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagUseNegotiate;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUseNegotiate;
                 }
 
                 if (authentication.Equals(AuthenticationMechanism.Kerberos))
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagUseKerberos;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUseKerberos;
                 }
 
                 if (authentication.Equals(AuthenticationMechanism.Digest))
@@ -686,7 +686,7 @@ namespace Microsoft.WSMan.Management
 
                 if (authentication.Equals(AuthenticationMechanism.ClientCertificate))
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagUseClientCertificate;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUseClientCertificate;
                 }
             }
 
@@ -718,7 +718,7 @@ namespace Microsoft.WSMan.Management
                     connObject.Password = nwCredential.Password;
                     if (!authentication.Equals(AuthenticationMechanism.Credssp) || !authentication.Equals(AuthenticationMechanism.Digest) || authentication.Equals(AuthenticationMechanism.Basic))
                     {
-                        sessionFlags |= (int)WSManSessionFlags.WSManFlagCredUserNamePassword;
+                        sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagCredUserNamePassword;
                     }
                 }
             }
@@ -726,7 +726,7 @@ namespace Microsoft.WSMan.Management
             if (certificateThumbprint != null)
             {
                 connObject.CertificateThumbprint = certificateThumbprint;
-                sessionFlags |= (int)WSManSessionFlags.WSManFlagUseClientCertificate;
+                sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUseClientCertificate;
             }
 
             if (sessionoption != null)
@@ -784,48 +784,48 @@ namespace Microsoft.WSMan.Management
 
                 if (sessionoption.SkipCACheck)
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagSkipCACheck;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagSkipCACheck;
                 }
 
                 if (sessionoption.SkipCNCheck)
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagSkipCNCheck;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagSkipCNCheck;
                 }
 
                 if (sessionoption.SPNPort > 0)
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagEnableSpnServerPort;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagEnableSpnServerPort;
                 }
 
                 if (sessionoption.UseUtf16)
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagUtf16;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUtf16;
                 }
                 else
                 {
                     // If UseUtf16 is false, then default Encoding is Utf8
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagUtf8;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUtf8;
                 }
 
                 if (!sessionoption.UseEncryption)
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagNoEncryption;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagNoEncryption;
                 }
 
                 if (sessionoption.SkipRevocationCheck)
                 {
-                    sessionFlags |= (int)WSManSessionFlags.WSManFlagSkipRevocationCheck;
+                    sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagSkipRevocationCheck;
                 }
             }
             else
             {
                 // If SessionOption is null then, default Encoding is Utf8
-                sessionFlags |= (int)WSManSessionFlags.WSManFlagUtf8;
+                sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUtf8;
             }
 
             if (usessl)
             {
-                sessionFlags |= (int)WSManSessionFlags.WSManFlagUseSsl;
+                sessionFlags = sessionFlags | (int)WSManSessionFlags.WSManFlagUseSsl;
             }
 
             IWSManSession m_SessionObj = null;
@@ -871,9 +871,9 @@ namespace Microsoft.WSMan.Management
                 if (entry.Key != null && entry.Value != null)
                 {
                     filter.Append(entry.Key.ToString());
-                    filter.Append('=');
+                    filter.Append("=");
                     filter.Append(entry.Value.ToString());
-                    filter.Append('+');
+                    filter.Append("+");
                 }
             }
 
@@ -917,7 +917,7 @@ namespace Microsoft.WSMan.Management
         {
             StringBuilder sburi = new StringBuilder();
             sburi.Append(uri);
-            sburi.Append('?');
+            sburi.Append("?");
 
             if (operation.Equals("remove", StringComparison.OrdinalIgnoreCase))
             {
@@ -953,14 +953,18 @@ namespace Microsoft.WSMan.Management
                 if (connectionuri != null)
                 {
                     // in the format http(s)://server[:port/applicationname]
-                    string[] constrsplit = connectionStr.Split(":" + port + "/" + applicationname, StringSplitOptions.None);
-                    string[] constrsplit1 = constrsplit[0].Split("//", StringSplitOptions.None);
+                    string[] constrsplit = connectionStr.Split(new string[] { ":" + port + "/" + applicationname }, StringSplitOptions.None);
+                    string[] constrsplit1 = constrsplit[0].Split(new string[] { "//" }, StringSplitOptions.None);
                     computername = constrsplit1[1].Trim();
                 }
 
                 IWSManSession m_session = CreateSessionObject(m_wsmanObject, authentication, sessionoption, credential, connectionStr, certificateThumbprint, usessl);
                 m_session.Identify(0);
-                string key = computername ?? "localhost";
+                string key = computername;
+                if (key == null)
+                {
+                    key = "localhost";
+                }
 
                 AddtoDictionary(key, m_session);
             }
@@ -1028,7 +1032,7 @@ namespace Microsoft.WSMan.Management
                     }
 
                     string[] valuenames = rGPOLocalMachineKey.GetValueNames();
-                    if (valuenames.Length == 0)
+                    if (valuenames.Length <= 0)
                     {
                         return !AllowFreshCredentialsValueShouldBePresent;
                     }
@@ -1092,21 +1096,21 @@ namespace Microsoft.WSMan.Management
                     while (!_sr.EndOfStream)
                     {
                         string Line = _sr.ReadLine();
-                        if (Line.Contains('='))
+                        if (Line.Contains("="))
                         {
-                            string[] arr = Line.Split('=', count: 2);
+                            string[] arr = Line.Split(new char[] { '=' }, 2);
                             if (!ResourceValueCache.ContainsKey(arr[0].Trim()))
                             {
-                                string value = arr[1].Trim('"');
+                                string value = arr[1].TrimStart(new char[] { '"' }).TrimEnd(new char[] { '"' });
                                 ResourceValueCache.Add(arr[0].Trim(), value.Trim());
                             }
                         }
                     }
                 }
             }
-            catch (IOException)
+            catch (IOException e)
             {
-                throw;
+                throw (e);
             }
         }
 
@@ -1119,7 +1123,7 @@ namespace Microsoft.WSMan.Management
         internal static string GetResourceString(string Key)
         {
             // Checks whether resource values already loaded and loads.
-            if (ResourceValueCache.Count == 0)
+            if (ResourceValueCache.Count <= 0)
             {
                 LoadResourceData();
             }
@@ -1135,6 +1139,6 @@ namespace Microsoft.WSMan.Management
 
         /// <summary>
         /// </summary>
-        private static readonly Dictionary<string, string> ResourceValueCache = new Dictionary<string, string>();
+        private static Dictionary<string, string> ResourceValueCache = new Dictionary<string, string>();
     }
 }

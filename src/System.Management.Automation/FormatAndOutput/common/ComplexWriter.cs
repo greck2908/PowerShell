@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -206,7 +206,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Helper object to manage the frame-based indentation and margins.
         /// </summary>
-        private readonly IndentationManager _indentationManager = new IndentationManager();
+        private IndentationManager _indentationManager = new IndentationManager();
 
         /// <summary>
         /// Buffer to accumulate partially constructed text.
@@ -243,7 +243,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 }
             }
 
-            private readonly IndentationManager _mgr;
+            private IndentationManager _mgr;
         }
 
         internal void Clear()
@@ -311,7 +311,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             return val;
         }
 
-        private readonly Stack<FrameInfo> _frameInfoStack = new Stack<FrameInfo>();
+        private Stack<FrameInfo> _frameInfoStack = new Stack<FrameInfo>();
     }
 
     /// <summary>
@@ -331,7 +331,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         private static readonly char s_softHyphen = '\u00AD';
         private static readonly char s_hardHyphen = '\u2011';
         private static readonly char s_nonBreakingSpace = '\u00A0';
-        private static readonly Collection<string> s_cultureCollection = new Collection<string>();
+        private static Collection<string> s_cultureCollection = new Collection<string>();
 
         static StringManipulationHelper()
         {
@@ -362,7 +362,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 {
                     result.Word = sb.ToString();
                     sb.Clear();
-                    result.Delim = new string(s[i], 1);
+                    result.Delim = new String(s[i], 1);
 
                     yield return result;
                 }
@@ -510,10 +510,10 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 }
             }
 
-            private readonly StringCollection _retVal;
+            private StringCollection _retVal;
             private bool _addedFirstLine;
-            private readonly int _firstLineLen;
-            private readonly int _followingLinesLen;
+            private int _firstLineLen;
+            private int _followingLinesLen;
         }
 
         private static StringCollection GenerateLinesWithWordWrap(DisplayCells displayCells, string val, int firstLineLen, int followingLinesLen)
@@ -730,3 +730,4 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         private static readonly char[] s_lineBreakChars = new char[] { '\n', '\r' };
     }
 }
+

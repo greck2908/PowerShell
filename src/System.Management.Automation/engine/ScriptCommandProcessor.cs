@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -66,7 +66,6 @@ namespace System.Management.Automation
         protected ScriptBlock _scriptBlock;
 
         private ScriptParameterBinderController _scriptParameterBinderController;
-
         internal ScriptParameterBinderController ScriptParameterBinderController
         {
             get
@@ -131,7 +130,7 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="helpTarget">Help target to request.</param>
         /// <param name="helpCategory">Help category to request.</param>
-        /// <returns><see langword="true"/> if user requested help; <see langword="false"/> otherwise.</returns>
+        /// <returns><c>true</c> if user requested help; <c>false</c> otherwise.</returns>
         internal override bool IsHelpRequested(out string helpTarget, out HelpCategory helpCategory)
         {
             if (arguments != null && CommandInfo != null && !string.IsNullOrEmpty(CommandInfo.Name) && _scriptBlock != null)
@@ -231,20 +230,12 @@ namespace System.Management.Automation
     /// </remarks>
     internal sealed class DlrScriptCommandProcessor : ScriptCommandProcessorBase
     {
-        private readonly ArrayList _input = new ArrayList();
-        private readonly object _dollarUnderbar = AutomationNull.Value;
         private new ScriptBlock _scriptBlock;
+        private readonly ArrayList _input = new ArrayList();
         private MutableTuple _localsTuple;
         private bool _runOptimizedCode;
         private bool _argsBound;
         private FunctionContext _functionContext;
-
-        internal DlrScriptCommandProcessor(ScriptBlock scriptBlock, ExecutionContext context, bool useNewScope, CommandOrigin origin, SessionStateInternal sessionState, object dollarUnderbar)
-            : base(scriptBlock, context, useNewScope, origin, sessionState)
-        {
-            Init();
-            _dollarUnderbar = dollarUnderbar;
-        }
 
         internal DlrScriptCommandProcessor(ScriptBlock scriptBlock, ExecutionContext context, bool useNewScope, CommandOrigin origin, SessionStateInternal sessionState)
             : base(scriptBlock, context, useNewScope, origin, sessionState)
@@ -274,7 +265,7 @@ namespace System.Management.Automation
         {
             _scriptBlock = base._scriptBlock;
             _obsoleteAttribute = _scriptBlock.ObsoleteAttribute;
-            _runOptimizedCode = _scriptBlock.Compile(optimized: _context._debuggingMode <= 0 && UseLocalScope);
+            _runOptimizedCode = _scriptBlock.Compile(optimized: _context._debuggingMode > 0 ? false : UseLocalScope);
             _localsTuple = _scriptBlock.MakeLocalsTuple(_runOptimizedCode);
 
             if (UseLocalScope)
@@ -521,10 +512,6 @@ namespace System.Management.Automation
                     if (dollarUnderbar != AutomationNull.Value)
                     {
                         _localsTuple.SetAutomaticVariable(AutomaticVariable.Underbar, dollarUnderbar, _context);
-                    }
-                    else if (_dollarUnderbar != AutomationNull.Value)
-                    {
-                        _localsTuple.SetAutomaticVariable(AutomaticVariable.Underbar, _dollarUnderbar, _context);
                     }
 
                     if (inputToProcess != AutomationNull.Value)

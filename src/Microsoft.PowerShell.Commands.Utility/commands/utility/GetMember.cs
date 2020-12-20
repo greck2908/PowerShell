@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
+using System.Reflection;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -22,7 +23,7 @@ namespace Microsoft.PowerShell.Commands
             return Definition;
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="MemberDefinition"/> class.
+        /// Initializes a new instance of this class.
         /// </summary>
         public MemberDefinition(string typeName, string name, PSMemberTypes memberType, string definition)
         {
@@ -56,7 +57,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This class implements get-member command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "Member", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096704", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsCommon.Get, "Member", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113322", RemotingCapability = RemotingCapability.None)]
     [OutputType(typeof(MemberDefinition))]
     public class GetMemberCommand : PSCmdlet
     {
@@ -64,21 +65,21 @@ namespace Microsoft.PowerShell.Commands
         /// The object to retrieve properties from.
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { get; set; }
+        public PSObject InputObject { set; get; }
 
         /// <summary>
         /// The member names to be retrieved.
         /// </summary>
         [Parameter(Position = 0)]
         [ValidateNotNullOrEmpty]
-        public string[] Name { get; set; } = new string[] { "*" };
+        public string[] Name { set; get; } = new string[] { "*" };
 
         /// <summary>
         /// The member types to be retrieved.
         /// </summary>
         [Parameter]
         [Alias("Type")]
-        public PSMemberTypes MemberType { get; set; } = PSMemberTypes.All;
+        public PSMemberTypes MemberType { set; get; } = PSMemberTypes.All;
 
         /// <summary>
         /// View from which the members are retrieved.
@@ -93,9 +94,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter]
         public SwitchParameter Static
         {
-            get { return _staticParameter; }
-
             set { _staticParameter = value; }
+
+            get { return _staticParameter; }
         }
 
         /// <summary>
@@ -131,7 +132,7 @@ namespace Microsoft.PowerShell.Commands
 
         private MshMemberMatchOptions _matchOptions = MshMemberMatchOptions.None;
 
-        private readonly HybridDictionary _typesAlreadyDisplayed = new();
+        private HybridDictionary _typesAlreadyDisplayed = new HybridDictionary();
 
         /// <summary>
         /// This method implements the ProcessRecord method for get-member command.
@@ -271,7 +272,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (_typesAlreadyDisplayed.Count == 0)
             {
-                ErrorRecord errorRecord = new(
+                ErrorRecord errorRecord = new ErrorRecord(
                     new InvalidOperationException(GetMember.NoObjectSpecified),
                     "NoObjectInGetMember",
                     ErrorCategory.CloseError,

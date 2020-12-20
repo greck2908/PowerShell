@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -27,9 +27,9 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
         private string _resultRole;
         private string _sourceRole;
 
-        internal readonly Dictionary<string, object> queryOptions = new(StringComparer.OrdinalIgnoreCase);
+        internal readonly Dictionary<string, object> queryOptions = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-        internal ClientSideQuery ClientSideQuery { get; }
+        internal ClientSideQuery ClientSideQuery { get; private set; }
 
         internal CimQuery()
         {
@@ -196,8 +196,8 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
         /// <param name="propertyName">Property name to query on.</param>
         /// <param name="allowedPropertyValues">Property values to accept in the query.</param>
         /// <param name="wildcardsEnabled">
-        ///   <see langword="true"/> if <paramref name="allowedPropertyValues"/> should be treated as a <see cref="System.String"/> containing a wildcard pattern;
-        ///   <see langword="false"/> otherwise.
+        ///   <c>true</c> if <paramref name="allowedPropertyValues"/> should be treated as a <see cref="System.String"/> containing a wildcard pattern;
+        ///   <c>false otherwise</c>
         /// </param>
         /// <param name="behaviorOnNoMatch">
         /// Describes how to handle filters that didn't match any objects
@@ -219,8 +219,8 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
         /// <param name="propertyName">Property name to query on.</param>
         /// <param name="excludedPropertyValues">Property values to reject in the query.</param>
         /// <param name="wildcardsEnabled">
-        /// <see langword="true"/> if <paramref name="excludedPropertyValues"/> should be treated as a <see cref="System.String"/> containing a wildcard pattern;
-        /// <see langword="false"/> otherwise.
+        /// <c>true</c> if <paramref name="excludedPropertyValues"/> should be treated as a <see cref="System.String"/> containing a wildcard pattern;
+        /// <c>false otherwise</c>
         /// </param>
         /// <param name="behaviorOnNoMatch">
         /// Describes how to handle filters that didn't match any objects
@@ -316,12 +316,12 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
         {
             if (string.IsNullOrEmpty(optionName))
             {
-                throw new ArgumentNullException(nameof(optionName));
+                throw new ArgumentNullException("optionName");
             }
 
             if (optionValue == null)
             {
-                throw new ArgumentNullException(nameof(optionValue));
+                throw new ArgumentNullException("optionValue");
             }
 
             this.queryOptions[optionName] = optionValue;

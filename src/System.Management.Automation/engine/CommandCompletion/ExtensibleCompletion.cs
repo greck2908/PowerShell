@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -24,17 +24,17 @@ namespace System.Management.Automation
     {
         /// <summary/>
         [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-        public Type Type { get; }
+        public Type Type { get; private set; }
 
         /// <summary/>
-        public ScriptBlock ScriptBlock { get; }
+        public ScriptBlock ScriptBlock { get; private set; }
 
         /// <param name="type">The type must implement <see cref="IArgumentCompleter"/> and have a default constructor.</param>
         public ArgumentCompleterAttribute(Type type)
         {
             if (type == null || (type.GetInterfaces().All(t => t != typeof(IArgumentCompleter))))
             {
-                throw PSTraceSource.NewArgumentException(nameof(type));
+                throw PSTraceSource.NewArgumentException("type");
             }
 
             Type = type;
@@ -48,7 +48,7 @@ namespace System.Management.Automation
         {
             if (scriptBlock == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(scriptBlock));
+                throw PSTraceSource.NewArgumentNullException("scriptBlock");
             }
 
             ScriptBlock = scriptBlock;
@@ -58,7 +58,6 @@ namespace System.Management.Automation
     /// <summary>
     /// A type specified by the <see cref="ArgumentCompleterAttribute"/> must implement this interface.
     /// </summary>
-#nullable enable
     public interface IArgumentCompleter
     {
         /// <summary>
@@ -83,7 +82,6 @@ namespace System.Management.Automation
             CommandAst commandAst,
             IDictionary fakeBoundParameters);
     }
-#nullable restore
 
     /// <summary>
     /// </summary>
@@ -131,7 +129,7 @@ namespace System.Management.Automation
 
             if (CommandName == null || CommandName.Length == 0)
             {
-                CommandName = new[] { string.Empty };
+                CommandName = new[] { "" };
             }
 
             for (int i = 0; i < CommandName.Length; i++)
@@ -166,7 +164,7 @@ namespace System.Management.Automation
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class ArgumentCompletionsAttribute : Attribute
     {
-        private readonly string[] _completions;
+        private string[] _completions;
 
         /// <summary>
         /// Initializes a new instance of the ArgumentCompletionsAttribute class.
@@ -178,12 +176,12 @@ namespace System.Management.Automation
         {
             if (completions == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(completions));
+                throw PSTraceSource.NewArgumentNullException("completions");
             }
 
             if (completions.Length == 0)
             {
-                throw PSTraceSource.NewArgumentOutOfRangeException(nameof(completions), completions);
+                throw PSTraceSource.NewArgumentOutOfRangeException("completions", completions);
             }
 
             _completions = completions;

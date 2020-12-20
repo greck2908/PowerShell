@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -190,7 +190,7 @@ namespace Microsoft.PowerShell.Commands
             if (string.IsNullOrEmpty(name))
             {
                 WriteError(new ErrorRecord(
-                    PSTraceSource.NewArgumentNullException(nameof(name)),
+                    PSTraceSource.NewArgumentNullException("name"),
                     "SetItemNullName",
                     ErrorCategory.InvalidArgument,
                     name));
@@ -241,7 +241,7 @@ namespace Microsoft.PowerShell.Commands
             if (string.IsNullOrEmpty(path))
             {
                 WriteError(new ErrorRecord(
-                    PSTraceSource.NewArgumentNullException(nameof(path)),
+                    PSTraceSource.NewArgumentNullException("path"),
                     "ClearItemNullPath",
                     ErrorCategory.InvalidArgument,
                     path));
@@ -326,7 +326,7 @@ namespace Microsoft.PowerShell.Commands
                 }
 
                 sortedEntries.Sort(
-                    (DictionaryEntry left, DictionaryEntry right) =>
+                    delegate (DictionaryEntry left, DictionaryEntry right)
                     {
                         string leftKey = (string)left.Key;
                         string rightKey = (string)right.Key;
@@ -608,7 +608,7 @@ namespace Microsoft.PowerShell.Commands
             if (string.IsNullOrEmpty(path))
             {
                 Exception e =
-                    PSTraceSource.NewArgumentException(nameof(path));
+                    PSTraceSource.NewArgumentException("path");
                 WriteError(new ErrorRecord(
                     e,
                     "RemoveItemNullPath",
@@ -682,7 +682,7 @@ namespace Microsoft.PowerShell.Commands
             if (string.IsNullOrEmpty(path))
             {
                 Exception e =
-                    PSTraceSource.NewArgumentException(nameof(path));
+                    PSTraceSource.NewArgumentException("path");
                 WriteError(new ErrorRecord(
                     e,
                     "NewItemNullPath",
@@ -710,7 +710,7 @@ namespace Microsoft.PowerShell.Commands
                 PSArgumentException e =
                     (PSArgumentException)
                     PSTraceSource.NewArgumentException(
-                        nameof(path),
+                        "path",
                         SessionStateStrings.NewItemAlreadyExists,
                         path);
 
@@ -760,7 +760,7 @@ namespace Microsoft.PowerShell.Commands
             if (string.IsNullOrEmpty(path))
             {
                 Exception e =
-                    PSTraceSource.NewArgumentException(nameof(path));
+                    PSTraceSource.NewArgumentException("path");
                 WriteError(new ErrorRecord(
                     e,
                     "CopyItemNullPath",
@@ -840,7 +840,7 @@ namespace Microsoft.PowerShell.Commands
                 PSArgumentException e =
                     (PSArgumentException)
                     PSTraceSource.NewArgumentException(
-                        nameof(path),
+                        "path",
                         SessionStateStrings.CopyItemDoesntExist,
                         path);
 
@@ -866,7 +866,7 @@ namespace Microsoft.PowerShell.Commands
             if (string.IsNullOrEmpty(name))
             {
                 Exception e =
-                    PSTraceSource.NewArgumentException(nameof(name));
+                    PSTraceSource.NewArgumentException("name");
                 WriteError(new ErrorRecord(
                     e,
                     "RenameItemNullPath",
@@ -899,7 +899,7 @@ namespace Microsoft.PowerShell.Commands
                     PSArgumentException e =
                         (PSArgumentException)
                         PSTraceSource.NewArgumentException(
-                            nameof(newName),
+                            "newName",
                             SessionStateStrings.NewItemAlreadyExists,
                             newName);
 
@@ -986,7 +986,7 @@ namespace Microsoft.PowerShell.Commands
                 PSArgumentException e =
                     (PSArgumentException)
                     PSTraceSource.NewArgumentException(
-                        nameof(name),
+                        "name",
                         SessionStateStrings.RenameItemDoesntExist,
                         name);
 
@@ -1104,20 +1104,20 @@ namespace Microsoft.PowerShell.Commands
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw PSTraceSource.NewArgumentException(nameof(path));
+                throw PSTraceSource.NewArgumentException("path");
             }
 
             if (provider == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(provider));
+                throw PSTraceSource.NewArgumentNullException("provider");
             }
 
             _path = path;
             _provider = provider;
         }
 
-        private readonly string _path;
-        private readonly SessionStateProviderBase _provider;
+        private string _path;
+        private SessionStateProviderBase _provider;
 
         /// <summary>
         /// Reads the content from the item.
@@ -1175,7 +1175,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (content == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(content));
+                throw PSTraceSource.NewArgumentNullException("content");
             }
 
             // Unravel the IList if there is only one value

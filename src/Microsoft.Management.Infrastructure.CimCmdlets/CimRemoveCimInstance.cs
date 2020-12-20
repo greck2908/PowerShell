@@ -1,8 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
 
+using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -17,7 +19,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal class CimRemoveCimInstanceContext : XOperationContextBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimRemoveCimInstanceContext"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         /// <param name="theNamespace"></param>
         /// <param name="theProxy"></param>
@@ -37,7 +41,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal sealed class CimRemoveCimInstance : CimGetInstance
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimRemoveCimInstance"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         public CimRemoveCimInstance()
             : base()
@@ -56,7 +62,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
 
             IEnumerable<string> computerNames = ConstValue.GetComputerNames(
                 GetComputerName(cmdlet));
-            List<CimSessionProxy> proxys = new();
+            List<CimSessionProxy> proxys = new List<CimSessionProxy>();
             switch (cmdlet.ParameterSetName)
             {
                 case CimBaseCommand.CimInstanceComputerSet:
@@ -82,7 +88,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 case CimBaseCommand.CimInstanceComputerSet:
                 case CimBaseCommand.CimInstanceSessionSet:
                     string nameSpace = null;
-                    if (cmdlet.ResourceUri != null)
+                    if(cmdlet.ResourceUri != null )
                     {
                         nameSpace = GetCimInstanceParameter(cmdlet).CimSystemProperties.Namespace;
                     }

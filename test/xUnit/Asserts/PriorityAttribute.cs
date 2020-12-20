@@ -1,18 +1,15 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 
-namespace PSTests.Internal
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class TestPriorityAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class PriorityAttribute : Attribute
+    public TestPriorityAttribute(int priority)
     {
-        public PriorityAttribute(int priority)
-        {
-            Priority = priority;
-        }
-
-        public int Priority { get; }
+        Priority = priority;
     }
+
+    public int Priority { get; private set; }
 }

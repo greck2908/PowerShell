@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -32,7 +32,7 @@ namespace System.Management.Automation
         [Dbg.TraceSourceAttribute(
              "CmdletProviderContext",
              "The context under which a core command is being run.")]
-        private static readonly Dbg.PSTraceSource s_tracer =
+        private static Dbg.PSTraceSource s_tracer =
             Dbg.PSTraceSource.GetTracer("CmdletProviderContext",
              "The context under which a core command is being run.");
 
@@ -54,7 +54,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                throw PSTraceSource.NewArgumentNullException("executionContext");
             }
 
             ExecutionContext = executionContext;
@@ -84,7 +84,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                throw PSTraceSource.NewArgumentNullException("executionContext");
             }
 
             ExecutionContext = executionContext;
@@ -118,7 +118,7 @@ namespace System.Management.Automation
             // verify the command parameter
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             _command = command;
@@ -172,7 +172,7 @@ namespace System.Management.Automation
             // verify the command parameter
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             _command = command;
@@ -220,7 +220,7 @@ namespace System.Management.Automation
             // verify the command parameter
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             _command = command;
@@ -250,12 +250,13 @@ namespace System.Management.Automation
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="contextToCopyFrom"/> is null.
         /// </exception>
+
         internal CmdletProviderContext(
             CmdletProviderContext contextToCopyFrom)
         {
             if (contextToCopyFrom == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(contextToCopyFrom));
+                throw PSTraceSource.NewArgumentNullException("contextToCopyFrom");
             }
 
             ExecutionContext = contextToCopyFrom.ExecutionContext;
@@ -294,12 +295,12 @@ namespace System.Management.Automation
         /// If the constructor that takes a context to copy is
         /// called, this will be set to the context being copied.
         /// </summary>
-        private readonly CmdletProviderContext _copiedContext;
+        private CmdletProviderContext _copiedContext;
 
         /// <summary>
         /// The credentials under which the operation should run.
         /// </summary>
-        private readonly PSCredential _credentials = PSCredential.Empty;
+        private PSCredential _credentials = PSCredential.Empty;
 
         /// <summary>
         /// The force parameter gives guidance to providers on how vigorously they
@@ -312,7 +313,7 @@ namespace System.Management.Automation
         /// made visible to anyone and should only be set through the
         /// constructor.
         /// </summary>
-        private readonly Cmdlet _command;
+        private Cmdlet _command;
 
         /// <summary>
         /// This makes the origin of the provider request visible to the internals.
@@ -327,17 +328,17 @@ namespace System.Management.Automation
         /// If it is false, the objects will be accumulated until the
         /// GetErrorObjects method is called.
         /// </summary>
-        private readonly bool _streamErrors;
+        private bool _streamErrors;
 
         /// <summary>
         /// A collection in which objects that are written using the WriteObject(s)
-        /// methods are accumulated if <see cref="PassThru"/> is false.
+        /// methods are accumulated if <see cref="PassThru" /> is false.
         /// </summary>
         private Collection<PSObject> _accumulatedObjects = new Collection<PSObject>();
 
         /// <summary>
         /// A collection in which objects that are written using the WriteError
-        /// method are accumulated if <see cref="PassThru"/> is false.
+        /// method are accumulated if <see cref="PassThru" /> is false.
         /// </summary>
         private Collection<ErrorRecord> _accumulatedErrorObjects = new Collection<ErrorRecord>();
 
@@ -826,7 +827,7 @@ namespace System.Management.Automation
             }
         }
 
-        internal void WriteInformation(object messageData, string[] tags)
+        internal void WriteInformation(Object messageData, string[] tags)
         {
             if (_command != null)
             {
@@ -984,7 +985,7 @@ namespace System.Management.Automation
         {
             if (errorContext == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(errorContext));
+                throw PSTraceSource.NewArgumentNullException("errorContext");
             }
 
             if (HasErrors())
@@ -1191,3 +1192,4 @@ namespace System.Management.Automation
         #endregion Public methods
     }
 }
+

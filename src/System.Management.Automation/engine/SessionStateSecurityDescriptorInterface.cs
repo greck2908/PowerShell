@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -32,10 +32,13 @@ namespace System.Management.Automation
         {
             if (providerInstance == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(providerInstance));
+                throw PSTraceSource.NewArgumentNullException("providerInstance");
             }
 
-            if (!(providerInstance is ISecurityDescriptorCmdletProvider permissionCmdletProvider))
+            ISecurityDescriptorCmdletProvider permissionCmdletProvider =
+                providerInstance as ISecurityDescriptorCmdletProvider;
+
+            if (permissionCmdletProvider == null)
             {
                 throw
                     PSTraceSource.NewNotSupportedException(
@@ -66,7 +69,7 @@ namespace System.Management.Automation
         {
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -107,7 +110,7 @@ namespace System.Management.Automation
         {
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             ProviderInfo provider = null;
@@ -197,12 +200,12 @@ namespace System.Management.Automation
         {
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             if (securityDescriptor == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(securityDescriptor));
+                throw PSTraceSource.NewArgumentNullException("securityDescriptor");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -244,12 +247,12 @@ namespace System.Management.Automation
         {
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             if (securityDescriptor == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(securityDescriptor));
+                throw PSTraceSource.NewArgumentNullException("securityDescriptor");
             }
 
             ProviderInfo provider = null;
@@ -391,7 +394,7 @@ namespace System.Management.Automation
 
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             ProviderInfo provider = null;
@@ -416,7 +419,7 @@ namespace System.Management.Automation
             }
             else
             {
-                throw PSTraceSource.NewArgumentException(nameof(path));
+                throw PSTraceSource.NewArgumentException("path");
             }
 
             return sd;
@@ -530,12 +533,12 @@ namespace System.Management.Automation
 
             if (type == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(type));
+                throw PSTraceSource.NewArgumentNullException("type");
             }
 
             if (providerInstance == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(providerInstance));
+                throw PSTraceSource.NewArgumentNullException("providerInstance");
             }
 
             // This just verifies that the provider supports the interface.
@@ -576,3 +579,4 @@ namespace System.Management.Automation
         #endregion NewSecurityDescriptor
     }
 }
+

@@ -1,6 +1,6 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-Describe "Out-Host Tests" -Tag CI {
+Describe "Out-Host Tests" -tag CI {
     BeforeAll {
         $th = New-TestHost
         $rs = [runspacefactory]::Createrunspace($th)

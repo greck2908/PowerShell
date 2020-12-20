@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation
@@ -137,6 +137,5 @@ namespace System.Management.Automation
         internal const string DeleteServiceDllName = "api-ms-win-service-management-l1-1-0.dll";             /*124*/
         internal const string QueryServiceConfigDllName = "api-ms-win-service-management-l2-1-0.dll";        /*125*/
         internal const string QueryServiceConfig2DllName = "api-ms-win-service-management-l2-1-0.dll";       /*126*/
-        internal const string SetServiceObjectSecurityDllName = "api-ms-win-service-management-l2-1-0.dll";  /*127*/
     }
 }

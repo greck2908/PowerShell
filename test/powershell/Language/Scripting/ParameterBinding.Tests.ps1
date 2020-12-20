@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Tests for parameter binding" -Tags "CI" {
     Context 'Test of Mandatory parameters' {
@@ -137,7 +137,7 @@ Describe "Tests for parameter binding" -Tags "CI" {
             }
         }
 
-        $b = 1..10 | Select-Object @{name='foo'; expression={$_ * 10}} | get-foo
+        $b = 1..10 | select-object @{name='foo'; expression={$_ * 10}} | get-foo
         $b -join ',' | Should -BeExactly '10,20,30,40,50,60,70,80,90,100'
     }
 
@@ -379,7 +379,7 @@ Describe "Tests for parameter binding" -Tags "CI" {
                 $p
             }
 
-            get-fooe | Should -Be 55
+            get-fooe| Should -Be 55
         }
 
         It "Validation attributes should not run on default values when CmdletBinding is set on the parameter" {
@@ -390,7 +390,7 @@ Describe "Tests for parameter binding" -Tags "CI" {
                 $p
             }
 
-            get-foof | Should -Be 55
+            get-foof| Should -Be 55
         }
 
         It "Validation attributes should not run on default values" {
@@ -400,7 +400,7 @@ Describe "Tests for parameter binding" -Tags "CI" {
                 $p
             }
 
-            { get-foog } | Should -Not -Throw
+            { get-foog } | Should -Not -throw
         }
 
         It "Validation attributes should not run on default values when CmdletBinding is set" {
@@ -411,7 +411,7 @@ Describe "Tests for parameter binding" -Tags "CI" {
                 $p
             }
 
-            { get-fooh } | Should -Not -Throw
+            { get-fooh } | Should -Not -throw
         }
 
         It "ValidateScript can use custom ErrorMessage" {
@@ -451,12 +451,12 @@ Describe "Tests for parameter binding" -Tags "CI" {
     }
 
     #known issue 2069
-    It 'Some conversions should be attempted before trying to encode a collection' -Skip:$IsCoreCLR {
+    It 'Some conversions should be attempted before trying to encode a collection' -skip:$IsCoreCLR {
         try {
                  $null = [Test.Language.ParameterBinding.MyClass]
             }
             catch {
-                Add-Type -PassThru -TypeDefinition @'
+                add-type -PassThru -TypeDefinition @'
                 using System.Management.Automation;
                 using System;
                 using System.Collections;
@@ -486,7 +486,7 @@ Describe "Tests for parameter binding" -Tags "CI" {
                         }
                     }
                 }
-'@ | ForEach-Object {$_.assembly} | Import-Module
+'@ | ForEach-Object {$_.assembly} | Import-module
             }
 
         Get-TestCmdlet -MyParameter @{ a = 42 } | Should -BeExactly 'hashtable'

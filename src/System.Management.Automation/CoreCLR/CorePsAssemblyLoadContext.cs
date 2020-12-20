@@ -1,14 +1,19 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#if CORECLR
+
+using System.IO;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.Loader;
+using System.Text;
+using System.Linq;
 
 namespace System.Management.Automation
 {
@@ -41,9 +46,7 @@ namespace System.Management.Automation
             lock (s_syncObj)
             {
                 if (Instance != null)
-                {
                     throw new InvalidOperationException(SingletonAlreadyInitialized);
-                }
 
                 Instance = new PowerShellAssemblyLoadContext(basePaths);
                 return Instance;
@@ -71,14 +74,14 @@ namespace System.Management.Automation
             }
             else
             {
-                _probingPaths = basePaths.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                _probingPaths = basePaths.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < _probingPaths.Length; i++)
                 {
                     string basePath = _probingPaths[i];
                     if (!Directory.Exists(basePath))
                     {
                         string message = string.Format(CultureInfo.CurrentCulture, BaseFolderDoesNotExist, basePath);
-                        throw new ArgumentException(message, nameof(basePaths));
+                        throw new ArgumentException(message, "basePaths");
                     }
 
                     _probingPaths[i] = basePath.Trim();
@@ -90,22 +93,15 @@ namespace System.Management.Automation
             _availableDotNetAssemblyNames = new Lazy<HashSet<string>>(
                     () => new HashSet<string>(_coreClrTypeCatalog.Values, StringComparer.Ordinal));
 
-            // LAST: Register the 'Resolving' handler and 'ResolvingUnmanagedDll' handler on the default load context.
+            // LAST: Register 'Resolving' handler on the default load context.
             AssemblyLoadContext.Default.Resolving += Resolve;
-
-            // Add last resort native dll resolver.
-            // Default order:
-            //      1. System.Runtime.InteropServices.DllImportResolver callbacks
-            //      2. AssemblyLoadContext.LoadUnmanagedDll()
-            //      3. AssemblyLoadContext.Default.ResolvingUnmanagedDll handlers
-            AssemblyLoadContext.Default.ResolvingUnmanagedDll += NativeDllHandler;
         }
 
         #endregion Constructor
 
         #region Fields
 
-        private static readonly object s_syncObj = new();
+        private static readonly object s_syncObj = new object();
         private readonly string[] _probingPaths;
         private readonly string[] _extensions = new string[] { ".ni.dll", ".dll" };
         // CoreCLR type catalog dictionary
@@ -113,9 +109,9 @@ namespace System.Management.Automation
         //  - Value: strong name of the TPA that contains the type represented by Key.
         private readonly Dictionary<string, string> _coreClrTypeCatalog;
         private readonly Lazy<HashSet<string>> _availableDotNetAssemblyNames;
-
-        private readonly HashSet<string> _denyListedAssemblies =
-            new(StringComparer.OrdinalIgnoreCase) { "System.Windows.Forms" };
+        private readonly HashSet<string> _blackListedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase){
+                "System.Windows.Forms"
+            };
 
 #if !UNIX
         private string _winDir;
@@ -139,7 +135,7 @@ namespace System.Management.Automation
         /// Therefore, there is no need to use the full assembly name as the key. Short assembly name is sufficient.
         /// </remarks>
         private static readonly ConcurrentDictionary<string, Assembly> s_assemblyCache =
-            new(StringComparer.OrdinalIgnoreCase);
+            new ConcurrentDictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
 
         #endregion Fields
 
@@ -196,50 +192,6 @@ namespace System.Management.Automation
 
             // Otherwise, we return null
             return null;
-        }
-
-        /// <summary>
-        /// If a managed dll has native dependencies the handler will try to find these native dlls.
-        ///     1. Gets the managed.dll location (folder)
-        ///     2. Based on OS name and architecture name builds subfolder name where it is expected the native dll resides:
-        ///     3. Loads the native dll
-        ///
-        ///     managed.dll folder
-        ///                     |
-        ///                     |--- 'win-x64' subfolder
-        ///                     |       |--- native.dll
-        ///                     |
-        ///                     |--- 'win-x86' subfolder
-        ///                     |       |--- native.dll
-        ///                     |
-        ///                     |--- 'win-arm' subfolder
-        ///                     |       |--- native.dll
-        ///                     |
-        ///                     |--- 'win-arm64' subfolder
-        ///                     |       |--- native.dll
-        ///                     |
-        ///                     |--- 'linux-x64' subfolder
-        ///                     |       |--- native.so
-        ///                     |
-        ///                     |--- 'linux-x86' subfolder
-        ///                     |       |--- native.so
-        ///                     |
-        ///                     |--- 'linux-arm' subfolder
-        ///                     |       |--- native.so
-        ///                     |
-        ///                     |--- 'linux-arm64' subfolder
-        ///                     |       |--- native.so
-        ///                     |
-        ///                     |--- 'osx-x64' subfolder
-        ///                     |       |--- native.dylib
-        /// </summary>
-        internal static IntPtr NativeDllHandler(Assembly assembly, string libraryName)
-        {
-            s_nativeDllSubFolder ??= GetNativeDllSubFolderName(out s_nativeDllExtension);
-            string folder = Path.GetDirectoryName(assembly.Location);
-            string fullName = Path.Combine(folder, s_nativeDllSubFolder, libraryName) + s_nativeDllExtension;
-
-            return NativeLibrary.TryLoad(fullName, out IntPtr pointer) ? pointer : IntPtr.Zero;
         }
 
         #endregion Internal_Methods
@@ -331,7 +283,7 @@ namespace System.Management.Automation
         private bool TryFindInGAC(AssemblyName assemblyName, out string assemblyFilePath)
         {
             assemblyFilePath = null;
-            if (_denyListedAssemblies.Contains(assemblyName.Name))
+            if (_blackListedAssemblies.Contains(assemblyName.Name))
             {
                 // DotNet catches and throws a new exception with no inner exception
                 // We cannot change the message DotNet returns.
@@ -392,7 +344,7 @@ namespace System.Management.Automation
         }
 
         // Find the assembly under 'gacRoot' and select the latest version.
-        private static bool FindInGac(string gacRoot, AssemblyName assemblyName, out string assemblyPath)
+        private bool FindInGac(string gacRoot, AssemblyName assemblyName, out string assemblyPath)
         {
             bool assemblyFound = false;
             assemblyPath = null;
@@ -403,12 +355,12 @@ namespace System.Management.Automation
             if (Directory.Exists(tempAssemblyDirPath))
             {
                 // Enumerate all directories, sort by name and select the last. This selects the latest version.
-                var chosenVersionDirectory = Directory.EnumerateDirectories(tempAssemblyDirPath).OrderBy(d => d).LastOrDefault();
+                var chosenVersionDirectory = Directory.GetDirectories(tempAssemblyDirPath).OrderBy(d => d).LastOrDefault();
 
                 if (!string.IsNullOrEmpty(chosenVersionDirectory))
                 {
                     // Select first or default as the directory will contain only one assembly. If nothing then default is null;
-                    var foundAssemblyPath = Directory.EnumerateFiles(chosenVersionDirectory, $"{assemblyName.Name}*").FirstOrDefault();
+                    var foundAssemblyPath = Directory.GetFiles(chosenVersionDirectory, $"{assemblyName.Name}*").FirstOrDefault();
 
                     if (!string.IsNullOrEmpty(foundAssemblyPath))
                     {
@@ -429,7 +381,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Try to get the specified assembly from cache.
         /// </summary>
-        private static bool TryGetAssemblyFromCache(AssemblyName assemblyName, out Assembly asmLoaded)
+        private bool TryGetAssemblyFromCache(AssemblyName assemblyName, out Assembly asmLoaded)
         {
             if (s_assemblyCache.TryGetValue(assemblyName.Name, out asmLoaded))
             {
@@ -453,7 +405,7 @@ namespace System.Management.Automation
         /// <param name="requestedAssembly">AssemblyName of the requested assembly.</param>
         /// <param name="loadedAssembly">AssemblyName of the loaded assembly.</param>
         /// <returns></returns>
-        private static bool IsAssemblyMatching(AssemblyName requestedAssembly, AssemblyName loadedAssembly)
+        private bool IsAssemblyMatching(AssemblyName requestedAssembly, AssemblyName loadedAssembly)
         {
             //
             // We use the same rules as CoreCLR loader to compare the requested assembly and loaded assembly:
@@ -500,7 +452,7 @@ namespace System.Management.Automation
         /// <param name="tpaStrongName">
         /// The assembly strong name of a CoreCLR Trusted_Platform_Assembly
         /// </param>
-        private static Assembly GetTrustedPlatformAssembly(string tpaStrongName)
+        private Assembly GetTrustedPlatformAssembly(string tpaStrongName)
         {
             // We always depend on the default context to load the TPAs that are recorded in
             // the type catalog.
@@ -508,7 +460,7 @@ namespace System.Management.Automation
             //     it back from the cache of default context.
             //   - If the requested TPA is not loaded yet, then 'Assembly.Load' will make the
             //     default context to load it
-            AssemblyName assemblyName = new(tpaStrongName);
+            AssemblyName assemblyName = new AssemblyName(tpaStrongName);
             Assembly asmLoaded = Assembly.Load(assemblyName);
             return asmLoaded;
         }
@@ -516,7 +468,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Throw FileLoadException.
         /// </summary>
-        private static void ThrowFileLoadException(string errorTemplate, params object[] args)
+        private void ThrowFileLoadException(string errorTemplate, params object[] args)
         {
             string message = string.Format(CultureInfo.CurrentCulture, errorTemplate, args);
             throw new FileLoadException(message);
@@ -525,38 +477,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Throw FileNotFoundException.
         /// </summary>
-        private static void ThrowFileNotFoundException(string errorTemplate, params object[] args)
+        private void ThrowFileNotFoundException(string errorTemplate, params object[] args)
         {
             string message = string.Format(CultureInfo.CurrentCulture, errorTemplate, args);
             throw new FileNotFoundException(message);
-        }
-
-        private static string s_nativeDllSubFolder;
-        private static string s_nativeDllExtension;
-
-        private static string GetNativeDllSubFolderName(out string ext)
-        {
-            string folderName = string.Empty;
-            ext = string.Empty;
-            var processArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                folderName = "win-" + processArch;
-                ext = ".dll";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                folderName = "linux-" + processArch;
-                ext = ".so";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                folderName = "osx-x64";
-                ext = ".dylib";
-            }
-
-            return folderName;
         }
 
         #endregion Private_Methods
@@ -565,7 +489,7 @@ namespace System.Management.Automation
     /// <summary>
     /// This is the managed entry point for Microsoft.PowerShell.CoreCLR.AssemblyLoadContext.dll.
     /// </summary>
-    public static class PowerShellAssemblyLoadContextInitializer
+    public class PowerShellAssemblyLoadContextInitializer
     {
         /// <summary>
         /// Create a singleton of PowerShellAssemblyLoadContext.
@@ -579,12 +503,15 @@ namespace System.Management.Automation
         /// Base directory paths that are separated by semicolon ';'.
         /// They will be the default paths to probe assemblies.
         /// </param>
-        public static void SetPowerShellAssemblyLoadContext([MarshalAs(UnmanagedType.LPWStr)] string basePaths)
+        public static void SetPowerShellAssemblyLoadContext([MarshalAs(UnmanagedType.LPWStr)]string basePaths)
         {
             if (string.IsNullOrEmpty(basePaths))
-                throw new ArgumentNullException(nameof(basePaths));
+                throw new ArgumentNullException("basePaths");
 
             PowerShellAssemblyLoadContext.InitializeSingleton(basePaths);
         }
     }
 }
+
+#endif
+

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -29,7 +29,7 @@ namespace System.Management.Automation
         [Dbg.TraceSourceAttribute(
              "PSDriveInfo",
              "The namespace navigation tracer")]
-        private static readonly Dbg.PSTraceSource s_tracer =
+        private static Dbg.PSTraceSource s_tracer =
             Dbg.PSTraceSource.GetTracer("PSDriveInfo",
              "The namespace navigation tracer");
 
@@ -127,7 +127,7 @@ namespace System.Management.Automation
         {
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             if (!DriveBeingCreated)
@@ -271,7 +271,7 @@ namespace System.Management.Automation
         {
             if (driveInfo == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(driveInfo));
+                throw PSTraceSource.NewArgumentNullException("driveInfo");
             }
 
             _name = driveInfo.Name;
@@ -326,17 +326,17 @@ namespace System.Management.Automation
 
             if (name == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             if (provider == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(provider));
+                throw PSTraceSource.NewArgumentNullException("provider");
             }
 
             if (root == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(root));
+                throw PSTraceSource.NewArgumentNullException("root");
             }
 
             // Copy the parameters to the local members
@@ -430,7 +430,7 @@ namespace System.Management.Automation
         /// If null, the current user credential is used.
         /// </param>
         /// <param name="persist">
-        /// It indicates if the created PSDrive would be
+        /// It indicates if the the created PSDrive would be
         /// persisted across PowerShell sessions.
         /// </param>
         /// <throws>
@@ -508,7 +508,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(newName))
             {
-                throw PSTraceSource.NewArgumentException(nameof(newName));
+                throw PSTraceSource.NewArgumentException("newName");
             }
 
             _name = newName;
@@ -534,7 +534,7 @@ namespace System.Management.Automation
         {
             if (newProvider == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(newProvider));
+                throw PSTraceSource.NewArgumentNullException("newProvider");
             }
 
             _provider = newProvider;
@@ -602,7 +602,7 @@ namespace System.Management.Automation
 
             if (drive == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(drive));
+                throw PSTraceSource.NewArgumentNullException("drive");
             }
 
             return string.Compare(Name, drive.Name, StringComparison.OrdinalIgnoreCase);
@@ -631,7 +631,7 @@ namespace System.Management.Automation
             {
                 ArgumentException e =
                     PSTraceSource.NewArgumentException(
-                        nameof(obj),
+                        "obj",
                         SessionStateStrings.OnlyAbleToComparePSDriveInfo);
                 throw e;
             }
@@ -817,7 +817,6 @@ namespace System.Management.Automation
         }
 
         private PSNoteProperty _noteProperty;
-
         internal PSNoteProperty GetNotePropertyForProviderCmdlets(string name)
         {
             if (_noteProperty == null)
@@ -830,3 +829,4 @@ namespace System.Management.Automation
         }
     }
 }
+

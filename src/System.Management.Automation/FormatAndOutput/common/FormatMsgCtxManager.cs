@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -19,15 +19,10 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     {
         // callbacks declarations
         internal delegate OutputContext FormatContextCreationCallback(OutputContext parentContext, FormatInfoData formatData);
-
         internal delegate void FormatStartCallback(OutputContext c);
-
         internal delegate void FormatEndCallback(FormatEndData fe, OutputContext c);
-
         internal delegate void GroupStartCallback(OutputContext c);
-
         internal delegate void GroupEndCallback(GroupEndData fe, OutputContext c);
-
         internal delegate void PayloadCallback(FormatEntryData formatEntryData, OutputContext c);
 
         // callback instances
@@ -140,6 +135,6 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         /// <summary>
         /// Internal stack to manage context.
         /// </summary>
-        private readonly Stack<OutputContext> _stack = new Stack<OutputContext>();
+        private Stack<OutputContext> _stack = new Stack<OutputContext>();
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -27,8 +27,8 @@ namespace System.Management.Automation
 
         #region private properties
 
-        private readonly string _resourceName = null;
-        private readonly ExecutionContext _context = null;
+        private string _resourceName = null;
+        private ExecutionContext _context = null;
         private DscResourceInfo _currentMatch = null;
         private IEnumerator<DscResourceInfo> _matchingResource = null;
         private Collection<DscResourceInfo> _matchingResourceList = null;

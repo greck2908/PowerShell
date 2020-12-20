@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -39,7 +39,7 @@ namespace System.Management.Automation
         /// <returns>
         /// An IDictionary representing the visible functions.
         /// </returns>
-        internal IDictionary<string, FunctionInfo> GetFunctionTable()
+        internal IDictionary GetFunctionTable()
         {
             SessionStateScopeEnumerator scopeEnumerator =
                 new SessionStateScopeEnumerator(_currentScope);
@@ -120,8 +120,8 @@ namespace System.Management.Automation
 
             set
             {
-                Dbg.Assert((value), "This property should never be set/reset to false");
-                if (value)
+                Dbg.Assert((value == true), "This property should never be set/reset to false");
+                if (value == true)
                 {
                     _functionsExportedWithWildcard = value;
                 }
@@ -154,7 +154,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             FunctionInfo result = null;
@@ -220,7 +220,7 @@ namespace System.Management.Automation
             return GetFunction(name, CommandOrigin.Internal);
         }
 
-        private static IEnumerable<string> GetFunctionAliases(IParameterMetadataProvider ipmp)
+        private IEnumerable<string> GetFunctionAliases(IParameterMetadataProvider ipmp)
         {
             if (ipmp == null || ipmp.Body.ParamBlock == null)
                 yield break;
@@ -234,7 +234,7 @@ namespace System.Management.Automation
                     var cvv = new ConstantValueVisitor { AttributeArgument = true };
                     for (int i = 0; i < attributeAst.PositionalArguments.Count; i++)
                     {
-                        yield return Compiler.s_attrArgToStringConverter.Target(Compiler.s_attrArgToStringConverter,
+                        yield return Compiler._attrArgToStringConverter.Target(Compiler._attrArgToStringConverter,
                             attributeAst.PositionalArguments[i].Accept(cvv));
                     }
                 }
@@ -269,12 +269,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (function == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(function));
+                throw PSTraceSource.NewArgumentNullException("function");
             }
 
             string originalName = name;
@@ -504,12 +504,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (function == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(function));
+                throw PSTraceSource.NewArgumentNullException("function");
             }
 
             string originalName = name;
@@ -583,12 +583,12 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             if (function == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(function));
+                throw PSTraceSource.NewArgumentNullException("function");
             }
 
             string originalName = name;
@@ -711,7 +711,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentException(nameof(name));
+                throw PSTraceSource.NewArgumentException("name");
             }
 
             // Use the scope enumerator to find an existing function

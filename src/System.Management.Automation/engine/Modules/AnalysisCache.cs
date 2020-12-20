@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -29,13 +29,13 @@ namespace System.Management.Automation
     /// </summary>
     internal class AnalysisCache
     {
-        private static readonly AnalysisCacheData s_cacheData = AnalysisCacheData.Get();
+        private static AnalysisCacheData s_cacheData = AnalysisCacheData.Get();
 
         // This dictionary shouldn't see much use, so low concurrency and capacity
-        private static readonly ConcurrentDictionary<string, string> s_modulesBeingAnalyzed =
+        private static ConcurrentDictionary<string, string> s_modulesBeingAnalyzed =
             new ConcurrentDictionary<string, string>( /*concurrency*/1, /*capacity*/2, StringComparer.OrdinalIgnoreCase);
 
-        internal static readonly char[] InvalidCommandNameCharacters = new[]
+        internal static char[] InvalidCommandNameCharacters = new[]
         {
             '#', ',', '(', ')', '{', '}', '[', ']', '&', '/', '\\', '$', '^', ';', ':',
             '"', '\'', '<', '>', '|', '?', '@', '`', '*', '%', '+', '=', '~'
@@ -103,7 +103,7 @@ namespace System.Management.Automation
                 var moduleManifestProperties = PsUtils.GetModuleManifestProperties(modulePath, PsUtils.FastModuleManifestAnalysisPropertyNames);
                 if (moduleManifestProperties != null)
                 {
-                    if (!Configuration.PowerShellConfig.Instance.IsImplicitWinCompatEnabled() && ModuleIsEditionIncompatible(modulePath, moduleManifestProperties))
+                    if (ModuleIsEditionIncompatible(modulePath, moduleManifestProperties))
                     {
                         ModuleIntrinsics.Tracer.WriteLine($"Module lies on the Windows System32 legacy module path and is incompatible with current PowerShell edition, skipping module: {modulePath}");
                         return null;
@@ -194,7 +194,8 @@ namespace System.Management.Automation
 
         internal static bool ModuleAnalysisViaGetModuleRequired(object modulePathObj, bool hadCmdlets, bool hadFunctions, bool hadAliases)
         {
-            if (!(modulePathObj is string modulePath))
+            var modulePath = modulePathObj as string;
+            if (modulePath == null)
                 return true;
 
             if (modulePath.EndsWith(StringLiterals.PowerShellModuleFileExtension, StringComparison.OrdinalIgnoreCase))
@@ -256,7 +257,8 @@ namespace System.Management.Automation
                     return ModuleAnalysisViaGetModuleRequired(nestedModule, hadCmdlets, hadFunctions, hadAliases);
                 }
 
-                if (!(nestedModules is object[] nestedModuleArray))
+                var nestedModuleArray = nestedModules as object[];
+                if (nestedModuleArray == null)
                     return true;
 
                 foreach (var element in nestedModuleArray)
@@ -490,8 +492,8 @@ namespace System.Management.Automation
             ModuleIntrinsics.Tracer.WriteLine("Requested caching for {0}", module.Name);
 
             // Don't cache incompatible modules on the system32 module path even if loaded with
-            // -SkipEditionCheck, since it will break subsequent sessions
-            if (!Configuration.PowerShellConfig.Instance.IsImplicitWinCompatEnabled() && !module.IsConsideredEditionCompatible)
+            // -SkipEditionCheck, since it will break subsequent sessions.
+            if (!module.IsConsideredEditionCompatible)
             {
                 ModuleIntrinsics.Tracer.WriteLine($"Module '{module.Name}' not edition compatible and not cached.");
                 return;
@@ -736,7 +738,7 @@ namespace System.Management.Automation
         private void Serialize(string filename)
         {
             AnalysisCacheData fromOtherProcess = null;
-            Diagnostics.Assert(_saveCacheToDisk, "Serialize should never be called without going through QueueSerialization which has a check");
+            Diagnostics.Assert(_saveCacheToDisk != false, "Serialize should never be called without going through QueueSerialization which has a check");
 
             try
             {
@@ -1119,7 +1121,11 @@ namespace System.Management.Automation
                 cacheFileName = string.Format(CultureInfo.InvariantCulture, "{0}-{1}", cacheFileName, hashString);
             }
 
-            s_cacheStoreLocation = Path.Combine(Platform.CacheDirectory, cacheFileName);
+#if UNIX
+            s_cacheStoreLocation = Path.Combine(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE), cacheFileName);
+#else
+            s_cacheStoreLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\PowerShell", cacheFileName);
+#endif
         }
     }
 

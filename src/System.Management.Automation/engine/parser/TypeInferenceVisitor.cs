@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -109,7 +109,7 @@ namespace System.Management.Automation
         }
     }
 
-    internal class PSTypeNameComparer : IEqualityComparer<PSTypeName>
+    class PSTypeNameComparer : IEqualityComparer<PSTypeName>
     {
         public bool Equals(PSTypeName x, PSTypeName y)
         {
@@ -132,7 +132,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TypeInferenceContext"/> class.
+        /// Initializes a new instance of the <see cref="TypeInferenceContext" /> class.
         /// The powerShell instance passed need to have a non null Runspace.
         /// </summary>
         /// <param name="powerShell">The instance of powershell to use for expression evaluation needed for type inference.</param>
@@ -316,7 +316,8 @@ namespace System.Management.Automation
             // iterate through bases/interfaces
             foreach (var baseType in typename.TypeDefinitionAst.BaseTypes)
             {
-                if (!(baseType.TypeName is TypeName baseTypeName))
+                var baseTypeName = baseType.TypeName as TypeName;
+                if (baseTypeName == null)
                 {
                     continue;
                 }
@@ -1217,7 +1218,7 @@ namespace System.Management.Automation
             }
 
             var previousPipelineElement = GetPreviousPipelineCommand(commandAst);
-            const string typeName = "Microsoft.PowerShell.Commands.GroupInfo";
+            var typeName = "Microsoft.PowerShell.Commands.GroupInfo";
             var members = new List<PSMemberNameAndType>();
             foreach (var prevType in InferTypes(previousPipelineElement))
             {
@@ -1230,7 +1231,7 @@ namespace System.Management.Automation
                 }
 
                 var memberNameAndTypes = GetMemberNameAndTypeFromProperties(prevType, IsInPropertyArgument);
-                if (memberNameAndTypes.Count == 0)
+                if (!memberNameAndTypes.Any())
                 {
                     continue;
                 }
@@ -1327,7 +1328,7 @@ namespace System.Management.Automation
                             switch (propertyNameOrPattern)
                             {
                                 case string propertyName:
-                                    if (string.Equals(name, propertyName, StringComparison.OrdinalIgnoreCase))
+                                    if (string.Compare(name, propertyName, StringComparison.OrdinalIgnoreCase) == 0)
                                     {
                                         return includeMatchedProperties;
                                     }
@@ -1483,7 +1484,8 @@ namespace System.Management.Automation
             var expression = memberExpressionAst.Expression;
 
             // If the member name isn't simple, don't even try.
-            if (!(memberCommandElement is StringConstantExpressionAst memberAsStringConst))
+            var memberAsStringConst = memberCommandElement as StringConstantExpressionAst;
+            if (memberAsStringConst == null)
             {
                 return Array.Empty<PSTypeName>();
             }
@@ -1699,7 +1701,7 @@ namespace System.Management.Automation
             return false;
         }
 
-        private static void AddTypesFromMethodCacheEntry(
+        private void AddTypesFromMethodCacheEntry(
             DotNetAdapter.MethodCacheEntry methodCacheEntry,
             List<PSTypeName> result,
             bool isInvokeMemberExpressionAst)
@@ -1726,7 +1728,8 @@ namespace System.Management.Automation
             PSTypeName[] exprType;
             if (isStatic)
             {
-                if (!(expression is TypeExpressionAst exprAsType))
+                var exprAsType = expression as TypeExpressionAst;
+                if (exprAsType == null)
                 {
                     return null;
                 }
@@ -2021,7 +2024,7 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="inferredTypes">The inferred types all the items in the array.</param>
         /// <returns>The inferred strongly typed array type.</returns>
-        private static PSTypeName GetArrayType(IEnumerable<PSTypeName> inferredTypes)
+        private PSTypeName GetArrayType(IEnumerable<PSTypeName> inferredTypes)
         {
             PSTypeName foundType = null;
             foreach (PSTypeName inferredType in inferredTypes)
@@ -2077,7 +2080,7 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="enumerableType">The type to infer enumerated item type from.</param>
         /// <returns>The inferred enumerated item type.</returns>
-        private static Type GetMostSpecificEnumeratedItemType(Type enumerableType)
+        private Type GetMostSpecificEnumeratedItemType(Type enumerableType)
         {
             if (enumerableType.IsArray)
             {
@@ -2141,19 +2144,19 @@ namespace System.Management.Automation
         /// <param name="interfaceType">The interface to test.</param>
         /// <param name="hasSeenNonGeneric">
         /// A reference to a value indicating whether a non-generic enumerable type has been
-        /// seen. If <see paramref="interfaceType"/> is a non-generic enumerable type this
-        /// value will be set to <see langword="true"/>.
+        /// seen. If <see paramref="interfaceType" /> is a non-generic enumerable type this
+        /// value will be set to <see langword="true" />.
         /// </param>
         /// <param name="hasSeenDictionaryEnumerator">
-        /// A reference to a value indicating whether <see cref="IDictionaryEnumerator"/> has been
-        /// seen. If <paramref name="interfaceType"/> is a <see cref="IDictionaryEnumerator"/> this
-        /// value will be set to <see langword="true"/>.
+        /// A reference to a value indicating whether <see cref="IDictionaryEnumerator" /> has been
+        /// seen. If <paramref name="interfaceType" /> is a <see cref="IDictionaryEnumerator" /> this
+        /// value will be set to <see langword="true" />.
         /// </param>
         /// <returns>
-        /// The value of <paramref name="interfaceType"/> if it can be used to infer a specific
-        /// enumerated type, otherwise <see langword="null"/>.
+        /// The value of <paramref name="interfaceType" /> if it can be used to infer a specific
+        /// enumerated type, otherwise <see langword="null" />.
         /// </returns>
-        private static Type GetGenericCollectionLikeInterface(
+        private Type GetGenericCollectionLikeInterface(
             Type interfaceType,
             ref bool hasSeenNonGeneric,
             ref bool hasSeenDictionaryEnumerator)
@@ -2250,14 +2253,14 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Infers the types as if they were enumerated. For example, a <see cref="List{T}"/>
-        /// of type <see cref="string"/> would be returned as <see cref="string"/>.
+        /// Infers the types as if they were enumerated. For example, a <see cref="List{T}" />
+        /// of type <see cref="string" /> would be returned as <see cref="string" />.
         /// </summary>
         /// <param name="enumerableTypes">
         /// The potentially enumerable types to infer enumerated type from.
         /// </param>
         /// <returns>The enumerated item types.</returns>
-        private static IEnumerable<PSTypeName> GetInferredEnumeratedTypes(IEnumerable<PSTypeName> enumerableTypes)
+        private IEnumerable<PSTypeName> GetInferredEnumeratedTypes(IEnumerable<PSTypeName> enumerableTypes)
         {
             foreach (PSTypeName maybeEnumerableType in enumerableTypes)
             {
@@ -2278,7 +2281,8 @@ namespace System.Management.Automation
         private void GetInferredTypeFromScriptBlockParameter(AstParameterArgumentPair argument, List<PSTypeName> inferredTypes)
         {
             var argumentPair = argument as AstPair;
-            if (!(argumentPair?.Argument is ScriptBlockExpressionAst scriptBlockExpressionAst))
+            var scriptBlockExpressionAst = argumentPair?.Argument as ScriptBlockExpressionAst;
+            if (scriptBlockExpressionAst == null)
             {
                 return;
             }
@@ -2322,19 +2326,6 @@ namespace System.Management.Automation
             return dynamicKeywordAst.CommandElements[0].Accept(this);
         }
 
-        object ICustomAstVisitor2.VisitTernaryExpression(TernaryExpressionAst ternaryExpressionAst)
-        {
-            return InferTypes(ternaryExpressionAst.IfTrue).Concat(InferTypes(ternaryExpressionAst.IfFalse));
-        }
-
-        object ICustomAstVisitor2.VisitPipelineChain(PipelineChainAst pipelineChainAst)
-        {
-            var types = new List<PSTypeName>();
-            types.AddRange(InferTypes(pipelineChainAst.LhsPipelineChain));
-            types.AddRange(InferTypes(pipelineChainAst.RhsPipeline));
-            return GetArrayType(types);
-        }
-
         private static CommandBaseAst GetPreviousPipelineCommand(CommandAst commandAst)
         {
             var pipe = (PipelineAst)commandAst.Parent;
@@ -2343,7 +2334,7 @@ namespace System.Management.Automation
         }
     }
 
-    internal static class TypeInferenceExtension
+    static class TypeInferenceExtension
     {
         public static bool EqualsOrdinalIgnoreCase(this string s, string t)
         {
@@ -2412,7 +2403,7 @@ namespace System.Management.Automation
                 lhs = convertExpr.Child;
             }
 
-            if (lhs is not VariableExpressionAst varExpr)
+            if (!(lhs is VariableExpressionAst varExpr))
             {
                 return false;
             }

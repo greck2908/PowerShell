@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -16,7 +16,7 @@ namespace Microsoft.PowerShell.Commands
     /// A cmdlet to retrieve time zone information.
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "TimeZone", DefaultParameterSetName = "Name",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096904")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=799468")]
     [Alias("gtz")]
     public class GetTimeZoneCommand : PSCmdlet
     {
@@ -82,7 +82,7 @@ namespace Microsoft.PowerShell.Commands
                     foreach (string tzname in Name)
                     {
                         TimeZoneInfo[] timeZones = TimeZoneHelper.LookupSystemTimeZoneInfoByName(tzname);
-                        if (timeZones.Length > 0)
+                        if (0 < timeZones.Length)
                         {
                             // manually process each object in the array, so if there is only a single
                             // entry then the returned type is TimeZoneInfo and not TimeZoneInfo[], and
@@ -120,7 +120,7 @@ namespace Microsoft.PowerShell.Commands
     [Cmdlet(VerbsCommon.Set, "TimeZone",
         SupportsShouldProcess = true,
         DefaultParameterSetName = "Name",
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2097056")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkId=799469")]
     [Alias("stz")]
     public class SetTimeZoneCommand : PSCmdlet
     {
@@ -188,7 +188,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 // lookup the time zone name and make sure we have one (and only one) match
                 TimeZoneInfo[] timeZones = TimeZoneHelper.LookupSystemTimeZoneInfoByName(Name);
-                if (timeZones.Length == 0)
+                if (0 == timeZones.Length)
                 {
                     string message = string.Format(CultureInfo.InvariantCulture,
                         TimeZoneResources.TimeZoneNameNotFound, Name);
@@ -198,7 +198,7 @@ namespace Microsoft.PowerShell.Commands
                         ErrorCategory.InvalidArgument,
                         "Name"));
                 }
-                else if (timeZones.Length > 1)
+                else if (1 < timeZones.Length)
                 {
                     string message = string.Format(CultureInfo.InvariantCulture,
                         TimeZoneResources.MultipleMatchingTimeZones, Name);
@@ -254,14 +254,14 @@ namespace Microsoft.PowerShell.Commands
                 try
                 {
                     // construct and populate a new DYNAMIC_TIME_ZONE_INFORMATION structure
-                    NativeMethods.DYNAMIC_TIME_ZONE_INFORMATION dtzi = new();
+                    NativeMethods.DYNAMIC_TIME_ZONE_INFORMATION dtzi = new NativeMethods.DYNAMIC_TIME_ZONE_INFORMATION();
                     dtzi.Bias -= (int)InputObject.BaseUtcOffset.TotalMinutes;
                     dtzi.StandardName = InputObject.StandardName;
                     dtzi.DaylightName = InputObject.DaylightName;
                     dtzi.TimeZoneKeyName = InputObject.Id;
 
                     // Request time zone transition information for the current year
-                    NativeMethods.TIME_ZONE_INFORMATION tzi = new();
+                    NativeMethods.TIME_ZONE_INFORMATION tzi = new NativeMethods.TIME_ZONE_INFORMATION();
                     if (!NativeMethods.GetTimeZoneInformationForYear((ushort)DateTime.Now.Year, ref dtzi, ref tzi))
                     {
                         ThrowWin32Error();
@@ -343,7 +343,7 @@ namespace Microsoft.PowerShell.Commands
                 try
                 {
                     // setup the privileges being checked
-                    NativeMethods.PRIVILEGE_SET ps = new()
+                    NativeMethods.PRIVILEGE_SET ps = new NativeMethods.PRIVILEGE_SET()
                     {
                         PrivilegeCount = 1,
                         Control = 1,
@@ -390,7 +390,7 @@ namespace Microsoft.PowerShell.Commands
             try
             {
                 // setup the privileges being requested
-                NativeMethods.TOKEN_PRIVILEGES tp = new()
+                NativeMethods.TOKEN_PRIVILEGES tp = new NativeMethods.TOKEN_PRIVILEGES()
                 {
                     PrivilegeCount = 1,
                     Luid = 0,
@@ -779,8 +779,8 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>A TimeZoneInfo object array containing information about the specified system time zones.</returns>
         internal static TimeZoneInfo[] LookupSystemTimeZoneInfoByName(string name)
         {
-            WildcardPattern namePattern = new(name, WildcardOptions.IgnoreCase);
-            List<TimeZoneInfo> tzi = new();
+            WildcardPattern namePattern = new WildcardPattern(name, WildcardOptions.IgnoreCase);
+            List<TimeZoneInfo> tzi = new List<TimeZoneInfo>();
 
             // get the available system time zones
             ReadOnlyCollection<TimeZoneInfo> zones = TimeZoneInfo.GetSystemTimeZones();

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -97,7 +97,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
             string firstString = PSObject.AsPSObject(first).ToString();
             string secondString = PSObject.AsPSObject(second).ToString();
 
-            return string.Equals(firstString, secondString, StringComparison.CurrentCultureIgnoreCase);
+            return string.Compare(firstString, secondString, StringComparison.CurrentCultureIgnoreCase) == 0;
         }
 
         /// <summary>
@@ -121,3 +121,4 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         private object _currentGroupingKeyPropertyValue = AutomationNull.Value;
     }
 }
+

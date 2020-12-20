@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -15,7 +15,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// This cmdlet waits for job to complete.
     /// </summary>
-    [Cmdlet(VerbsLifecycle.Wait, "Job", DefaultParameterSetName = JobCmdletBase.SessionIdParameterSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096902")]
+    [Cmdlet(VerbsLifecycle.Wait, "Job", DefaultParameterSetName = JobCmdletBase.SessionIdParameterSet, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113422")]
     [OutputType(typeof(Job))]
     public class WaitJobCommand : JobCmdletBase, IDisposable
     {
@@ -105,7 +105,10 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // Invoke action outside lock.
-            endProcessingAction?.Invoke();
+            if (endProcessingAction != null)
+            {
+                endProcessingAction();
+            }
         }
 
         private void CleanUpEndProcessing()
@@ -244,7 +247,7 @@ namespace Microsoft.PowerShell.Commands
         {
             lock (_jobTrackingLock)
             {
-                return _jobsToWaitFor.Find(j => j.JobStateInfo.State == JobState.Blocked);
+                return _jobsToWaitFor.FirstOrDefault(j => j.JobStateInfo.State == JobState.Blocked);
             }
         }
 

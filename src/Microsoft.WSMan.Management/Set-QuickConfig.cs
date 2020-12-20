@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -29,7 +29,7 @@ namespace Microsoft.WSMan.Management
     /// transport is http
     /// 4. Enable firewall exception for WS-Management traffic.
     /// </summary>
-    [Cmdlet(VerbsCommon.Set, "WSManQuickConfig", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097112")]
+    [Cmdlet(VerbsCommon.Set, "WSManQuickConfig", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=141463")]
     public class SetWSManQuickConfigCommand : PSCmdlet, IDisposable
     {
         /// <summary>
@@ -233,7 +233,7 @@ namespace Microsoft.WSMan.Management
                     xpathResult = "/cfg:EnableRemoting_OUTPUT/cfg:Results";
                 }
 
-                if (finalxml.SelectSingleNode(xpathStatus, nsmgr).InnerText.Equals("succeeded"))
+                if (finalxml.SelectSingleNode(xpathStatus, nsmgr).InnerText.ToString().Equals("succeeded"))
                 {
                     if (serviceonly)
                     {

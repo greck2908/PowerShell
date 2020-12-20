@@ -1,7 +1,9 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -74,3 +76,4 @@ namespace Microsoft.PowerShell.Commands
         #endregion protected members
     }
 }
+

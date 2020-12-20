@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -30,7 +30,7 @@ namespace System.Management.Automation
         {
             if (variable == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(variable));
+                throw PSTraceSource.NewArgumentNullException("variable");
             }
 
             _variable = variable;
@@ -154,7 +154,8 @@ namespace System.Management.Automation
         /// The variable whose value needs to be verified anytime
         /// the attributes change.
         /// </summary>
-        private readonly PSVariable _variable;
+        private PSVariable _variable;
         #endregion private data
     }
 }
+

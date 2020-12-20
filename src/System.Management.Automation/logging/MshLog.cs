@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Concurrent;
@@ -101,7 +101,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                throw PSTraceSource.NewArgumentNullException("executionContext");
             }
 
             string shellId = executionContext.ShellID;
@@ -205,13 +205,13 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
             if (exception == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(exception));
+                PSTraceSource.NewArgumentNullException("exception");
                 return;
             }
 
@@ -320,13 +320,13 @@ namespace System.Management.Automation
         {
             if (logContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(logContext));
+                PSTraceSource.NewArgumentNullException("logContext");
                 return;
             }
 
             if (exception == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(exception));
+                PSTraceSource.NewArgumentNullException("exception");
                 return;
             }
 
@@ -359,7 +359,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
@@ -407,13 +407,13 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
             if (exception == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(exception));
+                PSTraceSource.NewArgumentNullException("exception");
                 return;
             }
 
@@ -448,13 +448,13 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
             if (invocationInfo == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(invocationInfo));
+                PSTraceSource.NewArgumentNullException("invocationInfo");
                 return;
             }
 
@@ -469,8 +469,7 @@ namespace System.Management.Automation
                 if (NeedToLogCommandLifecycleEvent(provider, executionContext))
                 {
                     provider.LogCommandLifecycleEvent(
-                        () => logContext ??= GetLogContext(executionContext, invocationInfo),
-                        commandState);
+                        () => logContext ?? (logContext = GetLogContext(executionContext, invocationInfo)), commandState);
                 }
             }
         }
@@ -491,7 +490,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
@@ -532,7 +531,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
@@ -563,7 +562,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
@@ -599,13 +598,13 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
             if (exception == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(exception));
+                PSTraceSource.NewArgumentNullException("exception");
                 return;
             }
 
@@ -640,7 +639,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
@@ -676,7 +675,7 @@ namespace System.Management.Automation
         {
             if (executionContext == null)
             {
-                PSTraceSource.NewArgumentNullException(nameof(executionContext));
+                PSTraceSource.NewArgumentNullException("executionContext");
                 return;
             }
 
@@ -1086,7 +1085,7 @@ namespace System.Management.Automation
         /// Informational.
         /// </summary>
         Informational
-    }
+    };
 
     /// <summary>
     /// Enum for command states.
@@ -1104,7 +1103,7 @@ namespace System.Management.Automation
         /// <summary>
         /// </summary>
         Terminated = 2
-    }
+    };
 
     /// <summary>
     /// Enum for provider states.
@@ -1118,7 +1117,7 @@ namespace System.Management.Automation
         /// <summary>
         /// </summary>
         Stopped = 1,
-    }
+    };
 
     #endregion
 }

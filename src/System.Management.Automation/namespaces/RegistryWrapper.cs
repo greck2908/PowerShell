@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 /*
@@ -20,35 +20,21 @@ namespace Microsoft.PowerShell.Commands
     internal interface IRegistryWrapper
     {
         void SetValue(string name, object value);
-
         void SetValue(string name, object value, RegistryValueKind valueKind);
-
         string[] GetValueNames();
-
         void DeleteValue(string name);
-
         string[] GetSubKeyNames();
-
         IRegistryWrapper CreateSubKey(string subkey);
-
         IRegistryWrapper OpenSubKey(string name, bool writable);
-
         void DeleteSubKeyTree(string subkey);
-
         object GetValue(string name);
-
         object GetValue(string name, object defaultValue, RegistryValueOptions options);
-
         RegistryValueKind GetValueKind(string name);
-
         object RegistryKey { get; }
 
         void SetAccessControl(ObjectSecurity securityDescriptor);
-
         ObjectSecurity GetAccessControl(AccessControlSections includeSections);
-
         void Close();
-
         string Name { get; }
 
         int SubKeyCount { get; }
@@ -126,7 +112,7 @@ namespace Microsoft.PowerShell.Commands
 
     internal class RegistryWrapper : IRegistryWrapper
     {
-        private readonly RegistryKey _regKey;
+        private RegistryKey _regKey;
 
         internal RegistryWrapper(RegistryKey regKey)
         {
@@ -258,8 +244,8 @@ namespace Microsoft.PowerShell.Commands
 
     internal class TransactedRegistryWrapper : IRegistryWrapper
     {
-        private readonly TransactedRegistryKey _txRegKey;
-        private readonly CmdletProvider _provider;
+        private TransactedRegistryKey _txRegKey;
+        private CmdletProvider _provider;
 
         internal TransactedRegistryWrapper(TransactedRegistryKey txRegKey, CmdletProvider provider)
         {

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Host;
@@ -18,27 +18,27 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Transport manager.
         /// </summary>
-        private readonly BaseClientTransportManager _transportManager;
+        private BaseClientTransportManager _transportManager;
 
         /// <summary>
         /// Client host.
         /// </summary>
-        private readonly PSHost _clientHost;
+        private PSHost _clientHost;
 
         /// <summary>
         /// Client runspace pool id.
         /// </summary>
-        private readonly Guid _clientRunspacePoolId;
+        private Guid _clientRunspacePoolId;
 
         /// <summary>
         /// Client power shell id.
         /// </summary>
-        private readonly Guid _clientPowerShellId;
+        private Guid _clientPowerShellId;
 
         /// <summary>
         /// Remote host call.
         /// </summary>
-        private readonly RemoteHostCall _remoteHostCall;
+        private RemoteHostCall _remoteHostCall;
 
         /// <summary>
         /// Remote host call.
@@ -98,7 +98,8 @@ namespace System.Management.Automation.Remoting
                 if (hostPrivateData != null)
                 {
                     PSNoteProperty allowSetShouldExit = hostPrivateData.Properties["AllowSetShouldExitFromRemote"] as PSNoteProperty;
-                    hostAllowSetShouldExit = allowSetShouldExit != null && allowSetShouldExit.Value is bool && (bool)allowSetShouldExit.Value;
+                    hostAllowSetShouldExit = (allowSetShouldExit != null && allowSetShouldExit.Value is bool) ?
+                        (bool)allowSetShouldExit.Value : false;
                 }
             }
 
@@ -131,9 +132,10 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Is runspace pushed.
         /// </summary>
-        private static bool IsRunspacePushed(PSHost host)
+        private bool IsRunspacePushed(PSHost host)
         {
-            if (!(host is IHostSupportsInteractiveSession host2)) { return false; }
+            IHostSupportsInteractiveSession host2 = host as IHostSupportsInteractiveSession;
+            if (host2 == null) { return false; }
 
             // IsRunspacePushed can throw (not implemented exception)
             try
@@ -155,7 +157,7 @@ namespace System.Management.Automation.Remoting
             // If error-stream is null or we are in pushed-runspace - then write error directly to console.
             if (errorStream == null || IsRunspacePushed(_clientHost))
             {
-                writeErrorAction = (ErrorRecord errorRecord) =>
+                writeErrorAction = delegate (ErrorRecord errorRecord)
                 {
                     try
                     {
@@ -174,7 +176,10 @@ namespace System.Management.Automation.Remoting
             // Otherwise write it to error-stream.
             else
             {
-                writeErrorAction = (ErrorRecord errorRecord) => errorStream.Write(errorRecord);
+                writeErrorAction = delegate (ErrorRecord errorRecord)
+                {
+                    errorStream.Write(errorRecord);
+                };
             }
 
             this.Execute(writeErrorAction);
@@ -233,7 +238,7 @@ namespace System.Management.Automation.Remoting
                 // Create an error record and write it to the stream.
                 ErrorRecord errorRecord = new ErrorRecord(
                     exception,
-                    nameof(PSRemotingErrorId.RemoteHostCallFailed),
+                    PSRemotingErrorId.RemoteHostCallFailed.ToString(),
                     ErrorCategory.InvalidArgument,
                     _remoteHostCall.MethodName);
                 writeErrorAction(errorRecord);

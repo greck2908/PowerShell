@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -13,25 +13,25 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or private sets the Id property.
         /// </summary>
-        public string Id { get; }
+        public string Id { get; private set; }
 
         /// <summary>
         /// Gets or private sets the Method property.
         /// </summary>
-        public string Method { get; }
+        public string Method { get; private set; }
 
         /// <summary>
         /// Gets or private sets the Action property.
         /// </summary>
-        public string Action { get; }
+        public string Action { get; private set; }
 
         /// <summary>
         /// Gets or private sets the Fields property.
         /// </summary>
-        public Dictionary<string, string> Fields { get; }
+        public Dictionary<string, string> Fields { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FormObject"/> class.
+        /// Constructor for FormObject.
         /// </summary>
         /// <param name="id"></param>
         /// <param name="method"></param>

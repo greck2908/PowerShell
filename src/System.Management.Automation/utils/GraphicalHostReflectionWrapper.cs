@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 namespace System.Management.Automation.Internal
@@ -128,12 +128,12 @@ namespace System.Management.Automation.Internal
             ConstructorInfo constructor = returnValue._graphicalHostHelperType.GetConstructor(
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
-                Array.Empty<Type>(),
+                new Type[] { },
                 null);
 
             if (constructor != null)
             {
-                returnValue._graphicalHostHelperObject = constructor.Invoke(Array.Empty<object>());
+                returnValue._graphicalHostHelperObject = constructor.Invoke(new object[] { });
                 Diagnostics.Assert(returnValue._graphicalHostHelperObject != null, "the constructor does not throw anything");
             }
 
@@ -187,7 +187,7 @@ namespace System.Management.Automation.Internal
             Diagnostics.Assert(_graphicalHostHelperObject != null, "there should be a constructor in order to get an instance property value");
             PropertyInfo property = _graphicalHostHelperType.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Instance);
             Diagnostics.Assert(property != null, "property " + propertyName + " exists in graphicalHostHelperType is verified by caller");
-            return property.GetValue(_graphicalHostHelperObject, Array.Empty<object>());
+            return property.GetValue(_graphicalHostHelperObject, new object[] { });
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace System.Management.Automation.Internal
         {
             PropertyInfo property = _graphicalHostHelperType.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static);
             Diagnostics.Assert(property != null, "property " + propertyName + " exists in graphicalHostHelperType is verified by caller");
-            return property.GetValue(null, Array.Empty<object>());
+            return property.GetValue(null, new object[] { });
         }
 
         /// <summary>

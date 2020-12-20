@@ -1,8 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.Management.Automation;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -10,7 +12,7 @@ namespace Microsoft.PowerShell.Commands
     /// A command to remove a property from an item.
     /// </summary>
     [Cmdlet(VerbsCommon.Remove, "ItemProperty", DefaultParameterSetName = "Path", SupportsShouldProcess = true, SupportsTransactions = true,
-        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097013")]
+        HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113374")]
     public class RemoveItemPropertyCommand : ItemPropertyCommandBase
     {
         #region Parameters

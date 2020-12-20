@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Parameter Binding Tests" -Tags "CI" {
     It "Should throw a parameter binding exception when two parameters have the same position" {
@@ -131,7 +131,7 @@ Describe "Parameter Binding Tests" -Tags "CI" {
             Should -Throw -ErrorId "ParameterArgumentTransformationError,test-singleintparameter" -PassThru
         $e.CategoryInfo | Should -Match "ParameterBindingArgumentTransformationException"
         $e.Exception.Message | Should -Match "Input string was not in a correct format"
-        $e.Exception.Message | Should -Match "Parameter1"
+        $e.Exception.Message | should -Match "Parameter1"
     }
 
     It "Verify that WhatIf is available when SupportShouldProcess is true" {
@@ -241,8 +241,8 @@ Describe "Parameter Binding Tests" -Tags "CI" {
 
         $e = { test-nameconflicts6 -Parameter2 1 } | Should -Throw -ErrorId "ParameterNameConflictsWithAlias" -PassThru
         $e.CategoryInfo | Should -Match "MetadataException"
-        $e.Exception.Message | Should -Match "Parameter1"
-        $e.Exception.Message | Should -Match "Parameter2"
+        $e.Exception.Message | should -Match "Parameter1"
+        $e.Exception.Message | should -Match "Parameter2"
     }
 
     It "PipelineVariable shouldn't cause a NullRef exception when 'DynamicParam' block is present" {
@@ -254,62 +254,6 @@ Describe "Parameter Binding Tests" -Tags "CI" {
         }
 
         DynamicParamTest -PipelineVariable bar | ForEach-Object { $bar } | Should -Be "hi"
-    }
-
-    Context "PipelineVariable Behaviour" {
-
-        BeforeAll {
-            function Write-PipelineVariable {
-                [CmdletBinding()]
-                [OutputType([int])]
-                param(
-                    [Parameter(ValueFromPipeline)]
-                    $a
-                )
-                begin { 1 }
-                process { 2 }
-                end { 3 }
-            }
-
-            $testScripts = @(
-                @{
-                    CmdletType = 'Script Cmdlet'
-                    Script     = {
-                        1..3 |
-                            Write-PipelineVariable -PipelineVariable pipe |
-                            Select-Object -Property @(
-                                @{ Name = "PipelineVariableSet"; Expression = { $null -ne $pipe ? $true : $false } }
-                                @{ Name = "PipelineVariable"; Expression = { $pipe } }
-                            )
-                    }
-                }
-                @{
-                    CmdletType = 'Compiled Cmdlet'
-                    Script     = {
-                        1..3 |
-                            Write-PipelineVariable |
-                            ForEach-Object { $_ } -PipelineVariable pipe |
-                            Select-Object -Property @(
-                                @{ Name = "PipelineVariableSet"; Expression = { $null -ne $pipe ? $true : $false } }
-                                @{ Name = "PipelineVariable"; Expression = { $pipe } }
-                            )
-                    }
-                }
-            )
-        }
-
-        AfterAll {
-            Remove-Item -Path 'function:Write-PipelineVariable'
-        }
-
-        It 'should set the pipeline variable every time for a <CmdletType>' -TestCases $testScripts {
-            param($Script, $CmdletType)
-
-            $result = & $Script
-            $result.Count | Should -Be 5
-            $result.PipelineVariableSet | Should -Not -Contain $false
-            $result.PipelineVariable | Should -Be 1, 2, 2, 2, 3
-        }
     }
 
     Context "Use automatic variables as default value for parameters" {
@@ -333,7 +277,7 @@ Describe "Parameter Binding Tests" -Tags "CI" {
             $test2File = Join-Path -Path $tempDir -ChildPath "test2.ps1"
 
             $expected = "[$tempDir]"
-            $pwsh = "$PSHOME\pwsh"
+            $psPath = "$PSHOME\pwsh"
 
             $null = New-Item -Path $tempDir -ItemType Directory -Force
             Set-Content -Path $test1File -Value $test1 -Force
@@ -353,10 +297,10 @@ Describe "Parameter Binding Tests" -Tags "CI" {
         }
 
         It "Test 'powershell -File' should evaluate '`$PSScriptRoot' for parameter default value" {
-            $result = & $pwsh -NoProfile -File $test1File
+            $result = & $psPath -NoProfile -File $test1File
             $result | Should -Be $expected
 
-            $result = & $pwsh -NoProfile -File $test2File
+            $result = & $psPath -NoProfile -File $test2File
             $result | Should -Be $expected
         }
     }

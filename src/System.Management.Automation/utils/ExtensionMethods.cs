@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -12,12 +12,18 @@ namespace System.Management.Automation
     {
         public static void SafeInvoke(this EventHandler eventHandler, object sender, EventArgs eventArgs)
         {
-            eventHandler?.Invoke(sender, eventArgs);
+            if (eventHandler != null)
+            {
+                eventHandler(sender, eventArgs);
+            }
         }
 
         public static void SafeInvoke<T>(this EventHandler<T> eventHandler, object sender, T eventArgs) where T : EventArgs
         {
-            eventHandler?.Invoke(sender, eventArgs);
+            if (eventHandler != null)
+            {
+                eventHandler(sender, eventArgs);
+            }
         }
     }
 
@@ -43,10 +49,10 @@ namespace System.Management.Automation
                 int hash = 41; // 41 is a random prime number
                 foreach (T x in xs)
                 {
-                    hash *= 59; // 59 is a random prime number
+                    hash = hash * 59; // 59 is a random prime number
                     if (x != null)
                     {
-                        hash += x.GetHashCode();
+                        hash = hash + x.GetHashCode();
                     }
                 }
 
@@ -62,7 +68,7 @@ namespace System.Management.Automation
     /// * If you want to add an extension method that will be used only by CoreCLR powershell, please add it to the partial
     ///   'PSTypeExtensions' class in 'CorePsExtensions.cs'.
     /// </summary>
-    internal static class PSTypeExtensions
+    internal static partial class PSTypeExtensions
     {
         /// <summary>
         /// Check does the type have an instance default constructor with visibility that allows calling it from subclass.

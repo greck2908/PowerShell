@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -38,7 +38,7 @@ namespace System.Management.Automation
         {
             if (sessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sessionState));
+                throw PSTraceSource.NewArgumentNullException("sessionState");
             }
 
             _sessionState = sessionState;
@@ -387,8 +387,9 @@ namespace System.Management.Automation
         #region private data
 
         // A private reference to the internal session state of the engine.
-        private readonly SessionStateInternal _sessionState;
+        private SessionStateInternal _sessionState;
 
         #endregion private data
     }
 }
+

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -314,7 +314,7 @@ namespace System.Management.Automation
 
             for (int i = 0; i < arguments.Length; i++)
             {
-                parameters[i] = new ParameterInformation(typeof(object), false, null, false);
+                parameters[i] = new ParameterInformation(typeof(System.Object), false, null, false);
             }
 
             MethodInformation[] methodInformation = new MethodInformation[1];

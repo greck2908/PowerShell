@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -9,6 +9,7 @@ using System.Diagnostics.Eventing.Reader;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
+using System.Reflection;
 using System.Resources;
 using System.Xml;
 
@@ -18,7 +19,7 @@ namespace Microsoft.PowerShell.Commands
     /// Class that implements the New-WinEvent cmdlet.
     /// This cmdlet writes a new Etw event using the provider specified in parameter.
     ///
-    [Cmdlet(VerbsCommon.New, "WinEvent", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096808")]
+    [Cmdlet(VerbsCommon.New, "WinEvent", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=217469")]
     public sealed class NewWinEventCommand : PSCmdlet
     {
         private ProviderMetadata _providerMetadata;
@@ -26,8 +27,7 @@ namespace Microsoft.PowerShell.Commands
 
         private const string TemplateTag = "template";
         private const string DataTag = "data";
-
-        private readonly ResourceManager _resourceMgr = Microsoft.PowerShell.Commands.Diagnostics.Common.CommonUtilities.GetResourceManager();
+        private ResourceManager _resourceMgr = Microsoft.PowerShell.Commands.Diagnostics.Common.CommonUtilities.GetResourceManager();
 
         /// <summary>
         /// ProviderName.
@@ -36,7 +36,20 @@ namespace Microsoft.PowerShell.Commands
             Position = 0,
             Mandatory = true,
             ParameterSetName = ParameterAttribute.AllParameterSets)]
-        public string ProviderName { get; set; }
+        public string ProviderName
+        {
+            get
+            {
+                return _providerName;
+            }
+
+            set
+            {
+                _providerName = value;
+            }
+        }
+
+        private string _providerName;
 
         /// <summary>
         /// Id (EventId defined in manifest file)
@@ -96,7 +109,20 @@ namespace Microsoft.PowerShell.Commands
         SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays",
             Target = "Microsoft.PowerShell.Commands",
             Justification = "A string[] is required here because that is the type Powershell supports")]
-        public object[] Payload { get; set; }
+        public object[] Payload
+        {
+            get
+            {
+                return _payload;
+            }
+
+            set
+            {
+                _payload = value;
+            }
+        }
+
+        private object[] _payload;
 
         /// <summary>
         /// BeginProcessing.
@@ -111,16 +137,16 @@ namespace Microsoft.PowerShell.Commands
 
         private void LoadProvider()
         {
-            if (string.IsNullOrEmpty(ProviderName))
+            if (string.IsNullOrEmpty(_providerName))
             {
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("ProviderNotSpecified")), "ProviderName");
             }
 
-            using (EventLogSession session = new())
+            using (EventLogSession session = new EventLogSession())
             {
                 foreach (string providerName in session.GetProviderNames())
                 {
-                    if (string.Equals(providerName, ProviderName, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(providerName, _providerName, StringComparison.OrdinalIgnoreCase))
                     {
                         try
                         {
@@ -139,7 +165,7 @@ namespace Microsoft.PowerShell.Commands
 
             if (_providerMetadata == null)
             {
-                string msg = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("NoProviderFound"), ProviderName);
+                string msg = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("NoProviderFound"), _providerName);
                 throw new ArgumentException(msg);
             }
         }
@@ -148,7 +174,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (_idSpecified)
             {
-                List<EventMetadata> matchedEvents = new();
+                List<EventMetadata> matchedEvents = new List<EventMetadata>();
                 foreach (EventMetadata emd in _providerMetadata.Events)
                 {
                     if (emd.Id == _id)
@@ -162,7 +188,7 @@ namespace Microsoft.PowerShell.Commands
                     string msg = string.Format(CultureInfo.InvariantCulture,
                         _resourceMgr.GetString("IncorrectEventId"),
                         _id,
-                        ProviderName);
+                        _providerName);
                     throw new EventWriteException(msg);
                 }
 
@@ -190,7 +216,7 @@ namespace Microsoft.PowerShell.Commands
                                 _resourceMgr.GetString("IncorrectEventVersion"),
                                 _version,
                                 _id,
-                                ProviderName);
+                                _providerName);
 
                             throw new EventWriteException(msg);
                         }
@@ -200,7 +226,7 @@ namespace Microsoft.PowerShell.Commands
                         string msg = string.Format(CultureInfo.InvariantCulture,
                             _resourceMgr.GetString("VersionNotSpecified"),
                             _id,
-                            ProviderName);
+                            _providerName);
 
                         throw new EventWriteException(msg);
                     }
@@ -219,7 +245,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (emd.Template != null)
             {
-                XmlReaderSettings readerSettings = new()
+                XmlReaderSettings readerSettings = new XmlReaderSettings
                 {
                     CheckCharacters = false,
                     IgnoreComments = true,
@@ -243,8 +269,8 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
 
-                if ((Payload == null && definedParameterCount != 0)
-                    || ((Payload != null) && Payload.Length != definedParameterCount))
+                if ((_payload == null && definedParameterCount != 0)
+                    || ((_payload != null) && _payload.Length != definedParameterCount))
                 {
                     string warning = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("PayloadMismatch"), _id, emd.Template);
                     WriteWarning(warning);
@@ -287,25 +313,25 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            using (EventProvider provider = new(_providerMetadata.Id))
+            using (EventProvider provider = new EventProvider(_providerMetadata.Id))
             {
                 EventDescriptor ed = _eventDescriptor.Value;
 
-                if (Payload != null && Payload.Length > 0)
+                if (_payload != null && _payload.Length > 0)
                 {
-                    for (int i = 0; i < Payload.Length; i++)
+                    for (int i = 0; i < _payload.Length; i++)
                     {
-                        if (Payload[i] == null)
+                        if (_payload[i] == null)
                         {
-                            Payload[i] = string.Empty;
+                            _payload[i] = string.Empty;
                         }
                     }
 
-                    provider.WriteEvent(in ed, Payload);
+                    provider.WriteEvent(ref ed, _payload);
                 }
                 else
                 {
-                    provider.WriteEvent(in ed);
+                    provider.WriteEvent(ref ed);
                 }
             }
 

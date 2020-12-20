@@ -1,9 +1,9 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "Get-Event" -Tags "CI" {
 
     BeforeEach {
-	( New-Event -SourceIdentifier PesterTestEvent -Sender Windows.timer -MessageData "PesterTestMessage" )
+	( New-Event -SourceIdentifier PesterTestEvent -sender Windows.timer -messagedata "PesterTestMessage" )
     }
 
     AfterEach {

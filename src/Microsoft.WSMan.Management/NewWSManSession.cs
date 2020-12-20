@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -25,7 +25,8 @@ namespace Microsoft.WSMan.Management
     /// Invoke-WSManAction
     /// Connect-WSMan.
     /// </summary>
-    [Cmdlet(VerbsCommon.New, "WSManSessionOption", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=2096845")]
+
+    [Cmdlet(VerbsCommon.New, "WSManSessionOption", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=141449")]
     public class NewWSManSessionOptionCommand : PSCmdlet
     {
         /// <summary>

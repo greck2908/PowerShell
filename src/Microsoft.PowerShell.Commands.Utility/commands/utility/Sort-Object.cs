@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     [Cmdlet("Sort",
             "Object",
-            HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097038",
+            HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113403",
             DefaultParameterSetName = "Default",
             RemotingCapability = RemotingCapability.None)]
     public sealed class SortObjectCommand : OrderObjectBase
@@ -53,14 +53,14 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ParameterSetName = "Top", Mandatory = true)]
         [ValidateRange(1, int.MaxValue)]
-        public int Top { get; set; }
+        public int Top { get; set; } = 0;
 
         /// <summary>
         /// Gets or sets the number of items to return in a Bottom N sort.
         /// </summary>
         [Parameter(ParameterSetName = "Bottom", Mandatory = true)]
         [ValidateRange(1, int.MaxValue)]
-        public int Bottom { get; set; }
+        public int Bottom { get; set; } = 0;
 
         /// <summary>
         /// Moves unique entries to the front of the list.
@@ -239,7 +239,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void EndProcessing()
         {
-            OrderByProperty orderByProperty = new(
+            OrderByProperty orderByProperty = new OrderByProperty(
                 this, InputObjects, Property, !Descending, ConvertedCulture, CaseSensitive);
 
             var dataToProcess = orderByProperty.OrderMatrix;

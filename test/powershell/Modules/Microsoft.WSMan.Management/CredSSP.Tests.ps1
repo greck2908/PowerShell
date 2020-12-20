@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Describe "CredSSP cmdlet tests" -Tags 'Feature','RequireAdminOnWindows' {
 
@@ -49,7 +49,7 @@ Describe "CredSSP cmdlet tests" -Tags 'Feature','RequireAdminOnWindows' {
     ) {
         param ($params)
         $c = Enable-WSManCredSSP @params -Force
-        $c.CredSSP | Should -BeTrue
+        $c.CredSSP | Should -Be $true
 
         $c = Get-WSManCredSSP
         if ($params.Role -eq "Client")
@@ -87,7 +87,7 @@ Describe "CredSSP cmdlet tests" -Tags 'Feature','RequireAdminOnWindows' {
         $credssp.DelegateComputer = "foo", "bar"
         $credssp.DelegateComputer -join ',' | Should -Be "foo,bar"
         $credssp.Force = $true
-        $credssp.Force | Should -BeTrue
+        $credssp.Force | Should -Be $true
 
         $credssp = [Microsoft.WSMan.Management.DisableWSManCredSSPCommand]::new()
         $credssp.Role = "Server"
@@ -105,6 +105,6 @@ Describe "CredSSP cmdlet error cases tests" -Tags 'Feature' {
         param ($cmdline, $cmd)
 
         $scriptBlock = [scriptblock]::Create($cmdline)
-        $scriptBlock | Should -Throw -ErrorId "System.InvalidOperationException,Microsoft.WSMan.Management.$cmd"
+        $scriptBlock | should -Throw -ErrorId "System.InvalidOperationException,Microsoft.WSMan.Management.$cmd"
     }
 }

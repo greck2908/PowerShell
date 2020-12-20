@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
-#nullable enable
 
 using Dbg = System.Management.Automation.Diagnostics;
 
@@ -64,14 +62,15 @@ namespace System.Management.Automation
         /// <returns>
         /// An instance of the Name class.
         /// </returns>
-        internal static PSSnapinQualifiedName? GetInstance(string? name)
+        internal static PSSnapinQualifiedName GetInstance(string name)
         {
             if (name == null)
                 return null;
+            PSSnapinQualifiedName result = null;
             string[] splitName = name.Split(Utils.Separators.Backslash);
             if (splitName.Length == 0 || splitName.Length > 2)
                 return null;
-            var result = new PSSnapinQualifiedName(splitName);
+            result = new PSSnapinQualifiedName(splitName);
             // If the shortname is empty, then return null...
             if (string.IsNullOrEmpty(result.ShortName))
             {
@@ -92,12 +91,12 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly string _fullName;
+        private string _fullName;
 
         /// <summary>
         /// Gets the command's PSSnapin name.
         /// </summary>
-        internal string? PSSnapInName
+        internal string PSSnapInName
         {
             get
             {
@@ -105,7 +104,7 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly string? _psSnapinName;
+        private string _psSnapinName;
 
         /// <summary>
         /// Gets the command's short name.
@@ -118,7 +117,7 @@ namespace System.Management.Automation
             }
         }
 
-        private readonly string _shortName;
+        private string _shortName;
 
         /// <summary>
         /// The full name.
@@ -132,3 +131,4 @@ namespace System.Management.Automation
         }
     }
 }
+

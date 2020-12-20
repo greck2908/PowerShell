@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Function Stop-HTTPListener {
     <#
@@ -69,8 +69,8 @@ Function Start-HTTPListener {
                     {
                         if ($segment -match "\??(?<name>\w*)(=(?<value>.*?))?$")
                         {
-                            $name = $Matches["name"]
-                            $value = $Matches["value"]
+                            $name = $matches["name"]
+                            $value = $matches["value"]
                             if ($null -ne $value)
                             {
                                 $value = [System.Web.HttpUtility]::UrlDecode($value)
@@ -173,7 +173,7 @@ Function Start-HTTPListener {
 
                             Example: test=redirectex&type=Moved&multiredirect=true
 
-                            See also https://docs.microsoft.com/dotnet/api/system.net.httpstatuscode
+                            See also https://docs.microsoft.com/dotnet/api/system.net.httpstatuscode?view=netcore-2.1
                         #>
                         "redirect"
                         {
@@ -319,7 +319,7 @@ Function Start-HTTPListener {
             }
             catch
             {
-                $errormsg = $_ | ConvertTo-Json
+                $errormsg = $_ | convertto-json
                 Write-Error $errormsg
             }
             finally

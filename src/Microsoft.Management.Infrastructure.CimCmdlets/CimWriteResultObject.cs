@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -15,11 +15,11 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal sealed class CimWriteResultObject : CimBaseAction
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimWriteResultObject"/> class.
+        /// Constructor.
         /// </summary>
         public CimWriteResultObject(object result, XOperationContextBase theContext)
         {
-            this.Result = result;
+            this.result = result;
             this.Context = theContext;
         }
 
@@ -32,14 +32,23 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public override void Execute(CmdletOperationBase cmdlet)
         {
             ValidationHelper.ValidateNoNullArgument(cmdlet, "cmdlet");
-            cmdlet.WriteObject(Result, this.Context);
+            cmdlet.WriteObject(result, this.Context);
         }
 
         #region members
         /// <summary>
         /// Result object.
         /// </summary>
-        internal object Result { get; }
+        internal object Result
+        {
+            get
+            {
+                return result;
+            }
+        }
+
+        private object result;
         #endregion
     }
+
 }

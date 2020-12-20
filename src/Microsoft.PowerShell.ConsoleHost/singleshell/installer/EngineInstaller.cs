@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -54,16 +54,16 @@ namespace Microsoft.PowerShell
             }
         }
 
-        private Dictionary<string, object> _regValues = null;
+        private Dictionary<String, object> _regValues = null;
         /// <summary>
         /// </summary>
-        internal sealed override Dictionary<string, object> RegValues
+        internal sealed override Dictionary<String, object> RegValues
         {
             get
             {
                 if (_regValues == null)
                 {
-                    _regValues = new Dictionary<string, object>();
+                    _regValues = new Dictionary<String, object>();
                     _regValues[RegistryStrings.MonadEngine_MonadVersion] = EngineVersion;
                     _regValues[RegistryStrings.MonadEngine_ApplicationBase] = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                     _regValues[RegistryStrings.MonadEngine_ConsoleHostAssemblyName] = Assembly.GetExecutingAssembly().FullName;

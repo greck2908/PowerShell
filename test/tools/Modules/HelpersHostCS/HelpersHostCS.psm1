@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 $definition = @'
 using System;
@@ -310,7 +310,7 @@ function New-TestHost
     }
 
     if ( ! ("TestHost.TestHost" -as "type" )) {
-       $t = Add-Type -pass $definition -ref $references
+       $t = add-Type -pass $definition -ref $references
     }
 
     [TestHost.TestHost]::New()

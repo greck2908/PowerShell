@@ -1,9 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 
 namespace System.Management.Automation.Language
@@ -13,235 +14,174 @@ namespace System.Management.Automation.Language
     public interface ICustomAstVisitor
     {
         /// <summary/>
-        object DefaultVisit(Ast ast) => null;
-
+        object VisitErrorStatement(ErrorStatementAst errorStatementAst);
         /// <summary/>
-        object VisitErrorStatement(ErrorStatementAst errorStatementAst) => DefaultVisit(errorStatementAst);
-
-        /// <summary/>
-        object VisitErrorExpression(ErrorExpressionAst errorExpressionAst) => DefaultVisit(errorExpressionAst);
+        object VisitErrorExpression(ErrorExpressionAst errorExpressionAst);
 
         #region Script Blocks
 
         /// <summary/>
-        object VisitScriptBlock(ScriptBlockAst scriptBlockAst) => DefaultVisit(scriptBlockAst);
-
+        object VisitScriptBlock(ScriptBlockAst scriptBlockAst);
         /// <summary/>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Param")]
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "param")]
-        object VisitParamBlock(ParamBlockAst paramBlockAst) => DefaultVisit(paramBlockAst);
-
+        object VisitParamBlock(ParamBlockAst paramBlockAst);
         /// <summary/>
-        object VisitNamedBlock(NamedBlockAst namedBlockAst) => DefaultVisit(namedBlockAst);
-
+        object VisitNamedBlock(NamedBlockAst namedBlockAst);
         /// <summary/>
-        object VisitTypeConstraint(TypeConstraintAst typeConstraintAst) => DefaultVisit(typeConstraintAst);
-
+        object VisitTypeConstraint(TypeConstraintAst typeConstraintAst);
         /// <summary/>
-        object VisitAttribute(AttributeAst attributeAst) => DefaultVisit(attributeAst);
-
+        object VisitAttribute(AttributeAst attributeAst);
         /// <summary/>
-        object VisitNamedAttributeArgument(NamedAttributeArgumentAst namedAttributeArgumentAst) => DefaultVisit(namedAttributeArgumentAst);
-
+        object VisitNamedAttributeArgument(NamedAttributeArgumentAst namedAttributeArgumentAst);
         /// <summary/>
-        object VisitParameter(ParameterAst parameterAst) => DefaultVisit(parameterAst);
+        object VisitParameter(ParameterAst parameterAst);
 
         #endregion Script Blocks
 
         #region Statements
 
         /// <summary/>
-        object VisitFunctionDefinition(FunctionDefinitionAst functionDefinitionAst) => DefaultVisit(functionDefinitionAst);
-
+        object VisitFunctionDefinition(FunctionDefinitionAst functionDefinitionAst);
         /// <summary/>
-        object VisitStatementBlock(StatementBlockAst statementBlockAst) => DefaultVisit(statementBlockAst);
-
+        object VisitStatementBlock(StatementBlockAst statementBlockAst);
         /// <summary/>
-        object VisitIfStatement(IfStatementAst ifStmtAst) => DefaultVisit(ifStmtAst);
-
+        object VisitIfStatement(IfStatementAst ifStmtAst);
         /// <summary/>
-        object VisitTrap(TrapStatementAst trapStatementAst) => DefaultVisit(trapStatementAst);
-
+        object VisitTrap(TrapStatementAst trapStatementAst);
         /// <summary/>
-        object VisitSwitchStatement(SwitchStatementAst switchStatementAst) => DefaultVisit(switchStatementAst);
-
+        object VisitSwitchStatement(SwitchStatementAst switchStatementAst);
         /// <summary/>
-        object VisitDataStatement(DataStatementAst dataStatementAst) => DefaultVisit(dataStatementAst);
-
+        object VisitDataStatement(DataStatementAst dataStatementAst);
         /// <summary/>
-        object VisitForEachStatement(ForEachStatementAst forEachStatementAst) => DefaultVisit(forEachStatementAst);
-
+        object VisitForEachStatement(ForEachStatementAst forEachStatementAst);
         /// <summary/>
-        object VisitDoWhileStatement(DoWhileStatementAst doWhileStatementAst) => DefaultVisit(doWhileStatementAst);
-
+        object VisitDoWhileStatement(DoWhileStatementAst doWhileStatementAst);
         /// <summary/>
-        object VisitForStatement(ForStatementAst forStatementAst) => DefaultVisit(forStatementAst);
-
+        object VisitForStatement(ForStatementAst forStatementAst);
         /// <summary/>
-        object VisitWhileStatement(WhileStatementAst whileStatementAst) => DefaultVisit(whileStatementAst);
-
+        object VisitWhileStatement(WhileStatementAst whileStatementAst);
         /// <summary/>
-        object VisitCatchClause(CatchClauseAst catchClauseAst) => DefaultVisit(catchClauseAst);
-
+        object VisitCatchClause(CatchClauseAst catchClauseAst);
         /// <summary/>
-        object VisitTryStatement(TryStatementAst tryStatementAst) => DefaultVisit(tryStatementAst);
-
+        object VisitTryStatement(TryStatementAst tryStatementAst);
         /// <summary/>
-        object VisitBreakStatement(BreakStatementAst breakStatementAst) => DefaultVisit(breakStatementAst);
-
+        object VisitBreakStatement(BreakStatementAst breakStatementAst);
         /// <summary/>
-        object VisitContinueStatement(ContinueStatementAst continueStatementAst) => DefaultVisit(continueStatementAst);
-
+        object VisitContinueStatement(ContinueStatementAst continueStatementAst);
         /// <summary/>
-        object VisitReturnStatement(ReturnStatementAst returnStatementAst) => DefaultVisit(returnStatementAst);
-
+        object VisitReturnStatement(ReturnStatementAst returnStatementAst);
         /// <summary/>
-        object VisitExitStatement(ExitStatementAst exitStatementAst) => DefaultVisit(exitStatementAst);
-
+        object VisitExitStatement(ExitStatementAst exitStatementAst);
         /// <summary/>
-        object VisitThrowStatement(ThrowStatementAst throwStatementAst) => DefaultVisit(throwStatementAst);
-
+        object VisitThrowStatement(ThrowStatementAst throwStatementAst);
         /// <summary/>
-        object VisitDoUntilStatement(DoUntilStatementAst doUntilStatementAst) => DefaultVisit(doUntilStatementAst);
-
+        object VisitDoUntilStatement(DoUntilStatementAst doUntilStatementAst);
         /// <summary/>
-        object VisitAssignmentStatement(AssignmentStatementAst assignmentStatementAst) => DefaultVisit(assignmentStatementAst);
+        object VisitAssignmentStatement(AssignmentStatementAst assignmentStatementAst);
 
         #endregion Statements
 
         #region Pipelines
 
         /// <summary/>
-        object VisitPipeline(PipelineAst pipelineAst) => DefaultVisit(pipelineAst);
-
+        object VisitPipeline(PipelineAst pipelineAst);
         /// <summary/>
-        object VisitCommand(CommandAst commandAst) => DefaultVisit(commandAst);
-
+        object VisitCommand(CommandAst commandAst);
         /// <summary/>
-        object VisitCommandExpression(CommandExpressionAst commandExpressionAst) => DefaultVisit(commandExpressionAst);
-
+        object VisitCommandExpression(CommandExpressionAst commandExpressionAst);
         /// <summary/>
-        object VisitCommandParameter(CommandParameterAst commandParameterAst) => DefaultVisit(commandParameterAst);
-
+        object VisitCommandParameter(CommandParameterAst commandParameterAst);
         /// <summary/>
-        object VisitFileRedirection(FileRedirectionAst fileRedirectionAst) => DefaultVisit(fileRedirectionAst);
-
+        object VisitFileRedirection(FileRedirectionAst fileRedirectionAst);
         /// <summary/>
-        object VisitMergingRedirection(MergingRedirectionAst mergingRedirectionAst) => DefaultVisit(mergingRedirectionAst);
-
+        object VisitMergingRedirection(MergingRedirectionAst mergingRedirectionAst);
         #endregion Pipelines
 
         #region Expressions
 
         /// <summary/>
-        object VisitBinaryExpression(BinaryExpressionAst binaryExpressionAst) => DefaultVisit(binaryExpressionAst);
-
+        object VisitBinaryExpression(BinaryExpressionAst binaryExpressionAst);
         /// <summary/>
-        object VisitUnaryExpression(UnaryExpressionAst unaryExpressionAst) => DefaultVisit(unaryExpressionAst);
-
+        object VisitUnaryExpression(UnaryExpressionAst unaryExpressionAst);
         /// <summary/>
-        object VisitConvertExpression(ConvertExpressionAst convertExpressionAst) => DefaultVisit(convertExpressionAst);
-
+        object VisitConvertExpression(ConvertExpressionAst convertExpressionAst);
         /// <summary/>
-        object VisitConstantExpression(ConstantExpressionAst constantExpressionAst) => DefaultVisit(constantExpressionAst);
-
+        object VisitConstantExpression(ConstantExpressionAst constantExpressionAst);
         /// <summary/>
-        object VisitStringConstantExpression(StringConstantExpressionAst stringConstantExpressionAst) => DefaultVisit(stringConstantExpressionAst);
-
+        object VisitStringConstantExpression(StringConstantExpressionAst stringConstantExpressionAst);
         /// <summary/>
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "SubExpression")]
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "subExpression")]
-        object VisitSubExpression(SubExpressionAst subExpressionAst) => DefaultVisit(subExpressionAst);
-
+        object VisitSubExpression(SubExpressionAst subExpressionAst);
         /// <summary/>
-        object VisitUsingExpression(UsingExpressionAst usingExpressionAst) => DefaultVisit(usingExpressionAst);
-
+        object VisitUsingExpression(UsingExpressionAst usingExpressionAst);
         /// <summary/>
-        object VisitVariableExpression(VariableExpressionAst variableExpressionAst) => DefaultVisit(variableExpressionAst);
-
+        object VisitVariableExpression(VariableExpressionAst variableExpressionAst);
         /// <summary/>
-        object VisitTypeExpression(TypeExpressionAst typeExpressionAst) => DefaultVisit(typeExpressionAst);
-
+        object VisitTypeExpression(TypeExpressionAst typeExpressionAst);
         /// <summary/>
-        object VisitMemberExpression(MemberExpressionAst memberExpressionAst) => DefaultVisit(memberExpressionAst);
-
+        object VisitMemberExpression(MemberExpressionAst memberExpressionAst);
         /// <summary/>
-        object VisitInvokeMemberExpression(InvokeMemberExpressionAst invokeMemberExpressionAst) => DefaultVisit(invokeMemberExpressionAst);
-
+        object VisitInvokeMemberExpression(InvokeMemberExpressionAst invokeMemberExpressionAst);
         /// <summary/>
-        object VisitArrayExpression(ArrayExpressionAst arrayExpressionAst) => DefaultVisit(arrayExpressionAst);
-
+        object VisitArrayExpression(ArrayExpressionAst arrayExpressionAst);
         /// <summary/>
-        object VisitArrayLiteral(ArrayLiteralAst arrayLiteralAst) => DefaultVisit(arrayLiteralAst);
-
+        object VisitArrayLiteral(ArrayLiteralAst arrayLiteralAst);
         /// <summary/>
-        object VisitHashtable(HashtableAst hashtableAst) => DefaultVisit(hashtableAst);
-
+        object VisitHashtable(HashtableAst hashtableAst);
         /// <summary/>
-        object VisitScriptBlockExpression(ScriptBlockExpressionAst scriptBlockExpressionAst) => DefaultVisit(scriptBlockExpressionAst);
-
+        object VisitScriptBlockExpression(ScriptBlockExpressionAst scriptBlockExpressionAst);
         /// <summary/>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Paren")]
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "paren")]
-        object VisitParenExpression(ParenExpressionAst parenExpressionAst) => DefaultVisit(parenExpressionAst);
-
+        object VisitParenExpression(ParenExpressionAst parenExpressionAst);
         /// <summary/>
-        object VisitExpandableStringExpression(ExpandableStringExpressionAst expandableStringExpressionAst) => DefaultVisit(expandableStringExpressionAst);
-
+        object VisitExpandableStringExpression(ExpandableStringExpressionAst expandableStringExpressionAst);
         /// <summary/>
-        object VisitIndexExpression(IndexExpressionAst indexExpressionAst) => DefaultVisit(indexExpressionAst);
-
+        object VisitIndexExpression(IndexExpressionAst indexExpressionAst);
         /// <summary/>
-        object VisitAttributedExpression(AttributedExpressionAst attributedExpressionAst) => DefaultVisit(attributedExpressionAst);
-
+        object VisitAttributedExpression(AttributedExpressionAst attributedExpressionAst);
         /// <summary/>
-        object VisitBlockStatement(BlockStatementAst blockStatementAst) => DefaultVisit(blockStatementAst);
+        object VisitBlockStatement(BlockStatementAst blockStatementAst);
 
         #endregion Expressions
     }
 
     /// <summary/>
-#nullable enable
     public interface ICustomAstVisitor2 : ICustomAstVisitor
     {
         /// <summary/>
-        object? VisitTypeDefinition(TypeDefinitionAst typeDefinitionAst) => DefaultVisit(typeDefinitionAst);
+        object VisitTypeDefinition(TypeDefinitionAst typeDefinitionAst);
 
         /// <summary/>
-        object? VisitPropertyMember(PropertyMemberAst propertyMemberAst) => DefaultVisit(propertyMemberAst);
+        object VisitPropertyMember(PropertyMemberAst propertyMemberAst);
 
         /// <summary/>
-        object? VisitFunctionMember(FunctionMemberAst functionMemberAst) => DefaultVisit(functionMemberAst);
+        object VisitFunctionMember(FunctionMemberAst functionMemberAst);
 
         /// <summary/>
-        object? VisitBaseCtorInvokeMemberExpression(BaseCtorInvokeMemberExpressionAst baseCtorInvokeMemberExpressionAst) => DefaultVisit(baseCtorInvokeMemberExpressionAst);
+        object VisitBaseCtorInvokeMemberExpression(BaseCtorInvokeMemberExpressionAst baseCtorInvokeMemberExpressionAst);
 
         /// <summary/>
-        object? VisitUsingStatement(UsingStatementAst usingStatement) => DefaultVisit(usingStatement);
+        object VisitUsingStatement(UsingStatementAst usingStatement);
 
         /// <summary/>
-        object? VisitConfigurationDefinition(ConfigurationDefinitionAst configurationDefinitionAst) => DefaultVisit(configurationDefinitionAst);
+        object VisitConfigurationDefinition(ConfigurationDefinitionAst configurationDefinitionAst);
 
         /// <summary/>
-        object? VisitDynamicKeywordStatement(DynamicKeywordStatementAst dynamicKeywordAst) => DefaultVisit(dynamicKeywordAst);
-
-        /// <summary/>
-        object? VisitTernaryExpression(TernaryExpressionAst ternaryExpressionAst) => DefaultVisit(ternaryExpressionAst);
-
-        /// <summary/>
-        object? VisitPipelineChain(PipelineChainAst statementChainAst) => DefaultVisit(statementChainAst);
+        object VisitDynamicKeywordStatement(DynamicKeywordStatementAst dynamicKeywordAst);
     }
-#nullable restore
 
 #if DEBUG
-    internal class CheckAllParentsSet : AstVisitor2
+    class CheckAllParentsSet : AstVisitor2
     {
         internal CheckAllParentsSet(Ast root)
         {
             this.Root = root;
         }
 
-        private Ast Root { get; }
+        private Ast Root { get; set; }
 
         internal AstVisitAction CheckParent(Ast ast)
         {
@@ -372,23 +312,19 @@ namespace System.Management.Automation.Language
         public override AstVisitAction VisitConfigurationDefinition(ConfigurationDefinitionAst ast) { return CheckParent(ast); }
 
         public override AstVisitAction VisitDynamicKeywordStatement(DynamicKeywordStatementAst ast) { return CheckParent(ast); }
-
-        public override AstVisitAction VisitTernaryExpression(TernaryExpressionAst ast) => CheckParent(ast);
-
-        public override AstVisitAction VisitPipelineChain(PipelineChainAst ast) => CheckParent(ast);
     }
 
     /// <summary>
     /// Check if <see cref="TypeConstraintAst"/> contains <see cref="TypeBuilder "/> type.
     /// </summary>
-    internal class CheckTypeBuilder : AstVisitor2
+    class CheckTypeBuilder : AstVisitor2
     {
         public override AstVisitAction VisitTypeConstraint(TypeConstraintAst ast)
         {
             Type type = ast.TypeName.GetReflectionType();
             if (type != null)
             {
-                Diagnostics.Assert(type is not TypeBuilder, "ReflectionType can never be TypeBuilder");
+                Diagnostics.Assert(!(type is TypeBuilder), "ReflectionType can never be TypeBuilder");
             }
 
             return AstVisitAction.Continue;
@@ -427,7 +363,7 @@ namespace System.Management.Automation.Language
 
             var searcher = new AstSearcher(predicate, stopOnFirst: true, searchNestedScriptBlocks: searchNestedScriptBlocks);
             ast.InternalVisit(searcher);
-            return searcher.Results.Count > 0;
+            return searcher.Results.FirstOrDefault() != null;
         }
 
         internal static bool IsUsingDollarInput(Ast ast)
@@ -608,10 +544,6 @@ namespace System.Management.Automation.Language
         public override AstVisitAction VisitConfigurationDefinition(ConfigurationDefinitionAst ast) { return Check(ast); }
 
         public override AstVisitAction VisitDynamicKeywordStatement(DynamicKeywordStatementAst ast) { return Check(ast); }
-
-        public override AstVisitAction VisitTernaryExpression(TernaryExpressionAst ast) { return Check(ast); }
-
-        public override AstVisitAction VisitPipelineChain(PipelineChainAst ast) { return Check(ast); }
     }
 
     /// <summary>
@@ -620,169 +552,113 @@ namespace System.Management.Automation.Language
     public abstract class DefaultCustomAstVisitor : ICustomAstVisitor
     {
         /// <summary/>
-        public virtual object DefaultVisit(Ast ast) => null;
-
+        public virtual object VisitErrorStatement(ErrorStatementAst errorStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitErrorStatement(ErrorStatementAst errorStatementAst) => DefaultVisit(errorStatementAst);
-
+        public virtual object VisitErrorExpression(ErrorExpressionAst errorExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitErrorExpression(ErrorExpressionAst errorExpressionAst) => DefaultVisit(errorExpressionAst);
-
+        public virtual object VisitScriptBlock(ScriptBlockAst scriptBlockAst) { return null; }
         /// <summary/>
-        public virtual object VisitScriptBlock(ScriptBlockAst scriptBlockAst) => DefaultVisit(scriptBlockAst);
-
+        public virtual object VisitParamBlock(ParamBlockAst paramBlockAst) { return null; }
         /// <summary/>
-        public virtual object VisitParamBlock(ParamBlockAst paramBlockAst) => DefaultVisit(paramBlockAst);
-
+        public virtual object VisitNamedBlock(NamedBlockAst namedBlockAst) { return null; }
         /// <summary/>
-        public virtual object VisitNamedBlock(NamedBlockAst namedBlockAst) => DefaultVisit(namedBlockAst);
-
+        public virtual object VisitTypeConstraint(TypeConstraintAst typeConstraintAst) { return null; }
         /// <summary/>
-        public virtual object VisitTypeConstraint(TypeConstraintAst typeConstraintAst) => DefaultVisit(typeConstraintAst);
-
+        public virtual object VisitAttribute(AttributeAst attributeAst) { return null; }
         /// <summary/>
-        public virtual object VisitAttribute(AttributeAst attributeAst) => DefaultVisit(attributeAst);
-
+        public virtual object VisitNamedAttributeArgument(NamedAttributeArgumentAst namedAttributeArgumentAst) { return null; }
         /// <summary/>
-        public virtual object VisitNamedAttributeArgument(NamedAttributeArgumentAst namedAttributeArgumentAst) => DefaultVisit(namedAttributeArgumentAst);
-
+        public virtual object VisitParameter(ParameterAst parameterAst) { return null; }
         /// <summary/>
-        public virtual object VisitParameter(ParameterAst parameterAst) => DefaultVisit(parameterAst);
-
+        public virtual object VisitStatementBlock(StatementBlockAst statementBlockAst) { return null; }
         /// <summary/>
-        public virtual object VisitStatementBlock(StatementBlockAst statementBlockAst) => DefaultVisit(statementBlockAst);
-
+        public virtual object VisitIfStatement(IfStatementAst ifStmtAst) { return null; }
         /// <summary/>
-        public virtual object VisitIfStatement(IfStatementAst ifStmtAst) => DefaultVisit(ifStmtAst);
-
+        public virtual object VisitTrap(TrapStatementAst trapStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitTrap(TrapStatementAst trapStatementAst) => DefaultVisit(trapStatementAst);
-
+        public virtual object VisitSwitchStatement(SwitchStatementAst switchStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitSwitchStatement(SwitchStatementAst switchStatementAst) => DefaultVisit(switchStatementAst);
-
+        public virtual object VisitDataStatement(DataStatementAst dataStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitDataStatement(DataStatementAst dataStatementAst) => DefaultVisit(dataStatementAst);
-
+        public virtual object VisitForEachStatement(ForEachStatementAst forEachStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitForEachStatement(ForEachStatementAst forEachStatementAst) => DefaultVisit(forEachStatementAst);
-
+        public virtual object VisitDoWhileStatement(DoWhileStatementAst doWhileStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitDoWhileStatement(DoWhileStatementAst doWhileStatementAst) => DefaultVisit(doWhileStatementAst);
-
+        public virtual object VisitForStatement(ForStatementAst forStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitForStatement(ForStatementAst forStatementAst) => DefaultVisit(forStatementAst);
-
+        public virtual object VisitWhileStatement(WhileStatementAst whileStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitWhileStatement(WhileStatementAst whileStatementAst) => DefaultVisit(whileStatementAst);
-
+        public virtual object VisitCatchClause(CatchClauseAst catchClauseAst) { return null; }
         /// <summary/>
-        public virtual object VisitCatchClause(CatchClauseAst catchClauseAst) => DefaultVisit(catchClauseAst);
-
+        public virtual object VisitTryStatement(TryStatementAst tryStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitTryStatement(TryStatementAst tryStatementAst) => DefaultVisit(tryStatementAst);
-
+        public virtual object VisitBreakStatement(BreakStatementAst breakStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitBreakStatement(BreakStatementAst breakStatementAst) => DefaultVisit(breakStatementAst);
-
+        public virtual object VisitContinueStatement(ContinueStatementAst continueStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitContinueStatement(ContinueStatementAst continueStatementAst) => DefaultVisit(continueStatementAst);
-
+        public virtual object VisitReturnStatement(ReturnStatementAst returnStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitReturnStatement(ReturnStatementAst returnStatementAst) => DefaultVisit(returnStatementAst);
-
+        public virtual object VisitExitStatement(ExitStatementAst exitStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitExitStatement(ExitStatementAst exitStatementAst) => DefaultVisit(exitStatementAst);
-
+        public virtual object VisitThrowStatement(ThrowStatementAst throwStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitThrowStatement(ThrowStatementAst throwStatementAst) => DefaultVisit(throwStatementAst);
-
+        public virtual object VisitDoUntilStatement(DoUntilStatementAst doUntilStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitDoUntilStatement(DoUntilStatementAst doUntilStatementAst) => DefaultVisit(doUntilStatementAst);
-
+        public virtual object VisitAssignmentStatement(AssignmentStatementAst assignmentStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitAssignmentStatement(AssignmentStatementAst assignmentStatementAst) => DefaultVisit(assignmentStatementAst);
-
+        public virtual object VisitPipeline(PipelineAst pipelineAst) { return null; }
         /// <summary/>
-        public virtual object VisitPipeline(PipelineAst pipelineAst) => DefaultVisit(pipelineAst);
-
+        public virtual object VisitCommand(CommandAst commandAst) { return null; }
         /// <summary/>
-        public virtual object VisitCommand(CommandAst commandAst) => DefaultVisit(commandAst);
-
+        public virtual object VisitCommandExpression(CommandExpressionAst commandExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitCommandExpression(CommandExpressionAst commandExpressionAst) => DefaultVisit(commandExpressionAst);
-
+        public virtual object VisitCommandParameter(CommandParameterAst commandParameterAst) { return null; }
         /// <summary/>
-        public virtual object VisitCommandParameter(CommandParameterAst commandParameterAst) => DefaultVisit(commandParameterAst);
-
+        public virtual object VisitFileRedirection(FileRedirectionAst fileRedirectionAst) { return null; }
         /// <summary/>
-        public virtual object VisitFileRedirection(FileRedirectionAst fileRedirectionAst) => DefaultVisit(fileRedirectionAst);
-
+        public virtual object VisitMergingRedirection(MergingRedirectionAst mergingRedirectionAst) { return null; }
         /// <summary/>
-        public virtual object VisitMergingRedirection(MergingRedirectionAst mergingRedirectionAst) => DefaultVisit(mergingRedirectionAst);
-
+        public virtual object VisitBinaryExpression(BinaryExpressionAst binaryExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitBinaryExpression(BinaryExpressionAst binaryExpressionAst) => DefaultVisit(binaryExpressionAst);
-
+        public virtual object VisitUnaryExpression(UnaryExpressionAst unaryExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitUnaryExpression(UnaryExpressionAst unaryExpressionAst) => DefaultVisit(unaryExpressionAst);
-
+        public virtual object VisitConvertExpression(ConvertExpressionAst convertExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitConvertExpression(ConvertExpressionAst convertExpressionAst) => DefaultVisit(convertExpressionAst);
-
+        public virtual object VisitConstantExpression(ConstantExpressionAst constantExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitConstantExpression(ConstantExpressionAst constantExpressionAst) => DefaultVisit(constantExpressionAst);
-
+        public virtual object VisitStringConstantExpression(StringConstantExpressionAst stringConstantExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitStringConstantExpression(StringConstantExpressionAst stringConstantExpressionAst) => DefaultVisit(stringConstantExpressionAst);
-
+        public virtual object VisitSubExpression(SubExpressionAst subExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitSubExpression(SubExpressionAst subExpressionAst) => DefaultVisit(subExpressionAst);
-
+        public virtual object VisitUsingExpression(UsingExpressionAst usingExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitUsingExpression(UsingExpressionAst usingExpressionAst) => DefaultVisit(usingExpressionAst);
-
+        public virtual object VisitVariableExpression(VariableExpressionAst variableExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitVariableExpression(VariableExpressionAst variableExpressionAst) => DefaultVisit(variableExpressionAst);
-
+        public virtual object VisitTypeExpression(TypeExpressionAst typeExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitTypeExpression(TypeExpressionAst typeExpressionAst) => DefaultVisit(typeExpressionAst);
-
+        public virtual object VisitMemberExpression(MemberExpressionAst memberExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitMemberExpression(MemberExpressionAst memberExpressionAst) => DefaultVisit(memberExpressionAst);
-
+        public virtual object VisitInvokeMemberExpression(InvokeMemberExpressionAst invokeMemberExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitInvokeMemberExpression(InvokeMemberExpressionAst invokeMemberExpressionAst) => DefaultVisit(invokeMemberExpressionAst);
-
+        public virtual object VisitArrayExpression(ArrayExpressionAst arrayExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitArrayExpression(ArrayExpressionAst arrayExpressionAst) => DefaultVisit(arrayExpressionAst);
-
+        public virtual object VisitArrayLiteral(ArrayLiteralAst arrayLiteralAst) { return null; }
         /// <summary/>
-        public virtual object VisitArrayLiteral(ArrayLiteralAst arrayLiteralAst) => DefaultVisit(arrayLiteralAst);
-
+        public virtual object VisitHashtable(HashtableAst hashtableAst) { return null; }
         /// <summary/>
-        public virtual object VisitHashtable(HashtableAst hashtableAst) => DefaultVisit(hashtableAst);
-
+        public virtual object VisitParenExpression(ParenExpressionAst parenExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitParenExpression(ParenExpressionAst parenExpressionAst) => DefaultVisit(parenExpressionAst);
-
+        public virtual object VisitExpandableStringExpression(ExpandableStringExpressionAst expandableStringExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitExpandableStringExpression(ExpandableStringExpressionAst expandableStringExpressionAst) => DefaultVisit(expandableStringExpressionAst);
-
+        public virtual object VisitIndexExpression(IndexExpressionAst indexExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitIndexExpression(IndexExpressionAst indexExpressionAst) => DefaultVisit(indexExpressionAst);
-
+        public virtual object VisitAttributedExpression(AttributedExpressionAst attributedExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitAttributedExpression(AttributedExpressionAst attributedExpressionAst) => DefaultVisit(attributedExpressionAst);
-
+        public virtual object VisitBlockStatement(BlockStatementAst blockStatementAst) { return null; }
         /// <summary/>
-        public virtual object VisitBlockStatement(BlockStatementAst blockStatementAst) => DefaultVisit(blockStatementAst);
-
+        public virtual object VisitFunctionDefinition(FunctionDefinitionAst functionDefinitionAst) { return null; }
         /// <summary/>
-        public virtual object VisitFunctionDefinition(FunctionDefinitionAst functionDefinitionAst) => DefaultVisit(functionDefinitionAst);
-
-        /// <summary/>
-        public virtual object VisitScriptBlockExpression(ScriptBlockExpressionAst scriptBlockExpressionAst) => DefaultVisit(scriptBlockExpressionAst);
+        public virtual object VisitScriptBlockExpression(ScriptBlockExpressionAst scriptBlockExpressionAst) { return null; }
     }
 
     /// <summary>
@@ -791,30 +667,18 @@ namespace System.Management.Automation.Language
     public abstract class DefaultCustomAstVisitor2 : DefaultCustomAstVisitor, ICustomAstVisitor2
     {
         /// <summary/>
-        public virtual object VisitPropertyMember(PropertyMemberAst propertyMemberAst) => DefaultVisit(propertyMemberAst);
-
+        public virtual object VisitPropertyMember(PropertyMemberAst propertyMemberAst) { return null; }
         /// <summary/>
-        public virtual object VisitBaseCtorInvokeMemberExpression(BaseCtorInvokeMemberExpressionAst baseCtorInvokeMemberExpressionAst) => DefaultVisit(baseCtorInvokeMemberExpressionAst);
-
+        public virtual object VisitBaseCtorInvokeMemberExpression(BaseCtorInvokeMemberExpressionAst baseCtorInvokeMemberExpressionAst) { return null; }
         /// <summary/>
-        public virtual object VisitUsingStatement(UsingStatementAst usingStatement) => DefaultVisit(usingStatement);
-
+        public virtual object VisitUsingStatement(UsingStatementAst usingStatement) { return null; }
         /// <summary/>
-        public virtual object VisitConfigurationDefinition(ConfigurationDefinitionAst configurationAst) => DefaultVisit(configurationAst);
-
+        public virtual object VisitConfigurationDefinition(ConfigurationDefinitionAst configurationAst) { return null; }
         /// <summary/>
-        public virtual object VisitDynamicKeywordStatement(DynamicKeywordStatementAst dynamicKeywordAst) => DefaultVisit(dynamicKeywordAst);
-
+        public virtual object VisitDynamicKeywordStatement(DynamicKeywordStatementAst dynamicKeywordAst) { return null; }
         /// <summary/>
-        public virtual object VisitTypeDefinition(TypeDefinitionAst typeDefinitionAst) => DefaultVisit(typeDefinitionAst);
-
+        public virtual object VisitTypeDefinition(TypeDefinitionAst typeDefinitionAst) { return null; }
         /// <summary/>
-        public virtual object VisitFunctionMember(FunctionMemberAst functionMemberAst) => DefaultVisit(functionMemberAst);
-
-        /// <summary/>
-        public virtual object VisitTernaryExpression(TernaryExpressionAst ternaryExpressionAst) => DefaultVisit(ternaryExpressionAst);
-
-        /// <summary/>
-        public virtual object VisitPipelineChain(PipelineChainAst statementChainAst) => DefaultVisit(statementChainAst);
+        public virtual object VisitFunctionMember(FunctionMemberAst functionMemberAst) { return null; }
     }
 }

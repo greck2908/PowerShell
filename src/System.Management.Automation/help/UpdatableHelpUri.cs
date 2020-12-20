@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Diagnostics;
@@ -21,7 +21,7 @@ namespace System.Management.Automation.Help
         internal UpdatableHelpUri(string moduleName, Guid moduleGuid, CultureInfo culture, string resolvedUri)
         {
             Debug.Assert(!string.IsNullOrEmpty(moduleName));
-            Debug.Assert(moduleGuid != Guid.Empty);
+            Debug.Assert(moduleGuid != null);
             Debug.Assert(!string.IsNullOrEmpty(resolvedUri));
 
             ModuleName = moduleName;

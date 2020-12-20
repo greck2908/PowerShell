@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 //
@@ -31,8 +31,10 @@ namespace Microsoft.PowerShell.Commands.Internal
         // registry keys, but we'll also get back 0 as an invalid handle from
         // RegOpenKeyEx.
 
+        [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
         internal SafeRegistryHandle() : base(true) { }
 
+        [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
         internal SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
@@ -40,7 +42,8 @@ namespace Microsoft.PowerShell.Commands.Internal
 
         [DllImport(PinvokeDllNames.RegCloseKeyDllName),
          SuppressUnmanagedCodeSecurity,
-         ResourceExposure(ResourceScope.None)]
+         ResourceExposure(ResourceScope.None),
+         ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern int RegCloseKey(IntPtr hKey);
 
         protected override bool ReleaseHandle()

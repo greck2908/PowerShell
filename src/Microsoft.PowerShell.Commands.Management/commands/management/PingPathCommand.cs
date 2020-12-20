@@ -1,8 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
 using System.Management.Automation;
+
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -30,7 +32,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// A command to determine if an item exists at a specified path.
     /// </summary>
-    [Cmdlet(VerbsDiagnostic.Test, "Path", DefaultParameterSetName = "Path", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097057")]
+    [Cmdlet(VerbsDiagnostic.Test, "Path", DefaultParameterSetName = "Path", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113418")]
     [OutputType(typeof(bool))]
     public class TestPathCommand : CoreCommandWithCredentialsBase
     {
@@ -245,3 +247,4 @@ namespace Microsoft.PowerShell.Commands
 
     }
 }
+

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -10,13 +10,15 @@ using System.Management.Automation.Internal;
 using System.Management.Automation.Runspaces;
 using System.Threading;
 
+using Dbg = System.Management.Automation.Diagnostics;
+
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
     /// A cmdlet that traces the specified categories and flags for the duration of the
     /// specified expression.
     /// </summary>
-    [Cmdlet(VerbsDiagnostic.Trace, "Command", DefaultParameterSetName = "expressionSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2097136")]
+    [Cmdlet(VerbsDiagnostic.Trace, "Command", DefaultParameterSetName = "expressionSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113419")]
     public class TraceCommandCommand : TraceListenerCommandBase, IDisposable
     {
         #region Parameters
@@ -25,7 +27,7 @@ namespace Microsoft.PowerShell.Commands
         /// This parameter specifies the current pipeline object.
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { get; set; } = AutomationNull.Value;
+        public PSObject InputObject { set; get; } = AutomationNull.Value;
 
         /// <summary>
         /// The TraceSource parameter determines which TraceSource categories the
@@ -332,12 +334,12 @@ namespace Microsoft.PowerShell.Commands
         {
             if (cmdlet == null)
             {
-                throw new ArgumentNullException(nameof(cmdlet));
+                throw new ArgumentNullException("cmdlet");
             }
 
             if (matchingSources == null)
             {
-                throw new ArgumentNullException(nameof(matchingSources));
+                throw new ArgumentNullException("matchingSources");
             }
 
             _cmdlet = cmdlet;
@@ -523,7 +525,7 @@ namespace Microsoft.PowerShell.Commands
             if (mshobj != null)
             {
                 object baseObject = mshobj.BaseObject;
-                if (baseObject is not PSCustomObject)
+                if (!(baseObject is PSCustomObject))
                 {
                     obj = baseObject;
                 }
@@ -538,9 +540,9 @@ namespace Microsoft.PowerShell.Commands
             return result;
         }
 
-        private readonly TraceListenerCommandBase _cmdlet;
-        private readonly bool _writeError;
+        private TraceListenerCommandBase _cmdlet;
+        private bool _writeError;
         private bool _isOpen = true;
-        private readonly Collection<PSTraceSource> _matchingSources = new();
+        private Collection<PSTraceSource> _matchingSources = new Collection<PSTraceSource>();
     }
 }

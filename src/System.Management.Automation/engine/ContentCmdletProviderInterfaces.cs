@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -39,7 +39,7 @@ namespace System.Management.Automation
         {
             if (cmdlet == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(cmdlet));
+                throw PSTraceSource.NewArgumentNullException("cmdlet");
             }
 
             _cmdlet = cmdlet;
@@ -59,7 +59,7 @@ namespace System.Management.Automation
         {
             if (sessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sessionState));
+                throw PSTraceSource.NewArgumentNullException("sessionState");
             }
 
             _sessionState = sessionState;
@@ -586,9 +586,10 @@ namespace System.Management.Automation
 
         #region private data
 
-        private readonly Cmdlet _cmdlet;
-        private readonly SessionStateInternal _sessionState;
+        private Cmdlet _cmdlet;
+        private SessionStateInternal _sessionState;
 
         #endregion private data
     }
 }
+

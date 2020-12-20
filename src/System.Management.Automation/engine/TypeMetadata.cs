@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -51,7 +51,7 @@ namespace System.Management.Automation
         {
             if (other == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(other));
+                throw PSTraceSource.NewArgumentNullException("other");
             }
 
             _helpMessage = other._helpMessage;
@@ -265,23 +265,23 @@ namespace System.Management.Automation
             get
             {
                 ParameterFlags flags = 0;
-                if (IsMandatory) { flags |= ParameterFlags.Mandatory; }
+                if (IsMandatory) { flags = flags | ParameterFlags.Mandatory; }
 
-                if (ValueFromPipeline) { flags |= ParameterFlags.ValueFromPipeline; }
+                if (ValueFromPipeline) { flags = flags | ParameterFlags.ValueFromPipeline; }
 
-                if (ValueFromPipelineByPropertyName) { flags |= ParameterFlags.ValueFromPipelineByPropertyName; }
+                if (ValueFromPipelineByPropertyName) { flags = flags | ParameterFlags.ValueFromPipelineByPropertyName; }
 
-                if (ValueFromRemainingArguments) { flags |= ParameterFlags.ValueFromRemainingArguments; }
+                if (ValueFromRemainingArguments) { flags = flags | ParameterFlags.ValueFromRemainingArguments; }
 
                 return flags;
             }
 
             set
             {
-                this.IsMandatory = ((value & ParameterFlags.Mandatory) == ParameterFlags.Mandatory);
-                this.ValueFromPipeline = ((value & ParameterFlags.ValueFromPipeline) == ParameterFlags.ValueFromPipeline);
-                this.ValueFromPipelineByPropertyName = ((value & ParameterFlags.ValueFromPipelineByPropertyName) == ParameterFlags.ValueFromPipelineByPropertyName);
-                this.ValueFromRemainingArguments = ((value & ParameterFlags.ValueFromRemainingArguments) == ParameterFlags.ValueFromRemainingArguments);
+                this.IsMandatory = (ParameterFlags.Mandatory == (value & ParameterFlags.Mandatory));
+                this.ValueFromPipeline = (ParameterFlags.ValueFromPipeline == (value & ParameterFlags.ValueFromPipeline));
+                this.ValueFromPipelineByPropertyName = (ParameterFlags.ValueFromPipelineByPropertyName == (value & ParameterFlags.ValueFromPipelineByPropertyName));
+                this.ValueFromRemainingArguments = (ParameterFlags.ValueFromRemainingArguments == (value & ParameterFlags.ValueFromRemainingArguments));
             }
         }
 
@@ -411,7 +411,7 @@ namespace System.Management.Automation
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             _name = name;
@@ -431,7 +431,7 @@ namespace System.Management.Automation
         {
             if (other == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(other));
+                throw PSTraceSource.NewArgumentNullException("other");
             }
 
             _isDynamic = other._isDynamic;
@@ -625,7 +625,7 @@ namespace System.Management.Automation
         {
             if (type == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(type));
+                throw PSTraceSource.NewArgumentNullException("type");
             }
 
             CommandMetadata cmdMetaData = new CommandMetadata(type);
@@ -895,7 +895,7 @@ namespace System.Management.Automation
         /// <returns>
         /// Attribute's proxy string.
         /// </returns>
-        private static string GetProxyAttributeData(Attribute attrib, string prefix)
+        private string GetProxyAttributeData(Attribute attrib, string prefix)
         {
             string result;
 
@@ -978,7 +978,7 @@ namespace System.Management.Automation
                 string or = string.Empty;
                 string[] regexOptionEnumValues = Enum.GetNames(typeof(System.Text.RegularExpressions.RegexOptions));
 
-                foreach (string regexOption in regexOptionEnumValues)
+                foreach(string regexOption in regexOptionEnumValues)
                 {
                     System.Text.RegularExpressions.RegexOptions option = (System.Text.RegularExpressions.RegexOptions) Enum.Parse(
                         typeof(System.Text.RegularExpressions.RegexOptions),
@@ -1165,7 +1165,7 @@ namespace System.Management.Automation
         {
             if (type == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(type));
+                throw PSTraceSource.NewArgumentNullException("type");
             }
 
             InternalParameterMetadata result;
@@ -1208,7 +1208,7 @@ namespace System.Management.Automation
         {
             if (runtimeDefinedParameters == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(runtimeDefinedParameters));
+                throw PSTraceSource.NewArgumentNullException("runtimeDefinedParameters");
             }
 
             ConstructCompiledParametersUsingRuntimeDefinedParameters(runtimeDefinedParameters, processingDynamicParameters, checkNames);
@@ -1236,7 +1236,7 @@ namespace System.Management.Automation
         {
             if (type == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(type));
+                throw PSTraceSource.NewArgumentNullException("type");
             }
 
             _type = type;
@@ -1274,7 +1274,7 @@ namespace System.Management.Automation
         /// This member is null in all cases except when constructed with using reflection
         /// against the Type.
         /// </summary>
-        private readonly Type _type;
+        private Type _type;
 
         /// <summary>
         /// The flags used when reflecting against the object to create the metadata.
@@ -1367,7 +1367,7 @@ namespace System.Management.Automation
             }
         }
 
-        private static void CheckForReservedParameter(string name)
+        private void CheckForReservedParameter(string name)
         {
             if (name.Equals("SelectProperty", StringComparison.OrdinalIgnoreCase)
                 ||
@@ -1544,9 +1544,10 @@ namespace System.Management.Automation
         /// The cache of the type metadata. The key for the cache is the Type.FullName.
         /// Note, this is a case-sensitive dictionary because Type names are case sensitive.
         /// </summary>
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, InternalParameterMetadata> s_parameterMetadataCache =
+        private static System.Collections.Concurrent.ConcurrentDictionary<string, InternalParameterMetadata> s_parameterMetadataCache =
             new System.Collections.Concurrent.ConcurrentDictionary<string, InternalParameterMetadata>(StringComparer.Ordinal);
 
         #endregion Metadata cache
     }
 }
+

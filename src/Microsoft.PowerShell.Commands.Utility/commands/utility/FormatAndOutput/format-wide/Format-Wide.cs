@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
@@ -12,12 +13,11 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Implementation for the format-table command.
     /// </summary>
-    [Cmdlet(VerbsCommon.Format, "Wide", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096930")]
+    [Cmdlet(VerbsCommon.Format, "Wide", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113304")]
     public class FormatWideCommand : OuterFormatShapeCommandBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="FormatWideCommand"/> class
-        /// and sets the inner command.
+        /// Constructor to se the inner command.
         /// </summary>
         public FormatWideCommand()
         {
@@ -83,12 +83,12 @@ namespace Microsoft.PowerShell.Commands
 
         internal override FormattingCommandLineParameters GetCommandLineParameters()
         {
-            FormattingCommandLineParameters parameters = new();
+            FormattingCommandLineParameters parameters = new FormattingCommandLineParameters();
 
             if (_prop != null)
             {
-                ParameterProcessor processor = new(new FormatWideParameterDefinition());
-                TerminatingErrorContext invocationContext = new(this);
+                ParameterProcessor processor = new ParameterProcessor(new FormatWideParameterDefinition());
+                TerminatingErrorContext invocationContext = new TerminatingErrorContext(this);
                 parameters.mshParameterList = processor.ProcessParameters(new object[] { _prop }, invocationContext);
             }
 
@@ -111,7 +111,7 @@ namespace Microsoft.PowerShell.Commands
                     // the user specified -autosize:true AND a column number
                     string msg = StringUtil.Format(FormatAndOut_format_xxx.CannotSpecifyAutosizeAndColumnsError);
 
-                    ErrorRecord errorRecord = new(
+                    ErrorRecord errorRecord = new ErrorRecord(
                         new InvalidDataException(),
                         "FormatCannotSpecifyAutosizeAndColumns",
                         ErrorCategory.InvalidArgument,
@@ -134,7 +134,7 @@ namespace Microsoft.PowerShell.Commands
             if (_autosize.HasValue)
                 parameters.autosize = _autosize.Value;
 
-            WideSpecificParameters wideSpecific = new();
+            WideSpecificParameters wideSpecific = new WideSpecificParameters();
             parameters.shapeParameters = wideSpecific;
             if (_column.HasValue)
             {
@@ -145,3 +145,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+

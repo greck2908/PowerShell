@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -16,7 +16,7 @@ namespace System.Management.Automation.Internal
         Error,
         Warning,
         Information
-    }
+    };
 
     /// <summary>
     /// Pipe provides a way to stitch two commands.
@@ -28,7 +28,7 @@ namespace System.Management.Automation.Internal
     /// </remarks>
     internal class Pipe
     {
-        private readonly ExecutionContext _context;
+        private ExecutionContext _context;
 
         // If a pipeline object has been added, then
         // write objects to it, stepping one at a time...
@@ -299,7 +299,7 @@ namespace System.Management.Automation.Internal
             CopyVariableToTempPipe(VariableStreamKind.Information, _informationVariableList, tempPipe);
         }
 
-        private static void CopyVariableToTempPipe(VariableStreamKind streamKind, List<IList> variableList, Pipe tempPipe)
+        private void CopyVariableToTempPipe(VariableStreamKind streamKind, List<IList> variableList, Pipe tempPipe)
         {
             if (variableList != null && variableList.Count > 0)
             {
@@ -349,7 +349,7 @@ namespace System.Management.Automation.Internal
             _resultCollection = resultCollection;
         }
 
-        private readonly System.Collections.ObjectModel.Collection<PSObject> _resultCollection;
+        private System.Collections.ObjectModel.Collection<PSObject> _resultCollection;
 
         /// <summary>
         /// This pipe writes into another pipeline processor allowing
@@ -380,7 +380,7 @@ namespace System.Management.Automation.Internal
             _enumeratorToProcessIsEmpty = false;
         }
 
-        private readonly IEnumerator _enumeratorToProcess;
+        private IEnumerator _enumeratorToProcess;
         private bool _enumeratorToProcessIsEmpty;
 
         #endregion ctor
@@ -510,7 +510,7 @@ namespace System.Management.Automation.Internal
                 // If our object came from GetEnumerator (and hence is not IEnumerator), then we need to dispose
                 // Otherwise, we don't own the object, so don't dispose.
                 var disposable = ie as IDisposable;
-                if (disposable != null && objects is not IEnumerator)
+                if (disposable != null && !(objects is IEnumerator))
                 {
                     disposable.Dispose();
                 }

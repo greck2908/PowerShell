@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -35,12 +35,12 @@ namespace System.Management.Automation
         {
             if (sessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(sessionState));
+                throw PSTraceSource.NewArgumentNullException("sessionState");
             }
 
             if (lookupPath == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(lookupPath));
+                throw PSTraceSource.NewArgumentNullException("lookupPath");
             }
 
             this.sessionState = sessionState;
@@ -111,6 +111,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the current scoped item.
         /// </summary>
+
         T IEnumerator<T>.Current
         {
             get
@@ -230,7 +231,7 @@ namespace System.Management.Automation
 
         private T _current;
         protected SessionStateInternal sessionState;
-        private readonly VariablePath _lookupPath;
+        private VariablePath _lookupPath;
         private SessionStateScopeEnumerator _scopeEnumerable;
         private bool _isSingleScopeLookup;
         private bool _isInitialized;
@@ -274,7 +275,7 @@ namespace System.Management.Automation
             VariablePath name,
             out PSVariable variable)
         {
-            Diagnostics.Assert(name is not FunctionLookupPath,
+            Diagnostics.Assert(!(name is FunctionLookupPath),
                 "name was scanned incorrect if we get here and it is a FunctionLookupPath");
 
             bool result = true;
@@ -328,7 +329,7 @@ namespace System.Management.Automation
             VariablePath name,
             out AliasInfo alias)
         {
-            Diagnostics.Assert(name is not FunctionLookupPath,
+            Diagnostics.Assert(!(name is FunctionLookupPath),
                 "name was scanned incorrect if we get here and it is a FunctionLookupPath");
 
             bool result = true;
@@ -470,7 +471,7 @@ namespace System.Management.Automation
             VariablePath name,
             out PSDriveInfo drive)
         {
-            Diagnostics.Assert(name is not FunctionLookupPath,
+            Diagnostics.Assert(!(name is FunctionLookupPath),
                 "name was scanned incorrect if we get here and it is a FunctionLookupPath");
 
             bool result = true;

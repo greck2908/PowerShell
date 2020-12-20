@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
@@ -75,7 +75,7 @@ namespace System.Management.Automation
         {
             if (namespaceID == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(namespaceID));
+                throw PSTraceSource.NewArgumentNullException("namespaceID");
             }
 
             // If namespace ID is empty, we will use the current working drive
@@ -236,7 +236,7 @@ namespace System.Management.Automation
         {
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             PathInfo current = CurrentLocation;
@@ -519,7 +519,7 @@ namespace System.Management.Automation
 
                         throw
                             PSTraceSource.NewArgumentException(
-                                nameof(path),
+                                "path",
                                 SessionStateStrings.PathResolvedToMultiple,
                                 originalPath);
                     }
@@ -636,7 +636,7 @@ namespace System.Management.Automation
 
             if (path == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                throw PSTraceSource.NewArgumentNullException("path");
             }
 
             PSDriveInfo drive = null;
@@ -733,7 +733,7 @@ namespace System.Management.Automation
                     providerSpecificPath,
                     currentWorkingPath);
 
-                if (string.Equals(providerSpecificPath, currentWorkingPath, StringComparison.OrdinalIgnoreCase))
+                if (string.Compare(providerSpecificPath, currentWorkingPath, StringComparison.CurrentCultureIgnoreCase) == 0)
                 {
                     // The path is the current working directory so
                     // return true
@@ -765,7 +765,7 @@ namespace System.Management.Automation
                             lockedDirectory,
                             providerSpecificPath);
 
-                        if (string.Equals(lockedDirectory, providerSpecificPath, StringComparison.OrdinalIgnoreCase))
+                        if (string.Compare(lockedDirectory, providerSpecificPath, StringComparison.CurrentCultureIgnoreCase) == 0)
                         {
                             // The path is a parent of the current working
                             // directory
@@ -799,7 +799,7 @@ namespace System.Management.Automation
         /// <summary>
         /// A stack of the most recently pushed locations.
         /// </summary>
-        private readonly Dictionary<string, Stack<PathInfo>> _workingLocationStack;
+        private Dictionary<string, Stack<PathInfo>> _workingLocationStack;
 
         private const string startingDefaultStackName = "default";
         /// <summary>
@@ -913,7 +913,7 @@ namespace System.Management.Automation
                         {
                             throw
                                 PSTraceSource.NewArgumentException(
-                                    nameof(stackName),
+                                    "stackName",
                                     SessionStateStrings.StackNameResolvedToMultiple,
                                     stackName);
                         }
@@ -935,7 +935,7 @@ namespace System.Management.Automation
                     {
                         throw
                             PSTraceSource.NewArgumentException(
-                                nameof(stackName),
+                                "stackName",
                                 SessionStateStrings.StackNotFound,
                                 stackName);
                     }
@@ -1012,7 +1012,7 @@ namespace System.Management.Automation
                 }
                 else
                 {
-                    throw PSTraceSource.NewArgumentException(nameof(stackName));
+                    throw PSTraceSource.NewArgumentException("stackName");
                 }
             }
 
@@ -1115,3 +1115,4 @@ namespace System.Management.Automation
         public SessionState SessionState { get; internal set; }
     }
 }
+

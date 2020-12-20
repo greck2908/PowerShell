@@ -180,7 +180,7 @@ namespace System.Management.Automation.Language {
                     break;
                 case Flow.NewLine:
                     WriteLine();
-                    Write(new string(' ', Depth));
+                    Write(new String(' ', Depth));
                     break;
             }
 
@@ -470,7 +470,7 @@ namespace System.Management.Automation.Language {
         private static bool IsSimpleExpression(Expression node) {
             var binary = node as BinaryExpression;
             if (binary != null) {
-                return binary.Left is not BinaryExpression && binary.Right is not BinaryExpression;
+                return !(binary.Left is BinaryExpression || binary.Right is BinaryExpression);
             }
 
             return false;
@@ -548,7 +548,7 @@ namespace System.Management.Automation.Language {
                 return "UL";
             }
 
-            if (type == typeof(double)) {
+            if (type == typeof(Double)) {
                 return "D";
             }
 
@@ -556,7 +556,7 @@ namespace System.Management.Automation.Language {
                 return "F";
             }
 
-            if (type == typeof(decimal)) {
+            if (type == typeof(Decimal)) {
                 return "M";
             }
 

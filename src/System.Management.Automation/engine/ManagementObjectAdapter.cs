@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -32,7 +32,7 @@ namespace System.Management.Automation
         /// by Get-Member cmdlet, original MethodData and computed method information such
         /// as whether a method is static etc.
         /// </summary>
-        internal class WMIMethodCacheEntry : CacheEntry
+        internal class WMIMethodCacheEntry
         {
             public string Name { get; }
 
@@ -77,17 +77,17 @@ namespace System.Management.Automation
         /// <param name="dotnetBaseType"></param>
         /// <param name="shouldIncludeNamespace"></param>
         /// <returns></returns>
-        private static IEnumerable<string> GetTypeNameHierarchyFromDerivation(ManagementBaseObject managementObj,
+        private IEnumerable<string> GetTypeNameHierarchyFromDerivation(ManagementBaseObject managementObj,
             string dotnetBaseType, bool shouldIncludeNamespace)
         {
             StringBuilder type = new StringBuilder(200);
             // give the typename based on NameSpace and Class
             type.Append(dotnetBaseType);
-            type.Append('#');
+            type.Append("#");
             if (shouldIncludeNamespace)
             {
                 type.Append(managementObj.SystemProperties["__NAMESPACE"].Value);
-                type.Append('\\');
+                type.Append("\\");
             }
 
             type.Append(managementObj.SystemProperties["__CLASS"].Value);
@@ -112,11 +112,11 @@ namespace System.Management.Automation
                     {
                         type.Clear();
                         type.Append(dotnetBaseType);
-                        type.Append('#');
+                        type.Append("#");
                         if (shouldIncludeNamespace)
                         {
                             type.Append(managementObj.SystemProperties["__NAMESPACE"].Value);
-                            type.Append('\\');
+                            type.Append("\\");
                         }
 
                         type.Append(t);
@@ -172,7 +172,9 @@ namespace System.Management.Automation
         {
             tracer.WriteLine("Getting member with name {0}", memberName);
 
-            if (!(obj is ManagementBaseObject mgmtObject))
+            ManagementBaseObject mgmtObject = obj as ManagementBaseObject;
+
+            if (mgmtObject == null)
             {
                 return null;
             }
@@ -364,7 +366,8 @@ namespace System.Management.Automation
         /// <param name="convertIfPossible">Instructs the adapter to convert before setting, if the adapter supports conversion.</param>
         protected override void PropertySet(PSProperty property, object setValue, bool convertIfPossible)
         {
-            if (!(property.baseObject is ManagementBaseObject mObj))
+            ManagementBaseObject mObj = property.baseObject as ManagementBaseObject;
+            if (mObj == null)
             {
                 throw new SetValueInvocationException("CannotSetNonManagementObjectMsg",
                     null,
@@ -409,7 +412,7 @@ namespace System.Management.Automation
             // }
 
             returnValue.Append(PropertyType(property, forDisplay: true));
-            returnValue.Append(' ');
+            returnValue.Append(" ");
             returnValue.Append(property.Name);
             returnValue.Append(" {");
             if (PropertyIsGettable(property))
@@ -422,7 +425,7 @@ namespace System.Management.Automation
                 returnValue.Append("set;");
             }
 
-            returnValue.Append('}');
+            returnValue.Append("}");
             return returnValue.ToString();
         }
 
@@ -606,10 +609,10 @@ namespace System.Management.Automation
             switch (pData.Type)
             {
                 case CimType.SInt8:
-                    retValue = typeof(sbyte).FullName;
+                    retValue = typeof(System.SByte).FullName;
                     break;
                 case CimType.UInt8:
-                    retValue = typeof(byte).FullName;
+                    retValue = typeof(System.Byte).FullName;
                     break;
                 case CimType.SInt16:
                     retValue = typeof(System.Int16).FullName;
@@ -630,7 +633,7 @@ namespace System.Management.Automation
                     retValue = typeof(System.UInt64).FullName;
                     break;
                 case CimType.Real32:
-                    retValue = typeof(Single).FullName;
+                    retValue = typeof(System.Single).FullName;
                     break;
                 case CimType.Real64:
                     retValue = typeof(double).FullName;
@@ -760,7 +763,7 @@ namespace System.Management.Automation
         /// Should not throw exceptions
         /// </remarks>
         internal static void UpdateParameters(ManagementBaseObject parameters,
-            SortedList<int, WMIParameterInformation> parametersList)
+            SortedList parametersList)
         {
             // ManagementObject class do not populate parameters when there are none.
             if (parameters == null)
@@ -809,7 +812,7 @@ namespace System.Management.Automation
             Diagnostics.Assert(mData != null, "MethodData should not be null");
 
             // Get Method parameters
-            var parameters = new SortedList<int, WMIParameterInformation>();
+            SortedList parameters = new SortedList();
             UpdateParameters(mData.InParameters, parameters);
 
             // parameters is never null
@@ -829,16 +832,15 @@ namespace System.Management.Automation
             // gather parameter information for this method.
             // input and output parameters reside in 2 different groups..
             // we dont know the order they appear on the arguments line..
-            var parameters = new SortedList<int, WMIParameterInformation>();
+            SortedList parameters = new SortedList();
             UpdateParameters(mData.InParameters, parameters);
 
             StringBuilder inParameterString = new StringBuilder();
 
             if (parameters.Count > 0)
             {
-                for (int i = 0; i < parameters.Values.Count; i++)
+                foreach (WMIParameterInformation parameter in parameters.Values)
                 {
-                    WMIParameterInformation parameter = parameters.Values[i];
                     string typeName = parameter.parameterType.ToString();
 
                     PropertyData pData = mData.InParameters.Properties[parameter.Name];
@@ -853,7 +855,7 @@ namespace System.Management.Automation
                     }
 
                     inParameterString.Append(typeName);
-                    inParameterString.Append(' ');
+                    inParameterString.Append(" ");
                     inParameterString.Append(parameter.Name);
                     inParameterString.Append(", ");
                 }
@@ -869,9 +871,9 @@ namespace System.Management.Automation
 
             builder.Append("System.Management.ManagementBaseObject ");
             builder.Append(mData.Name);
-            builder.Append('(');
-            builder.Append(inParameterString);
-            builder.Append(')');
+            builder.Append("(");
+            builder.Append(inParameterString.ToString());
+            builder.Append(")");
 
             string returnValue = builder.ToString();
             tracer.WriteLine("Definition constructed: {0}", returnValue);
@@ -943,7 +945,7 @@ namespace System.Management.Automation
 
         #region Private Data
 
-        private static readonly HybridDictionary s_instanceMethodCacheTable = new HybridDictionary();
+        private static HybridDictionary s_instanceMethodCacheTable = new HybridDictionary();
 
         #endregion
     }

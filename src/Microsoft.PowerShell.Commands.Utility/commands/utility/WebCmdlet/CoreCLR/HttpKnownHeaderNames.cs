@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.PowerShell.Commands
 {
-    internal static class HttpKnownHeaderNames
+    internal static partial class HttpKnownHeaderNames
     {
         #region Known_HTTP_Header_Names
 
@@ -79,7 +79,6 @@ namespace Microsoft.PowerShell.Commands
         #endregion Known_HTTP_Header_Names
 
         private static HashSet<string> s_contentHeaderSet = null;
-
         internal static HashSet<string> ContentHeaders
         {
             get

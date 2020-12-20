@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -55,11 +55,11 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
                 }
             }
 
-            public string PropertyName { get; }
+            public string PropertyName { get; private set; }
 
-            public object PropertyValue { get; }
+            public object PropertyValue { get; private set; }
 
-            public Func<string, string, string> ErrorMessageGenerator { get; }
+            public Func<string, string, string> ErrorMessageGenerator { get; private set; }
 
             private static string GetErrorMessageForNotFound(string queryDescription, string className)
             {
@@ -153,8 +153,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
 
         private abstract class CimInstancePropertyBasedFilter : CimInstanceFilterBase
         {
-            private readonly List<PropertyValueFilter> _propertyValueFilters = new();
-
+            private readonly List<PropertyValueFilter> _propertyValueFilters = new List<PropertyValueFilter>();
             protected IEnumerable<PropertyValueFilter> PropertyValueFilters { get { return _propertyValueFilters; } }
 
             protected void AddPropertyValueFilter(PropertyValueFilter propertyValueFilter)
@@ -223,7 +222,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
                     case BehaviorOnNoMatch.Default:
                     default:
                         return this.PropertyValueFilters
-                                   .Any(f => !f.HadMatch && f.BehaviorOnNoMatch == BehaviorOnNoMatch.ReportErrors);
+                                   .Where(f => !f.HadMatch).Any(f => f.BehaviorOnNoMatch == BehaviorOnNoMatch.ReportErrors);
                 }
             }
 
@@ -358,7 +357,6 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             }
 
             protected abstract BehaviorOnNoMatch GetDefaultBehaviorWhenNoMatchesFound(object cimTypedExpectedPropertyValue);
-
             private BehaviorOnNoMatch _behaviorOnNoMatch;
 
             public string PropertyName { get; }
@@ -405,7 +403,7 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
 
             private object ConvertActualValueToExpectedType(object actualPropertyValue, object expectedPropertyValue)
             {
-                if (actualPropertyValue is string && expectedPropertyValue is not string)
+                if ((actualPropertyValue is string) && (!(expectedPropertyValue is string)))
                 {
                     actualPropertyValue = LanguagePrimitives.ConvertTo(actualPropertyValue, expectedPropertyValue.GetType(), CultureInfo.InvariantCulture);
                 }
@@ -572,7 +570,8 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             {
                 try
                 {
-                    if (!(expectedPropertyValue is IComparable expectedComparable))
+                    var expectedComparable = expectedPropertyValue as IComparable;
+                    if (expectedComparable == null)
                     {
                         return false;
                     }
@@ -607,7 +606,8 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
             {
                 try
                 {
-                    if (!(actualPropertyValue is IComparable actualComparable))
+                    var actualComparable = actualPropertyValue as IComparable;
+                    if (actualComparable == null)
                     {
                         return false;
                     }
@@ -624,8 +624,8 @@ namespace Microsoft.PowerShell.Cmdletization.Cim
         private int _numberOfResultsFromMi;
         private int _numberOfMatchingResults;
 
-        private readonly List<CimInstanceFilterBase> _filters = new();
-        private readonly object _myLock = new();
+        private readonly List<CimInstanceFilterBase> _filters = new List<CimInstanceFilterBase>();
+        private readonly object _myLock = new object();
 
         #region "Public" interface for client-side filtering
 

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Management.Automation.Internal;
@@ -56,7 +56,7 @@ namespace System.Management.Automation.Remoting
     internal abstract class ClientRemoteSession : RemoteSession
     {
         [TraceSourceAttribute("CRSession", "ClientRemoteSession")]
-        private static readonly PSTraceSource s_trace = PSTraceSource.GetTracer("CRSession", "ClientRemoteSession");
+        private static PSTraceSource s_trace = PSTraceSource.GetTracer("CRSession", "ClientRemoteSession");
 
         #region Public_Method_API
 
@@ -178,7 +178,7 @@ namespace System.Management.Automation.Remoting
     internal class ClientRemoteSessionImpl : ClientRemoteSession, IDisposable
     {
         [TraceSourceAttribute("CRSessionImpl", "ClientRemoteSessionImpl")]
-        private static readonly PSTraceSource s_trace = PSTraceSource.GetTracer("CRSessionImpl", "ClientRemoteSessionImpl");
+        private static PSTraceSource s_trace = PSTraceSource.GetTracer("CRSessionImpl", "ClientRemoteSessionImpl");
 
         private PSRemotingCryptoHelperClient _cryptoHelper = null;
 
@@ -221,8 +221,10 @@ namespace System.Management.Automation.Remoting
             // Register handlers for various ClientSessiondata structure handler events
             SessionDataStructureHandler.NegotiationReceived += HandleNegotiationReceived;
             SessionDataStructureHandler.ConnectionStateChanged += HandleConnectionStateChanged;
-            SessionDataStructureHandler.EncryptedSessionKeyReceived += HandleEncryptedSessionKeyReceived;
-            SessionDataStructureHandler.PublicKeyRequestReceived += HandlePublicKeyRequestReceived;
+            SessionDataStructureHandler.EncryptedSessionKeyReceived +=
+                new EventHandler<RemoteDataEventArgs<string>>(HandleEncryptedSessionKeyReceived);
+            SessionDataStructureHandler.PublicKeyRequestReceived +=
+                new EventHandler<RemoteDataEventArgs<string>>(HandlePublicKeyRequestReceived);
         }
 
         #endregion Constructors
@@ -297,7 +299,7 @@ namespace System.Management.Automation.Remoting
             {
                 if (arg == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(arg));
+                    throw PSTraceSource.NewArgumentNullException("arg");
                 }
 
                 if (arg.SessionStateInfo.State == RemoteSessionState.EstablishedAndKeyReceived) // TODO - Client session would never get into this state... to be removed
@@ -452,12 +454,12 @@ namespace System.Management.Automation.Remoting
             {
                 if (arg == null)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(arg));
+                    throw PSTraceSource.NewArgumentNullException("arg");
                 }
 
                 if (arg.RemoteSessionCapability == null)
                 {
-                    throw PSTraceSource.NewArgumentException(nameof(arg));
+                    throw PSTraceSource.NewArgumentException("arg");
                 }
 
                 Context.ServerCapability = arg.RemoteSessionCapability;
@@ -604,3 +606,4 @@ namespace System.Management.Automation.Remoting
         #endregion IDisposable
     }
 }
+

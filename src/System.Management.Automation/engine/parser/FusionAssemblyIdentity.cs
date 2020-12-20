@@ -1,7 +1,4 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
-// Code in this file was copied from https://github.com/dotnet/roslyn
+// Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -136,14 +133,17 @@ namespace Microsoft.CodeAnalysis
 
             if (hr != ERROR_INSUFFICIENT_BUFFER)
             {
-                Marshal.ThrowExceptionForHR(hr);
+                throw Marshal.GetExceptionForHR(hr);
             }
 
             byte[] data = new byte[(int)characterCountIncludingTerminator * 2];
             fixed (byte* p = data)
             {
                 hr = nameObject.GetDisplayName(p, ref characterCountIncludingTerminator, displayFlags);
-                Marshal.ThrowExceptionForHR(hr);
+                if (hr != 0)
+                {
+                    throw Marshal.GetExceptionForHR(hr);
+                }
 
                 return Marshal.PtrToStringUni((IntPtr)p, (int)characterCountIncludingTerminator - 1);
             }
@@ -162,14 +162,17 @@ namespace Microsoft.CodeAnalysis
 
             if (hr != ERROR_INSUFFICIENT_BUFFER)
             {
-                Marshal.ThrowExceptionForHR(hr);
+                throw Marshal.GetExceptionForHR(hr);
             }
 
             byte[] data = new byte[(int)size];
             fixed (byte* p = data)
             {
                 hr = nameObject.GetProperty(propertyId, p, ref size);
-                Marshal.ThrowExceptionForHR(hr);
+                if (hr != 0)
+                {
+                    throw Marshal.GetExceptionForHR(hr);
+                }
             }
 
             return data;
@@ -207,7 +210,10 @@ namespace Microsoft.CodeAnalysis
             uint result;
             uint size = sizeof(uint);
             int hr = nameObject.GetProperty(propertyId, &result, ref size);
-            Marshal.ThrowExceptionForHR(hr);
+            if (hr != 0)
+            {
+                throw Marshal.GetExceptionForHR(hr);
+            }
 
             if (size == 0)
             {

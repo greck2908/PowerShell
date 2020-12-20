@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -23,6 +23,7 @@ namespace Microsoft.WSMan.Management
 
     #region WsManEnumFlags
     /// <summary><para>_WSManEnumFlags enumeration.</para></summary>
+
     [SuppressMessage("Microsoft.Design", "CA1027:MarkEnumsWithFlags")]
     [TypeLibType((short)0)]
     public enum WSManEnumFlags
@@ -376,7 +377,7 @@ namespace Microsoft.WSMan.Management
         /// <summary><para><c>ProxyAuthenticationUseDigest</c> method of <c>IWSManConnectionOptionsEx2</c> interface.</para></summary>
         [DispId(11)]
         int ProxyAuthenticationUseDigest();
-    }
+    };
 
     #endregion IWSManConnectionOptions
 
@@ -734,18 +735,19 @@ namespace Microsoft.WSMan.Management
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
         string ResourceUri
         {
-            // IDL: HRESULT resourceUri ([out, retval] BSTR* ReturnValue);
-            [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "resource")]
-            [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
-            [DispId(1)]
-            [return: MarshalAs(UnmanagedType.BStr)]
-            get;
-
             // IDL: HRESULT resourceUri (BSTR value);
             [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "resource")]
             [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
             [DispId(1)]
             set;
+
+            // IDL: HRESULT resourceUri ([out, retval] BSTR* ReturnValue);
+
+            [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "resource")]
+            [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
+            [DispId(1)]
+            [return: MarshalAs(UnmanagedType.BStr)]
+            get;
         }
 
         /// <summary><para><c>AddSelector</c> method of <c>IWSManResourceLocator</c> interface.  </para><para>Add selector to resource locator</para></summary>
@@ -924,6 +926,7 @@ namespace Microsoft.WSMan.Management
         /// <param name="parameters"></param>
         /// <param name="flags"></param>
         /// <returns></returns>
+
         [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "URI")]
         [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "0#")]
         [DispId(5)]
@@ -1053,7 +1056,7 @@ namespace Microsoft.WSMan.Management
 
     [ComImport, Guid("EA502723-A23D-11d1-A7D3-0000F87571E3"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IGroupPolicyObject
+    interface IGroupPolicyObject
     {
         void New(
           [MarshalAs(UnmanagedType.LPWStr)] string pszDomainName,

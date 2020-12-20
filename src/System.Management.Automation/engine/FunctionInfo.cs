@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
@@ -55,7 +55,7 @@ namespace System.Management.Automation
         {
             if (function == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(function));
+                throw PSTraceSource.NewArgumentNullException("function");
             }
 
             _scriptBlock = function;
@@ -265,7 +265,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Returns <see langword="true"/> if this function uses cmdlet binding mode for its parameters; otherwise returns <see langword="false"/>.
+        /// Returns <c>true</c> if this function uses cmdlet binding mode for its parameters; otherwise returns <c>false</c>.
         /// </summary>
         public bool CmdletBinding
         {
@@ -277,7 +277,7 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Gets the name of the default parameter set.
-        /// Returns <see langword="null"/> if this function doesn't use cmdlet parameter binding or if the default parameter set wasn't specified.
+        /// Returns <c>null</c> if this function doesn't use cmdlet parameter binding or if the default parameter set wasn't specified.
         /// </summary>
         public string DefaultParameterSet
         {
@@ -479,8 +479,9 @@ namespace System.Management.Automation
         {
             get
             {
-                return _commandMetadata ??=
-                    new CommandMetadata(this.ScriptBlock, this.Name, LocalPipeline.GetExecutionContextFromTLS());
+                return _commandMetadata ??
+                       (_commandMetadata =
+                        new CommandMetadata(this.ScriptBlock, this.Name, LocalPipeline.GetExecutionContextFromTLS()));
             }
         }
 

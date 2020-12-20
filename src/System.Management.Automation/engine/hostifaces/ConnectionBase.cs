@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -40,7 +40,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (host == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(host));
+                throw PSTraceSource.NewArgumentNullException("host");
             }
 
             InitialSessionState = InitialSessionState.CreateDefault();
@@ -66,18 +66,21 @@ namespace System.Management.Automation.Runspaces
         {
             if (host == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(host));
+                throw PSTraceSource.NewArgumentNullException("host");
             }
 
             if (initialSessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(initialSessionState));
+                throw PSTraceSource.NewArgumentNullException("initialSessionState");
             }
 
             Host = host;
             InitialSessionState = initialSessionState.Clone();
             this.ThreadOptions = initialSessionState.ThreadOptions;
+
+#if !CORECLR // No ApartmentState In CoreCLR
             this.ApartmentState = initialSessionState.ApartmentState;
+#endif
         }
 
         /// <summary>
@@ -104,12 +107,12 @@ namespace System.Management.Automation.Runspaces
         {
             if (host == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(host));
+                throw PSTraceSource.NewArgumentNullException("host");
             }
 
             if (initialSessionState == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(initialSessionState));
+                throw PSTraceSource.NewArgumentNullException("initialSessionState");
             }
 
             Host = host;
@@ -123,7 +126,10 @@ namespace System.Management.Automation.Runspaces
             }
 
             this.ThreadOptions = initialSessionState.ThreadOptions;
+
+#if !CORECLR // No ApartmentState In CoreCLR
             this.ApartmentState = initialSessionState.ApartmentState;
+#endif
         }
 
         /// <summary>
@@ -268,7 +274,7 @@ namespace System.Management.Automation.Runspaces
             // sometimes there are many runspaces created - the callee ensures telemetry is only
             // reported once. Note that if the host implements IHostProvidesTelemetryData, we rely
             // on the host calling ReportStartupTelemetry.
-            if (this.Host is not IHostProvidesTelemetryData)
+            if (!(this.Host is IHostProvidesTelemetryData))
             {
                 TelemetryAPI.ReportStartupTelemetry(null);
             }
@@ -535,7 +541,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             return CoreCreatePipeline(command, false, false);
@@ -556,7 +562,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             return CoreCreatePipeline(command, addToHistory, false);
@@ -590,7 +596,7 @@ namespace System.Management.Automation.Runspaces
         {
             if (command == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(command));
+                throw PSTraceSource.NewArgumentNullException("command");
             }
 
             return CoreCreatePipeline(command, addToHistory, true);
@@ -829,7 +835,7 @@ namespace System.Management.Automation.Runspaces
 
             lock (_pipelineListLock)
             {
-                if (!ByPassRunspaceStateCheck && RunspaceState != RunspaceState.Opened)
+                if (ByPassRunspaceStateCheck == false && RunspaceState != RunspaceState.Opened)
                 {
                     InvalidRunspaceStateException e =
                         new InvalidRunspaceStateException
@@ -914,6 +920,7 @@ namespace System.Management.Automation.Runspaces
                     waitHandles[i] = runningPipelines[i].PipelineFinishedEvent;
                 }
 
+#if !CORECLR    // No ApartmentState.STA In CoreCLR
                 // WaitAll for multiple handles on a STA (single-thread apartment) thread is not supported as WaitAll will prevent the message pump to run
                 if (runningPipelines.Length > 1 && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                 {
@@ -924,17 +931,16 @@ namespace System.Management.Automation.Runspaces
                         Tuple<WaitHandle[], ManualResetEvent> stateInfo = new Tuple<WaitHandle[], ManualResetEvent>(waitHandles, waitAllIsDone);
 
                         ThreadPool.QueueUserWorkItem(new WaitCallback(
-                            (object state) =>
-                            {
-                                var tuple = (Tuple<WaitHandle[], ManualResetEvent>)state;
-                                WaitHandle.WaitAll(tuple.Item1);
-                                tuple.Item2.Set();
-                            }),
-                            stateInfo);
+                                                         delegate (object state)
+                                                         {
+                                                             var tuple = (Tuple<WaitHandle[], ManualResetEvent>)state;
+                                                             WaitHandle.WaitAll(tuple.Item1);
+                                                             tuple.Item2.Set();
+                                                         }), stateInfo);
                         return waitAllIsDone.WaitOne();
                     }
                 }
-
+#endif
                 return WaitHandle.WaitAll(waitHandles);
             }
             else
@@ -972,7 +978,7 @@ namespace System.Management.Automation.Runspaces
                 // If we have no running pipeline, or if the currently running pipeline is
                 // the same as the current thread, then execute the action.
                 var pipelineRunning = _currentlyRunningPipeline as PipelineBase;
-                return pipelineRunning == null ||
+                return pipelineRunning == null || 
                     Thread.CurrentThread == pipelineRunning.NestedPipelineExecutionThread;
             }
         }
@@ -1003,7 +1009,7 @@ namespace System.Management.Automation.Runspaces
                 // first check if this pipeline is in the list of running
                 // pipelines. It is possible that pipeline has already
                 // completed.
-                if (!RunningPipelines.Contains(pipeline))
+                if (RunningPipelines.Contains(pipeline) == false)
                 {
                     return;
                 }
@@ -1044,7 +1050,7 @@ namespace System.Management.Automation.Runspaces
             // Concurrency check should be done under runspace lock
             lock (SyncRoot)
             {
-                if (_bSessionStateProxyCallInProgress)
+                if (_bSessionStateProxyCallInProgress == true)
                 {
                     throw PSTraceSource.NewInvalidOperationException(RunspaceStrings.NoPipelineWhenSessionStateProxyInProgress);
                 }
@@ -1152,7 +1158,7 @@ namespace System.Management.Automation.Runspaces
                     throw e;
                 }
 
-                if (_bSessionStateProxyCallInProgress)
+                if (_bSessionStateProxyCallInProgress == true)
                 {
                     throw PSTraceSource.NewInvalidOperationException(RunspaceStrings.AnotherSessionStateProxyInProgress);
                 }
@@ -1574,7 +1580,7 @@ namespace System.Management.Automation.Runspaces
         /// <returns></returns>
         internal override SessionStateProxy GetSessionStateProxy()
         {
-            return _sessionStateProxy ??= new SessionStateProxy(this);
+            return _sessionStateProxy ?? (_sessionStateProxy = new SessionStateProxy(this));
         }
 
         #endregion session state proxy

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections;
@@ -121,7 +121,7 @@ namespace System.Management.Automation
     {
         #region Private Data
 
-        private readonly IList<T> _data;
+        private IList<T> _data;
         private ManualResetEvent _readWaitHandle;
         private bool _isOpen = true;
         private bool _releaseOnEnumeration;
@@ -333,12 +333,14 @@ namespace System.Management.Automation
         {
             if (info == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(info));
+                throw PSTraceSource.NewArgumentNullException("info");
             }
 
-            if (!(info.GetValue("Data", typeof(IList<T>)) is IList<T> listToUse))
+            IList<T> listToUse = info.GetValue("Data", typeof(IList<T>)) as IList<T>;
+
+            if (listToUse == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(info));
+                throw PSTraceSource.NewArgumentNullException("info");
             }
 
             _data = listToUse;
@@ -558,7 +560,11 @@ namespace System.Management.Automation
 
                     // A temporary variable is used as the Completed may
                     // reach null (because of -='s) after the null check
-                    Completed?.Invoke(this, EventArgs.Empty);
+                    EventHandler tempCompleted = Completed;
+                    if (tempCompleted != null)
+                    {
+                        tempCompleted(this, EventArgs.Empty);
+                    }
                 }
 
                 if (raiseDataAdded)
@@ -658,13 +664,13 @@ namespace System.Management.Automation
                 {
                     if ((index < 0) || (index >= _data.Count))
                     {
-                        throw PSTraceSource.NewArgumentOutOfRangeException(nameof(index), index,
+                        throw PSTraceSource.NewArgumentOutOfRangeException("index", index,
                             PSDataBufferStrings.IndexOutOfRange, 0, _data.Count - 1);
                     }
 
                     if (_serializeInput)
                     {
-                        value = (T)(object)GetSerializedObject(value);
+                        value = (T)(Object)GetSerializedObject(value);
                     }
 
                     _data[index] = value;
@@ -732,7 +738,7 @@ namespace System.Management.Automation
             {
                 if ((index < 0) || (index >= _data.Count))
                 {
-                    throw PSTraceSource.NewArgumentOutOfRangeException(nameof(index), index,
+                    throw PSTraceSource.NewArgumentOutOfRangeException("index", index,
                         PSDataBufferStrings.IndexOutOfRange, 0, _data.Count - 1);
                 }
 
@@ -817,7 +823,7 @@ namespace System.Management.Automation
             {
                 if (_serializeInput)
                 {
-                    item = (T)(object)GetSerializedObject(item);
+                    item = (T)(Object)GetSerializedObject(item);
                 }
 
                 return _data.Contains(item);
@@ -1259,7 +1265,7 @@ namespace System.Management.Automation
 
             if (_serializeInput)
             {
-                item = (T)(object)GetSerializedObject(item);
+                item = (T)(Object)GetSerializedObject(item);
             }
 
             _data.Insert(index, item);
@@ -1293,7 +1299,7 @@ namespace System.Management.Automation
         {
             if (info == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(info));
+                throw PSTraceSource.NewArgumentNullException("info");
             }
 
             info.AddValue("Data", _data);
@@ -1399,14 +1405,22 @@ namespace System.Management.Automation
         {
             // A temporary variable is used as the DataAdding may
             // reach null (because of -='s) after the null check
-            DataAdding?.Invoke(this, new DataAddingEventArgs(psInstanceId, itemAdded));
+            EventHandler<DataAddingEventArgs> tempDataAdding = DataAdding;
+            if (tempDataAdding != null)
+            {
+                tempDataAdding(this, new DataAddingEventArgs(psInstanceId, itemAdded));
+            }
         }
 
         private void RaiseDataAddedEvent(Guid psInstanceId, int index)
         {
             // A temporary variable is used as the DataAdded may
             // reach null (because of -='s) after the null check
-            DataAdded?.Invoke(this, new DataAddedEventArgs(psInstanceId, index));
+            EventHandler<DataAddedEventArgs> tempDataAdded = DataAdded;
+            if (tempDataAdded != null)
+            {
+                tempDataAdded(this, new DataAddedEventArgs(psInstanceId, index));
+            }
         }
 
         /// <summary>
@@ -1500,7 +1514,7 @@ namespace System.Management.Automation
         {
             if (collection == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(collection));
+                throw PSTraceSource.NewArgumentNullException("collection");
             }
 
             int index = -1;
@@ -1585,7 +1599,7 @@ namespace System.Management.Automation
         {
             if (_serializeInput)
             {
-                item = (T)(object)GetSerializedObject(item);
+                item = (T)(Object)GetSerializedObject(item);
             }
 
             int count = _data.Count;
@@ -1617,19 +1631,19 @@ namespace System.Management.Automation
             {
                 if (typeof(T).IsValueType)
                 {
-                    throw PSTraceSource.NewArgumentNullException(nameof(value), PSDataBufferStrings.ValueNullReference);
+                    throw PSTraceSource.NewArgumentNullException("value", PSDataBufferStrings.ValueNullReference);
                 }
             }
-            else if (value is not T)
+            else if (!(value is T))
             {
-                throw PSTraceSource.NewArgumentException(nameof(value), PSDataBufferStrings.CannotConvertToGenericType,
+                throw PSTraceSource.NewArgumentException("value", PSDataBufferStrings.CannotConvertToGenericType,
                                                          value.GetType().FullName,
                                                          typeof(T).FullName);
             }
         }
 
         // Serializes an object, as long as it's not serialized.
-        private static PSObject GetSerializedObject(object value)
+        private PSObject GetSerializedObject(Object value)
         {
             // This is a safe cast, as this method is only called with "SerializeInput" is set,
             // and that method throws if the collection type is not PSObject.
@@ -1654,7 +1668,7 @@ namespace System.Management.Automation
             }
         }
 
-        private static bool SerializationWouldHaveNoEffect(PSObject result)
+        private bool SerializationWouldHaveNoEffect(PSObject result)
         {
             if (result == null)
             {
@@ -1829,8 +1843,8 @@ namespace System.Management.Automation
 
         private W _currentElement;
         private int _index;
-        private readonly PSDataCollection<W> _collToEnumerate;
-        private readonly bool _neverBlock;
+        private PSDataCollection<W> _collToEnumerate;
+        private bool _neverBlock;
 
         #endregion
 
@@ -1911,7 +1925,7 @@ namespace System.Management.Automation
         /// </remarks>
         public bool MoveNext()
         {
-            return MoveNext(!_neverBlock);
+            return MoveNext(_neverBlock == false);
         }
 
         /// <summary>
@@ -1926,7 +1940,7 @@ namespace System.Management.Automation
         {
             lock (_collToEnumerate.SyncObject)
             {
-                while (true)
+                do
                 {
                     if (_index < _collToEnumerate.Count)
                     {
@@ -1942,7 +1956,7 @@ namespace System.Management.Automation
 
                     // we have reached the end if either the collection is closed
                     // or no powershell instance is bound to this collection.
-                    if ((_collToEnumerate.RefCount == 0) || (!_collToEnumerate.IsOpen))
+                    if ((0 == _collToEnumerate.RefCount) || (!_collToEnumerate.IsOpen))
                     {
                         return false;
                     }
@@ -1965,7 +1979,7 @@ namespace System.Management.Automation
                     {
                         return false;
                     }
-                }
+                } while (true);
             }
         }
 
@@ -1996,7 +2010,7 @@ namespace System.Management.Automation
     /// </summary>
     internal sealed class PSInformationalBuffers
     {
-        private readonly Guid _psInstanceId;
+        private Guid _psInstanceId;
 
         /// <summary>
         /// Default constructor.

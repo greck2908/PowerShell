@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using Dbg = System.Management.Automation;
@@ -35,7 +35,7 @@ namespace System.Management.Automation
         {
             if (sessionState == null)
             {
-                throw PSTraceSource.NewArgumentException(nameof(sessionState));
+                throw PSTraceSource.NewArgumentException("sessionState");
             }
 
             _sessionState = sessionState;
@@ -441,8 +441,9 @@ namespace System.Management.Automation
 
         #region private data
 
-        private readonly SessionStateInternal _sessionState;
+        private SessionStateInternal _sessionState;
 
         #endregion private data
     }
 }
+

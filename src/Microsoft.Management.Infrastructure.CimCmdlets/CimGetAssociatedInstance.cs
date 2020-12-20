@@ -1,8 +1,10 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #region Using directives
 
+using System.Collections;
+using System;
 using System.Collections.Generic;
 
 #endregion
@@ -17,7 +19,9 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal sealed class CimGetAssociatedInstance : CimAsyncOperation
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CimGetAssociatedInstance"/> class.
+        /// <para>
+        /// Constructor
+        /// </para>
         /// </summary>
         public CimGetAssociatedInstance()
             : base()
@@ -41,14 +45,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 nameSpace = ConstValue.GetNamespace(cmdlet.CimInstance.CimSystemProperties.Namespace);
             }
 
-            List<CimSessionProxy> proxys = new();
+            List<CimSessionProxy> proxys = new List<CimSessionProxy>();
             switch (cmdlet.ParameterSetName)
             {
                 case CimBaseCommand.ComputerSetName:
                     foreach (string computerName in computerNames)
                     {
                         CimSessionProxy proxy = CreateSessionProxy(computerName, cmdlet.CimInstance, cmdlet);
-                        proxys.Add(proxy);
+                            proxys.Add(proxy);
                     }
 
                     break;
@@ -85,7 +89,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         /// <param name="proxy"></param>
         /// <param name="cmdlet"></param>
-        private static void SetSessionProxyProperties(
+        private void SetSessionProxyProperties(
             ref CimSessionProxy proxy,
             GetCimAssociatedInstanceCommand cmdlet)
         {

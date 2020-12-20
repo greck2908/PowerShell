@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -10,7 +10,7 @@ namespace Microsoft.PowerShell.Commands
     /// <summary>
     /// Generates a new event notification.
     /// </summary>
-    [Cmdlet(VerbsCommon.New, "Event", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=2096708")]
+    [Cmdlet(VerbsCommon.New, "Event", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=135234")]
     [OutputType(typeof(PSEventArgs))]
     public class NewEventCommand : PSCmdlet
     {

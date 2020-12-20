@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System;
@@ -171,7 +171,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         {
             if (val == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(val));
+                throw PSTraceSource.NewArgumentNullException("val");
             }
 
             // need to check the type:
@@ -201,7 +201,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
                 return ex;
             }
 
-            PSTraceSource.NewArgumentException(nameof(val));
+            PSTraceSource.NewArgumentException("val");
             return null;
         }
 
@@ -249,7 +249,7 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
 
         #endregion
 
-        private readonly bool _noGlobbing;
+        private bool _noGlobbing;
     }
 
     internal class AlignmentEntryDefinition : HashtableEntryDefinition
@@ -489,3 +489,4 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
     }
     #endregion
 }
+

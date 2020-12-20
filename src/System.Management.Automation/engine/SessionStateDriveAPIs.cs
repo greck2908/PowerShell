@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -65,7 +65,7 @@ namespace System.Management.Automation
         {
             if (drive == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(drive));
+                throw PSTraceSource.NewArgumentNullException("drive");
             }
 
             PSDriveInfo result = null;
@@ -140,12 +140,12 @@ namespace System.Management.Automation
         {
             if (drive == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(drive));
+                throw PSTraceSource.NewArgumentNullException("drive");
             }
 
             if (context == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(context));
+                throw PSTraceSource.NewArgumentNullException("context");
             }
 
             if (!IsValidDriveName(drive.Name))
@@ -170,7 +170,7 @@ namespace System.Management.Automation
                 return;
             }
 
-            if (string.Equals(result.Name, drive.Name, StringComparison.OrdinalIgnoreCase))
+            if (string.Compare(result.Name, drive.Name, StringComparison.CurrentCultureIgnoreCase) == 0)
             {
                 // Set the drive in the current scope.
 
@@ -251,7 +251,7 @@ namespace System.Management.Automation
             return result;
         }
 
-        private static readonly char[] s_charactersInvalidInDriveName = new char[] { ':', '/', '\\', '.', '~' };
+        private static char[] s_charactersInvalidInDriveName = new char[] { ':', '/', '\\', '.', '~' };
 
         /// <summary>
         /// Tries to resolve the drive root as an MSH path. If it successfully resolves
@@ -432,7 +432,7 @@ namespace System.Management.Automation
         {
             if (name == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             PSDriveInfo result = null;
@@ -473,9 +473,13 @@ namespace System.Management.Automation
 
             if (result == null && automount)
             {
-                // Attempt to automount as a file system drive
-                // or as a BuiltIn drive (e.g. "Cert"/"Certificate"/"WSMan")
-                result = AutomountFileSystemDrive(name) ?? AutomountBuiltInDrive(name);
+                // first try to automount as a file system drive
+                result = AutomountFileSystemDrive(name);
+                // if it didn't work, then try automounting as a BuiltIn drive (e.g. "Cert"/"Certificate"/"WSMan")
+                if (result == null)
+                {
+                    result = AutomountBuiltInDrive(name); // internally this calls GetDrive(name, false)
+                }
             }
 
             if (result == null)
@@ -524,7 +528,7 @@ namespace System.Management.Automation
         {
             if (name == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(name));
+                throw PSTraceSource.NewArgumentNullException("name");
             }
 
             PSDriveInfo result = null;
@@ -740,9 +744,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Auto-mounts a built-in drive.
         /// </summary>
-        /// <remarks>
-        /// Calls GetDrive(name, false) internally.
-        /// </remarks>
         /// <param name="name">The name of the drive to load.</param>
         /// <returns></returns>
         internal PSDriveInfo AutomountBuiltInDrive(string name)
@@ -993,7 +994,7 @@ namespace System.Management.Automation
         {
             if (driveName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(driveName));
+                throw PSTraceSource.NewArgumentNullException("driveName");
             }
 
             PSDriveInfo drive = GetDrive(driveName, scopeID);
@@ -1036,7 +1037,7 @@ namespace System.Management.Automation
         {
             if (driveName == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(driveName));
+                throw PSTraceSource.NewArgumentNullException("driveName");
             }
 
             Dbg.Diagnostics.Assert(
@@ -1078,7 +1079,7 @@ namespace System.Management.Automation
         {
             if (drive == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(drive));
+                throw PSTraceSource.NewArgumentNullException("drive");
             }
 
             CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
@@ -1240,12 +1241,12 @@ namespace System.Management.Automation
         {
             if (context == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(context));
+                throw PSTraceSource.NewArgumentNullException("context");
             }
 
             if (drive == null)
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(drive));
+                throw PSTraceSource.NewArgumentNullException("drive");
             }
 
             s_tracer.WriteLine("Drive name = {0}", drive.Name);
@@ -1294,7 +1295,7 @@ namespace System.Management.Automation
                 // Make sure the provider didn't try to pull a fast one on us
                 // and substitute a different drive.
 
-                if (string.Equals(result.Name, drive.Name, StringComparison.OrdinalIgnoreCase))
+                if (string.Compare(result.Name, drive.Name, StringComparison.CurrentCultureIgnoreCase) == 0)
                 {
                     driveRemovable = true;
                 }
